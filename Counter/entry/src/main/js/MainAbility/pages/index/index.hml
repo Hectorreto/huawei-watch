@@ -1,0 +1,3 @@
+<div class="container" onclick="increment">
+    <text class="count">{{ count }}</text>
+</div>
