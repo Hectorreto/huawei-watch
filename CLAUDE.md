@@ -13,7 +13,7 @@ A minimal app for a Huawei Watch GT 6 Pro: a black screen showing a number that 
 
 ## Verifying changes
 
-For now, in DevEco Studio's Previewer: open `index.hml`, click Previewer and tap the watch screen (see `docs/create-and-preview-the-app.md`). Installing on the real watch does not work yet; once it does, check every change on the watch too. Before reporting a bug as new, check `docs/known-issues.md`.
+First in DevEco Studio's Previewer: open `index.hml`, click Previewer and tap the watch screen (see `docs/create-and-preview-the-app.md`). Then build the signed HAP and install it on the real watch with DevEco Assistant (see `docs/install-on-the-watch.md`); the user does the install and reports what the watch shows. Before reporting a bug as new, check `docs/known-issues.md`.
 
 ## Docs
 
@@ -29,5 +29,6 @@ How to write them:
 - Creating the DevEco project, its settings, or checking the app in the Previewer → `docs/create-and-preview-the-app.md`
 - Creating the Huawei developer account, getting the watch's UDID or registering it in AppGallery Connect → `docs/developer-account-and-udid.md`
 - Creating the debug certificate, app ID or debug profile, the signing config, or building the signed package → `docs/sign-the-app.md`
+- Installing the signed app on the watch with DevEco Assistant → `docs/install-on-the-watch.md`
 - Choosing the toolchain, signing an app or installing it on the Watch GT 6 Pro (Android, iPhone, Gadgetbridge) → `docs/choose-a-development-path.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`

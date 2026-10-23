@@ -1,6 +1,6 @@
 # Choose a development path for the Watch GT 6 Pro
 
-Research from October 2026, before writing any code. Nothing here has been tried on our watch yet. Update this doc with what actually happens.
+Research from October 2026, before writing any code. The DevEco Assistant route has since worked on our watch (see `install-on-the-watch.md`); the other routes are still untried.
 
 ## What kind of device it is
 
@@ -35,7 +35,7 @@ The UDID comes from DevEco Assistant (Android) or HuaSideload (iPhone).
 
 | Route | Phone | Status |
 |---|---|---|
-| **DevEco Assistant** (Huawei's official app, from AppGallery) | Android with Huawei Health from AppGallery | The documented route. Copy the HAP to `/sdcard/haps/`, open DevEco Assistant, tap "Install watch app". A GT 5 user got "Installation failed: 40. Invalid configuration file format" with no answer in the thread: usually an API level or `deviceType` mismatch. |
+| **DevEco Assistant** (Huawei's official app, from AppGallery) | Android with Huawei Health from AppGallery | **Works on our GT 6 Pro** (October 2026, DevEco Assistant v1.2.1.600 from an unofficial APK, since it is not in AppGallery on a non-Huawei phone). Copy the HAP to `/sdcard/haps/`, open DevEco Assistant, tap "Install watch app". A GT 5 user got "Installation failed: 40. Invalid configuration file format" with no answer in the thread: usually an API level or `deviceType` mismatch. |
 | **HuaSideload** (`Burak4Arslan/huawei-watch-sideload-ios`, AGPL) | iPhone, built with Xcode on a **Mac** | Community port of Gadgetbridge's Huawei protocol. Installs signed `.bin` packages with a debug profile, shows the UDID. Tested only on a GT 3 SE (API 6); its build pipeline uses DevEco 3.1 / API 9 SDK and Node 16. Pairing may break the Health connection. |
 | **Gadgetbridge** (open source, Android) | Android, without Huawei Health | Supports the GT 6 Pro (nightly builds) including "app management", but app install needs the same signed `.bin`. Connecting to Gadgetbridge may require resetting the watch. |
 | **AppGallery in Huawei Health** | Either | Only for published apps. Store review is not a development loop. |
@@ -50,7 +50,7 @@ The Flappy Bird on our watch is most likely a published AppGallery app, so it pr
 4. Create the certificate and profile, sign, install with DevEco Assistant.
 5. If DevEco Assistant fails on the GT 6 Pro, try Gadgetbridge (Android) with the same signed package, then HuaSideload (we have a Mac and an iPhone for it).
 
-Step 1 is done with DevEco Studio 6.1.1 instead of 6.0.1 (the version that was downloaded): the counter works in the Previewer. See `create-and-preview-the-app.md`.
+Steps 1 to 4 are done, with DevEco Studio 6.1.1 instead of 6.0.1: the signed counter installed on the watch with DevEco Assistant, so step 5 was not needed. See `create-and-preview-the-app.md`, `developer-account-and-udid.md`, `sign-the-app.md` and `install-on-the-watch.md`.
 
 ## Sources
 

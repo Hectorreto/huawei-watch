@@ -64,4 +64,4 @@ node "E:/Programs/Huawei/DevEco Studio/tools/hvigor/bin/hvigorw.js" --mode modul
 - The warning `can not sign bin with codesign` is printed on every build; the `.bin` is still signed (`sign-app success`) and contains the profile.
 - `hap-sign-tool.jar verify-app` passes on the `.hap`. On the `.bin` with `-inForm bin` it fails with `elf magic verify failed`, because that form expects an ELF file, so it is not a valid check for Lite Wearable `.bin` files.
 
-Installing on the watch is not done yet.
+Installing it on the watch is in `install-on-the-watch.md`.
