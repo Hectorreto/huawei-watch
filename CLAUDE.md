@@ -28,5 +28,6 @@ How to write them:
 
 - Creating the DevEco project, its settings, or checking the app in the Previewer → `docs/create-and-preview-the-app.md`
 - Creating the Huawei developer account, getting the watch's UDID or registering it in AppGallery Connect → `docs/developer-account-and-udid.md`
+- Creating the debug certificate, app ID or debug profile, or finding the signing files → `docs/sign-the-app.md`
 - Choosing the toolchain, signing an app or installing it on the Watch GT 6 Pro (Android, iPhone, Gadgetbridge) → `docs/choose-a-development-path.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`

@@ -26,9 +26,11 @@ Alternatives if DevEco Assistant is gone or fails: HuaSideload on the iPhone sho
 
 ## Register the watch in AppGallery Connect
 
-https://developer.huawei.com/consumer/en/service/josp/agc/index.html > **Users and permissions > Device management > Add device**, type **Sports watch** (sport watch), paste the UDID.
+Confirmed October 2026: https://developer.huawei.com/consumer/en/service/josp/agc/index.html > **Certificates, app IDs, and profiles > Devices > Add device**. Older guides say **Users and permissions > Device management**; that menu no longer has it.
 
-Next: debug certificate, app with package name `com.hectorreto.counter`, and a debug profile with this device (to be written in a signing doc once done).
+The form asks for a name (ours: `GT6Pro`), a type and the UDID (exactly 64 characters). Types offered: Mobile phone, Tablet, PC/2-in-1, Sports watch, Smart watch, Vision, Router. The GT 6 Pro is **Sports watch** (Smart watch is for full-HarmonyOS watches). The list shows the UDID masked and allows up to 100 devices.
+
+Next: debug certificate, app ID and debug profile with this device, in `sign-the-app.md`.
 
 ## Sources
 
