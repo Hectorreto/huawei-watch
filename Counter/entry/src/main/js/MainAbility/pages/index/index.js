@@ -30,6 +30,8 @@ const GOLDEN_MAX_S = 120;
 const GOLDEN_STAY_S = 10;
 const FRENZY_MULT = 7;
 const FRENZY_S = 30;
+// The list only exists once the view has rendered, so its crown focus is requested a bit later.
+const FOCUS_DELAY_MS = 50;
 
 // s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
@@ -246,10 +248,21 @@ export default {
     openShop() {
         this.refreshItems();
         this.view = 'shop';
+        this.focusCrown('shopList');
     },
     openAchievements() {
         this.refreshAchievements();
         this.view = 'achievements';
+        this.focusCrown('achievementList');
+    },
+    // Turning the crown scrolls the list that has the crown focus.
+    focusCrown(ref) {
+        setTimeout(() => {
+            const list = this.$refs[ref];
+            if (list && list.rotation) {
+                list.rotation({ focus: true });
+            }
+        }, FOCUS_DELAY_MS);
     },
     closeView() {
         this.view = 'cookie';

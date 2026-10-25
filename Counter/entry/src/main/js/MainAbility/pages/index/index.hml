@@ -22,7 +22,7 @@
     </stack>
     <div class="view" if="{{ view === 'shop' }}">
         <text class="count">{{ countText }}</text>
-        <list class="shop">
+        <list class="shop" ref="shopList">
             <list-item class="item" for="{{ items }}" onclick="buy($idx)">
                 <text class="item-name" if="{{ $item.affordable }}">{{ $item.title }}</text>
                 <text class="item-name-off" if="{{ !$item.affordable }}">{{ $item.title }}</text>
@@ -33,7 +33,7 @@
     </div>
     <div class="view" if="{{ view === 'achievements' }}">
         <text class="count">{{ achievedText }}</text>
-        <list class="shop">
+        <list class="shop" ref="achievementList">
             <list-item class="item" for="{{ achievementItems }}">
                 <text class="item-name" if="{{ $item.done }}">{{ $item.title }}</text>
                 <text class="item-name-off" if="{{ !$item.done }}">{{ $item.title }}</text>
