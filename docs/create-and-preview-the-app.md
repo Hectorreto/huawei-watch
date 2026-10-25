@@ -26,7 +26,16 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 
 ## The app
 
-`entry/src/main/js/MainAbility/pages/index/`: `index.hml` is a full-screen `div` with `onclick="increment"` holding one `text`; `index.js` keeps `count` in `data`; `index.css` makes the background black and the text white. Tapping anywhere on the screen counts, not only on the number.
+`entry/src/main/js/MainAbility/pages/index/`: `index.hml` is a full-screen `div` with `onclick="increment"` holding the count, a "+1" row and the cookie image. Tapping anywhere on the screen counts, not only on the cookie. Each tap:
+
+- vibrates briefly with `@system.vibrator` (`mode: 'short'`), which needs `ohos.permission.VIBRATE` in `reqPermissions` in `config.json`;
+- swaps the cookie to `common/cookie_pressed.png` for 120 ms. The press is an image swap because lite `@keyframes` are not a reliable way to scale an image;
+- shows a "+1" that rises and fades. Lite does not allow binding `class` to data (build error "class selector does not support data binding"), so the page toggles between two `if` texts, and each one starts its animation when it is created;
+- saves `count` with `@system.storage` (key `count`, string value) 1 s after the last tap, and again in `onDestroy`. `onInit` adds the stored value to `count`, so taps made before the read finishes are not lost.
+
+`common/cookie.png` and `cookie_pressed.png` are 200x200 opaque RGB PNGs on black (cookie radius 96 and 84 px), drawn with the same kind of pure-Python PNG script as the icon.
+
+Not yet checked in the Previewer or on the watch: the vibration, the "+1" animation (lite may ignore `opacity` in keyframes) and whether the count survives closing the app.
 
 The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our cookie icon was drawn with a small pure-Python PNG script (Pillow is not installed on this PC).
 

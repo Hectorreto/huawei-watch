@@ -9,6 +9,11 @@
   },
   "deviceConfig": {},
   "module": {
+    "reqPermissions": [
+      {
+        "name": "ohos.permission.VIBRATE"
+      }
+    ],
     "deviceType": [
       "liteWearable"
     ],
