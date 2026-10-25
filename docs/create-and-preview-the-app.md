@@ -28,6 +28,8 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 
 `entry/src/main/js/MainAbility/pages/index/`: `index.hml` is a full-screen `div` with `onclick="increment"` holding one `text`; `index.js` keeps `count` in `data`; `index.css` makes the background black and the text white. Tapping anywhere on the screen counts, not only on the number.
 
+The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our cookie icon was drawn with a small pure-Python PNG script (Pillow is not installed on this PC).
+
 ## Previewer
 
 Open `index.hml` and click **Previewer** on the right edge. It builds (`buildPreviewerResource`, a few seconds) and shows a round LiteWearable watch. Clicks on the screen act as taps.
