@@ -26,16 +26,22 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 
 ## The app
 
-`entry/src/main/js/MainAbility/pages/index/`: `index.hml` is a full-screen `div` with `onclick="increment"` holding the count, a "+1" row and the cookie image. Tapping anywhere on the screen counts, not only on the cookie. Each tap:
+`entry/src/main/js/MainAbility/pages/index/` is one page with two views, switched with `if` on `view`: the cookie and the shop. Changing `view` is enough, so no `@system.router` page is needed and the production timer keeps running in the shop.
 
+**Cookie view:** the count, the cookies per second, a "+N" row, the cookie (a `div` with `onclick="increment"`) and a "Tienda" button. Only the cookie counts taps, so the button does not add cookies. Each tap:
+
+- adds `tapPower` (1 + one per "Dedo de oro");
 - vibrates briefly with `@system.vibrator` (`mode: 'short'`), which needs `ohos.permission.VIBRATE` in `reqPermissions` in `config.json`, with `reason` and `usedScene` (with only `name`, the watch refuses to install it with error 46; see `install-on-the-watch.md`);
 - swaps the cookie to `common/cookie_pressed.png` for 120 ms. The press is an image swap because lite `@keyframes` are not a reliable way to scale an image;
-- shows a "+1" that rises and fades. Lite does not allow binding `class` to data (build error "class selector does not support data binding"), so the page toggles between two `if` texts, and each one starts its animation when it is created;
-- saves `count` with `@system.storage` (key `count`, string value) 1 s after the last tap, and again in `onDestroy`. `onInit` adds the stored value to `count`, so taps made before the read finishes are not lost.
+- shows a "+N" that rises and fades. Lite does not allow binding `class` to data (build error "class selector does not support data binding"), so the page toggles between two `if` texts, and each one starts its animation when it is created. Greying out unaffordable shop rows uses the same trick.
+
+**Shop view:** a `list` of the `UPGRADES` in `index.js` (Dedo de oro +1 per tap, Cursor, Abuela, Granja, Mina +N per second). The price is `base * 1.15^owned`. Tapping a row buys it (short vibration) or, if there are not enough cookies, gives a long vibration. `onclick="buy($idx)"` inside a `for` compiles to a handler that gets the row index. `items` is rebuilt as a new array on every change, because lite does not reliably notice changes inside array items.
+
+**Production and saving:** a 1 s `setInterval` adds the cookies per second. `@system.storage` holds `count` and `owned` (comma-separated counts in `UPGRADES` order, so new upgrades must be appended). It saves 1 s after the last tap, every 10 s while producing, after each purchase and in `onDestroy`. `onInit` adds the stored count to `count`, so taps made before the read finishes are not lost. Large numbers show as 1.2K, 3.4M, and so on. Nothing is produced while the app is closed.
 
 `common/cookie.png` and `cookie_pressed.png` are 200x200 opaque RGB PNGs on black (cookie radius 96 and 84 px), drawn with the same kind of pure-Python PNG script as the icon.
 
-Confirmed on the GT 6 Pro (October 2026): the cookie press, the "+1" rising and fading (so lite keyframes do apply `translateY` and `opacity`), the vibration on each tap, and the count surviving closing and reopening the app.
+Confirmed on the GT 6 Pro (October 2026): the cookie press, the "+1" rising and fading (so lite keyframes do apply `translateY` and `opacity`), the vibration on each tap, and the count surviving closing and reopening the app. Not yet checked on the watch: the shop, the production timer and saving `owned`.
 
 The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our cookie icon was drawn with a small pure-Python PNG script (Pillow is not installed on this PC).
 

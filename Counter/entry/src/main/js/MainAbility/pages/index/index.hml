@@ -1,8 +1,25 @@
-<div class="container" onclick="increment">
-    <text class="count">{{ count }}</text>
-    <div class="plus-row">
-        <text class="plus" if="{{ plus === 'a' }}">+1</text>
-        <text class="plus" if="{{ plus === 'b' }}">+1</text>
+<div class="container">
+    <div class="view" if="{{ view === 'cookie' }}">
+        <text class="count">{{ countText }}</text>
+        <text class="rate">{{ rateText }}</text>
+        <div class="plus-row">
+            <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
+        </div>
+        <div class="cookie-box" onclick="increment">
+            <image class="cookie" src="{{ cookieSrc }}"></image>
+        </div>
+        <text class="button" onclick="openShop">Tienda</text>
     </div>
-    <image class="cookie" src="{{ cookieSrc }}"></image>
+    <div class="view" if="{{ view === 'shop' }}">
+        <text class="count">{{ countText }}</text>
+        <list class="shop">
+            <list-item class="item" for="{{ items }}" onclick="buy($idx)">
+                <text class="item-name" if="{{ $item.affordable }}">{{ $item.title }}</text>
+                <text class="item-name-off" if="{{ !$item.affordable }}">{{ $item.title }}</text>
+                <text class="item-detail">{{ $item.detail }}</text>
+            </list-item>
+        </list>
+        <text class="button" onclick="closeShop">Volver</text>
+    </div>
 </div>

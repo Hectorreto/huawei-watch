@@ -1,23 +1,49 @@
 .container {
   width: 100%;
   height: 100%;
+  background-color: #000000;
+}
+.view {
+  width: 100%;
+  height: 100%;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: #000000;
 }
 .count {
   width: 100%;
+  height: 50px;
   font-size: 38px;
   color: #ffffff;
   text-align: center;
+}
+.rate {
+  width: 100%;
+  height: 40px;
+  font-size: 30px;
+  color: #9a9a9a;
+  text-align: center;
+}
+.cookie-box {
+  width: 200px;
+  height: 200px;
 }
 .cookie {
   width: 200px;
   height: 200px;
 }
+.button {
+  width: 160px;
+  height: 50px;
+  margin-top: 10px;
+  font-size: 30px;
+  color: #000000;
+  background-color: #f5c16c;
+  border-radius: 25px;
+  text-align: center;
+}
 
-/* "+1" above the cookie. index.js swaps which of two "if" texts exists, so each tap
+/* "+N" above the cookie. index.js swaps which of two "if" texts exists, so each tap
    creates a new text and its animation starts again (lite cannot bind class). */
 .plus-row {
   width: 100%;
@@ -42,4 +68,38 @@
     transform: translateY(-10px);
     opacity: 0;
   }
+}
+
+/* Shop. Narrower than the screen so the round edge does not clip the rows. */
+.shop {
+  width: 320px;
+  height: 280px;
+}
+.item {
+  width: 320px;
+  height: 90px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.item-name {
+  width: 320px;
+  height: 40px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.item-name-off {
+  width: 320px;
+  height: 40px;
+  font-size: 30px;
+  color: #5a5a5a;
+  text-align: center;
+}
+.item-detail {
+  width: 320px;
+  height: 40px;
+  font-size: 30px;
+  color: #f5c16c;
+  text-align: center;
 }
