@@ -19,6 +19,9 @@ const UPGRADES = [
     { name: 'Mina', base: 15000, tap: 0, cps: 250 }
 ];
 const PRICE_GROWTH = 1.15;
+// Offline earnings stop after this long away, so an old save does not give a huge jump.
+const OFFLINE_MAX_S = 24 * 60 * 60;
+const AWAY_MESSAGE_MS = 4000;
 
 let pressTimer = null;
 let saveTimer = null;
@@ -44,30 +47,38 @@ export default {
         tapPower: 1,
         cps: 0,
         rateText: '0 / s',
+        awayText: '',
         plusText: '+1',
         items: [],
         cookieSrc: COOKIE,
         plus: ''
     },
     onInit() {
-        storage.get({
-            key: 'count',
-            default: '0',
-            success: (value) => {
-                // Add instead of assign so taps made before the read finishes are kept.
-                this.setCount(this.count + (parseInt(value, 10) || 0));
-            }
-        });
+        this.setOwned(this.owned);
+        // Chained so the offline earnings use the loaded upgrades.
         storage.get({
             key: 'owned',
             default: '',
-            success: (value) => {
-                const parts = value.split(',');
-                const owned = UPGRADES.map((u, i) => parseInt(parts[i], 10) || 0);
-                this.setOwned(owned);
+            success: (owned) => {
+                const parts = owned.split(',');
+                this.setOwned(UPGRADES.map((u, i) => parseInt(parts[i], 10) || 0));
+                storage.get({
+                    key: 'count',
+                    default: '0',
+                    success: (count) => {
+                        // Add instead of assign so taps made before the read finishes are kept.
+                        this.setCount(this.count + (parseInt(count, 10) || 0));
+                        storage.get({
+                            key: 'savedAt',
+                            default: '0',
+                            success: (savedAt) => {
+                                this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
+                            }
+                        });
+                    }
+                });
             }
         });
-        this.setOwned(this.owned);
         tickTimer = setInterval(() => {
             this.tick();
         }, 1000);
@@ -75,6 +86,22 @@ export default {
     onDestroy() {
         clearInterval(tickTimer);
         this.save();
+    },
+    // savedAt is when count was last saved, so the time since then is exactly what was not produced.
+    addOfflineEarnings(savedAt) {
+        const seconds = Math.floor((Date.now() - savedAt) / 1000);
+        // No save yet, or the clock went backwards.
+        if (savedAt <= 0 || seconds <= 0 || this.cps <= 0) {
+            return;
+        }
+        const earned = this.cps * Math.min(seconds, OFFLINE_MAX_S);
+        this.setCount(this.count + earned);
+        this.save();
+        vibrator.vibrate({ mode: 'long' });
+        this.awayText = '+' + format(earned) + ' fuera';
+        setTimeout(() => {
+            this.awayText = '';
+        }, AWAY_MESSAGE_MS);
     },
     tick() {
         if (this.cps > 0) {
@@ -163,5 +190,6 @@ export default {
         clearTimeout(saveTimer);
         storage.set({ key: 'count', value: String(this.count) });
         storage.set({ key: 'owned', value: this.owned.join(',') });
+        storage.set({ key: 'savedAt', value: String(Date.now()) });
     }
 };
