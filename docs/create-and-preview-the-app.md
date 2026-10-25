@@ -35,7 +35,7 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 
 `common/cookie.png` and `cookie_pressed.png` are 200x200 opaque RGB PNGs on black (cookie radius 96 and 84 px), drawn with the same kind of pure-Python PNG script as the icon.
 
-Not yet checked in the Previewer or on the watch: the vibration, the "+1" animation (lite may ignore `opacity` in keyframes) and whether the count survives closing the app.
+Confirmed on the GT 6 Pro (October 2026): the cookie press, the "+1" rising and fading (so lite keyframes do apply `translateY` and `opacity`), the vibration on each tap, and the count surviving closing and reopening the app.
 
 The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our cookie icon was drawn with a small pure-Python PNG script (Pillow is not installed on this PC).
 
