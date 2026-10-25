@@ -8,7 +8,11 @@ Confirmed October 2026: the signed counter installed on our Watch GT 6 Pro throu
 2. Copy the HAP to the Android phone into a folder named **`haps`** at the root of internal storage: `/storage/emulated/0/haps/` (same as `/sdcard/haps/`). A HAP left directly in `/storage/emulated/0` is not the documented location; DevEco Assistant looks in `haps`.
 3. With the watch paired in HUAWEI Health, open **DevEco Assistant** (v1.2.1.600) and tap **Install watch app**, then pick the HAP.
 
-The `.hap` worked; the `.bin` was not needed for this route.
+The `.hap` worked. It is a zip holding only `entry-default-signed.bin`, the same signed `.bin` the build writes to `bin/`.
+
+## Switching the watch back to the iPhone
+
+Confirmed October 2026: after unpairing the watch from the Android phone and pairing it again with the iPhone (HUAWEI Health), the installed app stayed on the watch and still runs. Installing a new version needs the Android phone and DevEco Assistant again, which means pairing the watch with Android again (HuaSideload on the iPhone is untested).
 
 ## What it proves
 
