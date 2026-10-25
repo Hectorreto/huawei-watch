@@ -1,17 +1,22 @@
 <div class="container">
-    <div class="view" if="{{ view === 'cookie' }}">
-        <text class="count">{{ countText }}</text>
-        <text class="rate" if="{{ awayText === '' }}">{{ rateText }}</text>
-        <text class="away" if="{{ awayText !== '' }}">{{ awayText }}</text>
-        <div class="plus-row">
-            <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
-            <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
+    <stack class="stage" if="{{ view === 'cookie' }}">
+        <div class="column">
+            <text class="count">{{ countText }}</text>
+            <text class="rate" if="{{ awayText === '' && frenzyText === '' }}">{{ rateText }}</text>
+            <text class="away" if="{{ awayText !== '' }}">{{ awayText }}</text>
+            <text class="away" if="{{ awayText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
+            <div class="plus-row">
+                <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
+                <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
+            </div>
+            <div class="cookie-box" onclick="increment">
+                <image class="cookie" src="{{ cookieSrc }}"></image>
+            </div>
+            <text class="button" onclick="openShop">Tienda</text>
         </div>
-        <div class="cookie-box" onclick="increment">
-            <image class="cookie" src="{{ cookieSrc }}"></image>
-        </div>
-        <text class="button" onclick="openShop">Tienda</text>
-    </div>
+        <image class="golden-left" if="{{ golden === 'left' }}" src="/common/golden.png" onclick="clickGolden"></image>
+        <image class="golden-right" if="{{ golden === 'right' }}" src="/common/golden.png" onclick="clickGolden"></image>
+    </stack>
     <div class="view" if="{{ view === 'shop' }}">
         <text class="count">{{ countText }}</text>
         <list class="shop">

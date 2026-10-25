@@ -22,11 +22,24 @@ const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
 const OFFLINE_MAX_S = 24 * 60 * 60;
 const AWAY_MESSAGE_MS = 4000;
+// The golden cookie shows up every 45-120 s, stays 10 s, and a tap on it multiplies
+// taps and production by 7 for 30 s.
+const GOLDEN_MIN_S = 45;
+const GOLDEN_MAX_S = 120;
+const GOLDEN_STAY_S = 10;
+const FRENZY_MULT = 7;
+const FRENZY_S = 30;
 
 let pressTimer = null;
 let saveTimer = null;
 let tickTimer = null;
 let ticks = 0;
+let goldenIn = 0;
+let goldenLeft = 0;
+
+function nextGolden() {
+    return GOLDEN_MIN_S + Math.floor(Math.random() * (GOLDEN_MAX_S - GOLDEN_MIN_S + 1));
+}
 
 function format(n) {
     const units = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
@@ -48,6 +61,9 @@ export default {
         cps: 0,
         rateText: '0 / s',
         awayText: '',
+        frenzyLeft: 0,
+        frenzyText: '',
+        golden: '',
         plusText: '+1',
         items: [],
         cookieSrc: COOKIE,
@@ -55,6 +71,7 @@ export default {
     },
     onInit() {
         this.setOwned(this.owned);
+        goldenIn = nextGolden();
         // Chained so the offline earnings use the loaded upgrades.
         storage.get({
             key: 'owned',
@@ -105,15 +122,52 @@ export default {
     },
     tick() {
         if (this.cps > 0) {
-            this.setCount(this.count + this.cps);
+            this.setCount(this.count + this.cps * this.multiplier());
             ticks++;
             if (ticks % SAVE_EVERY_TICKS === 0) {
                 this.save();
             }
         }
+        this.tickGolden();
+    },
+    tickGolden() {
+        if (this.frenzyLeft > 0) {
+            this.frenzyLeft--;
+            this.frenzyText = this.frenzyLeft > 0 ? 'x' + FRENZY_MULT + '  ' + this.frenzyLeft + ' s' : '';
+            this.updateRates();
+            return;
+        }
+        if (this.golden !== '') {
+            goldenLeft--;
+            if (goldenLeft <= 0) {
+                this.golden = '';
+                goldenIn = nextGolden();
+            }
+            return;
+        }
+        // Only count down on the cookie view, so it never shows up unseen behind the shop.
+        if (this.view !== 'cookie') {
+            return;
+        }
+        goldenIn--;
+        if (goldenIn <= 0) {
+            this.golden = Math.random() < 0.5 ? 'left' : 'right';
+            goldenLeft = GOLDEN_STAY_S;
+        }
+    },
+    clickGolden() {
+        vibrator.vibrate({ mode: 'long' });
+        this.golden = '';
+        goldenIn = nextGolden();
+        this.frenzyLeft = FRENZY_S;
+        this.frenzyText = 'x' + FRENZY_MULT + '  ' + FRENZY_S + ' s';
+        this.updateRates();
+    },
+    multiplier() {
+        return this.frenzyLeft > 0 ? FRENZY_MULT : 1;
     },
     increment() {
-        this.setCount(this.count + this.tapPower);
+        this.setCount(this.count + this.tapPower * this.multiplier());
         vibrator.vibrate({ mode: 'short' });
 
         this.cookieSrc = COOKIE_PRESSED;
@@ -170,9 +224,12 @@ export default {
         this.owned = owned;
         this.tapPower = tap;
         this.cps = cps;
-        this.plusText = '+' + format(tap);
-        this.rateText = format(cps) + ' / s';
+        this.updateRates();
         this.refreshItems();
+    },
+    updateRates() {
+        this.plusText = '+' + format(this.tapPower * this.multiplier());
+        this.rateText = format(this.cps * this.multiplier()) + ' / s';
     },
     // Rebuilt as a new array: lite does not reliably notice changes inside array items.
     refreshItems() {
