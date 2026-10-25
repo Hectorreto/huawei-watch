@@ -245,6 +245,14 @@ export default {
             this.save();
         }, SAVE_DELAY_MS);
     },
+    // Swipe right for the shop, up for the awards (direction is where the finger moves).
+    swipeCookie(e) {
+        if (e.direction === 'right') {
+            this.openShop();
+        } else if (e.direction === 'up') {
+            this.openAchievements();
+        }
+    },
     openShop() {
         this.refreshItems();
         this.view = 'shop';

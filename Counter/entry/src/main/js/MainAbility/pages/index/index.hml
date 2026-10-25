@@ -1,6 +1,6 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
-        <div class="column">
+        <div class="column" onswipe="swipeCookie">
             <text class="count">{{ countText }}</text>
             <text class="rate" if="{{ noticeText === '' && frenzyText === '' }}">{{ rateText }}</text>
             <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
@@ -11,10 +11,6 @@
             </div>
             <div class="cookie-box" onclick="increment">
                 <image class="cookie" src="{{ cookieSrc }}"></image>
-            </div>
-            <div class="buttons">
-                <text class="button" onclick="openShop">Shop</text>
-                <text class="button" onclick="openAchievements">Awards</text>
             </div>
         </div>
         <image class="golden-left" if="{{ golden === 'left' }}" src="/common/golden.png" onclick="clickGolden"></image>

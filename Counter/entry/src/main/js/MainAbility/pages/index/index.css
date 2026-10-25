@@ -21,20 +21,20 @@
   justify-content: center;
   align-items: center;
 }
-/* Golden cookie beside the big one, level with its centre (the column is about 390 px
+/* Golden cookie beside the big one, level with its centre (the column is 330 px
    tall, centred on a 466 px screen). Lite has no binding for class or
    reliable binding for position, so each side is its own "if" image. */
 .golden-left {
   width: 90px;
   height: 90px;
   left: 25px;
-  top: 223px;
+  top: 253px;
 }
 .golden-right {
   width: 90px;
   height: 90px;
   left: 351px;
-  top: 223px;
+  top: 253px;
 }
 .count {
   width: 100%;
@@ -64,23 +64,6 @@
 .cookie {
   width: 200px;
   height: 200px;
-}
-/* Two buttons side by side: 250 px fits the round screen at the bottom of the column. */
-.buttons {
-  width: 250px;
-  height: 50px;
-  margin-top: 10px;
-  flex-direction: row;
-  justify-content: space-between;
-}
-.button {
-  width: 120px;
-  height: 50px;
-  font-size: 30px;
-  color: #000000;
-  background-color: #f5c16c;
-  border-radius: 25px;
-  text-align: center;
 }
 .button-wide {
   width: 160px;
