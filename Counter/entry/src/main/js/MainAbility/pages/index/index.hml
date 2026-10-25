@@ -2,9 +2,9 @@
     <stack class="stage" if="{{ view === 'cookie' }}">
         <div class="column">
             <text class="count">{{ countText }}</text>
-            <text class="rate" if="{{ awayText === '' && frenzyText === '' }}">{{ rateText }}</text>
-            <text class="away" if="{{ awayText !== '' }}">{{ awayText }}</text>
-            <text class="away" if="{{ awayText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
+            <text class="rate" if="{{ noticeText === '' && frenzyText === '' }}">{{ rateText }}</text>
+            <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
+            <text class="notice" if="{{ noticeText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
             <div class="plus-row">
                 <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
                 <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
@@ -12,7 +12,10 @@
             <div class="cookie-box" onclick="increment">
                 <image class="cookie" src="{{ cookieSrc }}"></image>
             </div>
-            <text class="button" onclick="openShop">Tienda</text>
+            <div class="buttons">
+                <text class="button" onclick="openShop">Tienda</text>
+                <text class="button" onclick="openAchievements">Logros</text>
+            </div>
         </div>
         <image class="golden-left" if="{{ golden === 'left' }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' }}" src="/common/golden.png" onclick="clickGolden"></image>
@@ -26,6 +29,18 @@
                 <text class="item-detail">{{ $item.detail }}</text>
             </list-item>
         </list>
-        <text class="button" onclick="closeShop">Volver</text>
+        <text class="button-wide" onclick="closeView">Volver</text>
+    </div>
+    <div class="view" if="{{ view === 'achievements' }}">
+        <text class="count">{{ achievedText }}</text>
+        <list class="shop">
+            <list-item class="item" for="{{ achievementItems }}">
+                <text class="item-name" if="{{ $item.done }}">{{ $item.title }}</text>
+                <text class="item-name-off" if="{{ !$item.done }}">{{ $item.title }}</text>
+                <text class="item-detail" if="{{ $item.done }}">{{ $item.detail }}</text>
+                <text class="item-detail-off" if="{{ !$item.done }}">{{ $item.detail }}</text>
+            </list-item>
+        </list>
+        <text class="button-wide" onclick="closeView">Volver</text>
     </div>
 </div>
