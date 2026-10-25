@@ -13,8 +13,8 @@
                 <image class="cookie" src="{{ cookieSrc }}"></image>
             </div>
             <div class="buttons">
-                <text class="button" onclick="openShop">Tienda</text>
-                <text class="button" onclick="openAchievements">Logros</text>
+                <text class="button" onclick="openShop">Shop</text>
+                <text class="button" onclick="openAchievements">Awards</text>
             </div>
         </div>
         <image class="golden-left" if="{{ golden === 'left' }}" src="/common/golden.png" onclick="clickGolden"></image>
@@ -29,7 +29,7 @@
                 <text class="item-detail">{{ $item.detail }}</text>
             </list-item>
         </list>
-        <text class="button-wide" onclick="closeView">Volver</text>
+        <text class="button-wide" onclick="closeView">Back</text>
     </div>
     <div class="view" if="{{ view === 'achievements' }}">
         <text class="count">{{ achievedText }}</text>
@@ -41,6 +41,6 @@
                 <text class="item-detail-off" if="{{ !$item.done }}">{{ $item.detail }}</text>
             </list-item>
         </list>
-        <text class="button-wide" onclick="closeView">Volver</text>
+        <text class="button-wide" onclick="closeView">Back</text>
     </div>
 </div>

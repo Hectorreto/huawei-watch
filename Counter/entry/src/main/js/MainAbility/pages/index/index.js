@@ -12,11 +12,11 @@ const SAVE_EVERY_TICKS = 10;
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
-    { name: 'Dedo de oro', base: 15, tap: 1, cps: 0 },
+    { name: 'Golden finger', base: 15, tap: 1, cps: 0 },
     { name: 'Cursor', base: 25, tap: 0, cps: 1 },
-    { name: 'Abuela', base: 150, tap: 0, cps: 5 },
-    { name: 'Granja', base: 1500, tap: 0, cps: 40 },
-    { name: 'Mina', base: 15000, tap: 0, cps: 250 }
+    { name: 'Grandma', base: 150, tap: 0, cps: 5 },
+    { name: 'Farm', base: 1500, tap: 0, cps: 40 },
+    { name: 'Mine', base: 15000, tap: 0, cps: 250 }
 ];
 const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
@@ -36,20 +36,20 @@ const FOCUS_DELAY_MS = 50;
 // s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
 const ACHIEVEMENTS = [
-    { name: 'Primera galleta', detail: 'Hornea 1', done: (s) => s.baked >= 1 },
-    { name: 'Panadero', detail: 'Hornea 100', done: (s) => s.baked >= 100 },
-    { name: 'Pasteleria', detail: 'Hornea 1K', done: (s) => s.baked >= 1e3 },
-    { name: 'Fabrica', detail: 'Hornea 100K', done: (s) => s.baked >= 1e5 },
-    { name: 'Imperio', detail: 'Hornea 1M', done: (s) => s.baked >= 1e6 },
-    { name: 'Dedo veloz', detail: '1K toques', done: (s) => s.taps >= 1e3 },
-    { name: 'Primer cursor', detail: 'Compra un Cursor', done: (s) => s.owned[1] >= 1 },
-    { name: 'Abuelita', detail: 'Compra una Abuela', done: (s) => s.owned[2] >= 1 },
-    { name: 'Granjero', detail: 'Compra una Granja', done: (s) => s.owned[3] >= 1 },
-    { name: 'Minero', detail: 'Compra una Mina', done: (s) => s.owned[4] >= 1 },
-    { name: 'En marcha', detail: '10 / s', done: (s) => s.cps >= 10 },
-    { name: 'Produccion', detail: '100 / s', done: (s) => s.cps >= 100 },
-    { name: 'Suertudo', detail: '1 galleta dorada', done: (s) => s.golden >= 1 },
-    { name: 'Buscador de oro', detail: '10 doradas', done: (s) => s.golden >= 10 }
+    { name: 'First cookie', detail: 'Bake 1', done: (s) => s.baked >= 1 },
+    { name: 'Baker', detail: 'Bake 100', done: (s) => s.baked >= 100 },
+    { name: 'Bakery', detail: 'Bake 1K', done: (s) => s.baked >= 1e3 },
+    { name: 'Factory', detail: 'Bake 100K', done: (s) => s.baked >= 1e5 },
+    { name: 'Empire', detail: 'Bake 1M', done: (s) => s.baked >= 1e6 },
+    { name: 'Fast finger', detail: '1K taps', done: (s) => s.taps >= 1e3 },
+    { name: 'First cursor', detail: 'Buy a Cursor', done: (s) => s.owned[1] >= 1 },
+    { name: 'Granny', detail: 'Buy a Grandma', done: (s) => s.owned[2] >= 1 },
+    { name: 'Farmer', detail: 'Buy a Farm', done: (s) => s.owned[3] >= 1 },
+    { name: 'Miner', detail: 'Buy a Mine', done: (s) => s.owned[4] >= 1 },
+    { name: 'Rolling', detail: '10 / s', done: (s) => s.cps >= 10 },
+    { name: 'Production', detail: '100 / s', done: (s) => s.cps >= 100 },
+    { name: 'Lucky', detail: '1 golden cookie', done: (s) => s.golden >= 1 },
+    { name: 'Gold digger', detail: '10 golden', done: (s) => s.golden >= 10 }
 ];
 
 let pressTimer = null;
@@ -162,7 +162,7 @@ export default {
         this.bake(earned);
         this.save();
         vibrator.vibrate({ mode: 'long' });
-        this.showNotice('+' + format(earned) + ' fuera');
+        this.showNotice('+' + format(earned) + ' away');
     },
     showNotice(text) {
         notices.push(text);
@@ -326,7 +326,7 @@ export default {
             if (!achieved[i] && a.done(state)) {
                 achieved[i] = true;
                 changed = true;
-                this.showNotice('Logro: ' + a.name);
+                this.showNotice('Award: ' + a.name);
             }
         });
         if (changed) {
@@ -339,7 +339,7 @@ export default {
     refreshItems() {
         this.items = UPGRADES.map((u, i) => {
             const price = this.price(i);
-            const gain = u.tap > 0 ? '+' + u.tap + ' toque' : '+' + u.cps + ' / s';
+            const gain = u.tap > 0 ? '+' + u.tap + ' / tap' : '+' + u.cps + ' / s';
             return {
                 title: u.name + ' (' + this.owned[i] + ')',
                 detail: format(price) + '  ' + gain,
