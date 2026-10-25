@@ -11,7 +11,14 @@
   "module": {
     "reqPermissions": [
       {
-        "name": "ohos.permission.VIBRATE"
+        "name": "ohos.permission.VIBRATE",
+        "reason": "Vibrate on each tap",
+        "usedScene": {
+          "ability": [
+            ".MainAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ],
     "deviceType": [

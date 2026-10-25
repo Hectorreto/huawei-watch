@@ -21,3 +21,7 @@ Confirmed October 2026: after unpairing the watch from the Android phone and pai
 - Self-built apps can be sideloaded on the GT 6 Pro with an individual developer account from Mexico, a debug certificate and a debug profile listing the watch's UDID.
 - Compatible SDK 5.0.0(12) and target SDK 6.1.1(24) are accepted by this watch.
 - The "Installation failed: 40" error reported for a GT 5 did not happen here.
+
+## Install errors
+
+- **"Installation failed: 46. Invalid value entered for module.abilities.permissions."** The HAP declared `reqPermissions` with only `name` (`ohos.permission.VIBRATE`). The build accepts that, but the watch's installer rejects it. Each permission also needs `reason` and `usedScene` (`ability: [".MainAbility"]`, `when: "inuse"`), as in `Counter/entry/src/main/config.json`. With them, the watch installed the app (confirmed October 2026).

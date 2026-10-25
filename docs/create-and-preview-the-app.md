@@ -28,7 +28,7 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 
 `entry/src/main/js/MainAbility/pages/index/`: `index.hml` is a full-screen `div` with `onclick="increment"` holding the count, a "+1" row and the cookie image. Tapping anywhere on the screen counts, not only on the cookie. Each tap:
 
-- vibrates briefly with `@system.vibrator` (`mode: 'short'`), which needs `ohos.permission.VIBRATE` in `reqPermissions` in `config.json`;
+- vibrates briefly with `@system.vibrator` (`mode: 'short'`), which needs `ohos.permission.VIBRATE` in `reqPermissions` in `config.json`, with `reason` and `usedScene` (with only `name`, the watch refuses to install it with error 46; see `install-on-the-watch.md`);
 - swaps the cookie to `common/cookie_pressed.png` for 120 ms. The press is an image swap because lite `@keyframes` are not a reliable way to scale an image;
 - shows a "+1" that rises and fades. Lite does not allow binding `class` to data (build error "class selector does not support data binding"), so the page toggles between two `if` texts, and each one starts its animation when it is created;
 - saves `count` with `@system.storage` (key `count`, string value) 1 s after the last tap, and again in `onDestroy`. `onInit` adds the stored value to `count`, so taps made before the read finishes are not lost.
