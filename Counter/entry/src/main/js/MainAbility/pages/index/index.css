@@ -14,27 +14,43 @@
   width: 100%;
   height: 100%;
 }
-.column {
-  width: 100%;
-  height: 100%;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+/* The cookie fills the 466 px screen and the rest of the cookie view is laid over it with
+   left/top. The overlays are kept small because taps on them do not reach the cookie. */
+.cookie-box {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
 }
-/* Golden cookie beside the big one, level with its centre (the column is 330 px
-   tall, centred on a 466 px screen). Lite has no binding for class or
-   reliable binding for position, so each side is its own "if" image. */
+.cookie {
+  width: 466px;
+  height: 466px;
+}
+/* Dark capsule so the count and the rate stay readable over the cookie.
+   300 px fits the round screen at this height. */
+.capsule {
+  width: 300px;
+  height: 96px;
+  left: 83px;
+  top: 50px;
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  border-radius: 48px;
+}
+/* Golden cookie over the edge of the big one, level with the screen centre. Lite has no
+   binding for class or reliable binding for position, so each side is its own "if" image. */
 .golden-left {
   width: 90px;
   height: 90px;
-  left: 25px;
-  top: 253px;
+  left: 30px;
+  top: 188px;
 }
 .golden-right {
   width: 90px;
   height: 90px;
-  left: 351px;
-  top: 253px;
+  left: 346px;
+  top: 188px;
 }
 .count {
   width: 100%;
@@ -57,14 +73,6 @@
   color: #f5c16c;
   text-align: center;
 }
-.cookie-box {
-  width: 200px;
-  height: 200px;
-}
-.cookie {
-  width: 200px;
-  height: 200px;
-}
 .button-wide {
   width: 160px;
   height: 50px;
@@ -76,17 +84,22 @@
   text-align: center;
 }
 
-/* "+N" above the cookie. index.js swaps which of two "if" texts exists, so each tap
-   creates a new text and its animation starts again (lite cannot bind class). */
+/* "+N" below the capsule, in a small dark pill so it reads on the cookie. index.js swaps
+   which of two "if" texts exists, so each tap creates a new text and its animation starts
+   again (lite cannot bind class). */
 .plus-row {
-  width: 100%;
+  width: 140px;
   height: 40px;
+  left: 163px;
+  top: 165px;
 }
 .plus {
-  width: 100%;
+  width: 140px;
   height: 40px;
   font-size: 30px;
-  color: #f5c16c;
+  color: #ffffff;
+  background-color: #000000;
+  border-radius: 20px;
   text-align: center;
   animation-name: float;
   animation-duration: 600ms;
