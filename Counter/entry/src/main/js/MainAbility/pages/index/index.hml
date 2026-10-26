@@ -24,16 +24,27 @@
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
     </stack>
-    <div class="view" if="{{ view === 'shop' }}">
+    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="swipeBack">
         <text class="count">{{ countText }}</text>
-        <list class="shop" ref="shopList">
-            <list-item class="item" for="{{ items }}" onclick="buy($idx)">
-                <text class="item-name" if="{{ $item.affordable }}">{{ $item.title }}</text>
-                <text class="item-name-off" if="{{ !$item.affordable }}">{{ $item.title }}</text>
-                <text class="item-detail">{{ $item.detail }}</text>
+        <text class="rate">{{ rateText }}</text>
+        <text class="title">Shop</text>
+        <list class="shop-list" ref="shopList">
+            <list-item class="shop-item" for="{{ items }}" onclick="buy($idx)">
+                <image class="shop-icon" src="{{ $item.icon }}"></image>
+                <div class="shop-text">
+                    <text class="shop-name">{{ $item.title }}</text>
+                    <text class="shop-detail">{{ $item.detail }}</text>
+                </div>
+                <div class="price" if="{{ $item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
+                <div class="price-off" if="{{ !$item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
             </list-item>
         </list>
-        <text class="button-wide" onclick="closeView">Back</text>
     </div>
     <div class="view" if="{{ view === 'achievements' }}">
         <text class="count">{{ achievedText }}</text>

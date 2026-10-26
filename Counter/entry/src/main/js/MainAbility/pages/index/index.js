@@ -12,11 +12,11 @@ const SAVE_EVERY_TICKS = 10;
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
-    { name: 'Golden finger', base: 15, tap: 1, cps: 0 },
-    { name: 'Cursor', base: 25, tap: 0, cps: 1 },
-    { name: 'Grandma', base: 150, tap: 0, cps: 5 },
-    { name: 'Farm', base: 1500, tap: 0, cps: 40 },
-    { name: 'Mine', base: 15000, tap: 0, cps: 250 }
+    { name: 'Golden finger', icon: 'finger', base: 15, tap: 1, cps: 0 },
+    { name: 'Cursor', icon: 'cursor', base: 25, tap: 0, cps: 1 },
+    { name: 'Grandma', icon: 'grandma', base: 150, tap: 0, cps: 5 },
+    { name: 'Farm', icon: 'farm', base: 1500, tap: 0, cps: 40 },
+    { name: 'Mine', icon: 'mine', base: 15000, tap: 0, cps: 250 }
 ];
 const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
@@ -276,6 +276,12 @@ export default {
             }
         }, FOCUS_DELAY_MS);
     },
+    // A sideways swipe goes back to the cookie.
+    swipeBack(e) {
+        if (e.direction === 'left' || e.direction === 'right') {
+            this.closeView();
+        }
+    },
     closeView() {
         this.view = 'cookie';
     },
@@ -351,10 +357,12 @@ export default {
     refreshItems() {
         this.items = UPGRADES.map((u, i) => {
             const price = this.price(i);
-            const gain = u.tap > 0 ? '+' + u.tap + ' / tap' : '+' + u.cps + ' / s';
+            const gain = u.tap > 0 ? '+' + u.tap + '/tap' : '+' + u.cps + '/s';
             return {
-                title: u.name + ' (' + this.owned[i] + ')',
-                detail: format(price) + '  ' + gain,
+                icon: '/common/shop/' + u.icon + '.png',
+                title: u.name,
+                detail: gain + ' (' + this.owned[i] + ')',
+                price: format(price),
                 affordable: this.count >= price
             };
         });
