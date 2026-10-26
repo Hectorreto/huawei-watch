@@ -20,7 +20,7 @@
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png"></image>
         <image class="menu-close" if="{{ menu }}" src="/common/menu/close.png" onclick="closeMenu"></image>
         <image class="menu-awards" if="{{ menu }}" src="/common/menu/awards.png" onclick="openAchievements"></image>
-        <image class="menu-events" if="{{ menu }}" src="/common/menu/events.png"></image>
+        <image class="menu-upgrades" if="{{ menu }}" src="/common/menu/upgrades.png" onclick="openUpgrades"></image>
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
     </stack>
@@ -29,7 +29,29 @@
         <text class="rate">{{ rateText }}</text>
         <text class="title">Shop</text>
         <list class="shop-list" ref="shopList">
-            <list-item class="shop-item" for="{{ items }}" onclick="buy($idx)">
+            <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
+                <image class="shop-icon" src="{{ $item.icon }}"></image>
+                <div class="shop-text">
+                    <text class="shop-name">{{ $item.title }}</text>
+                    <text class="shop-detail">{{ $item.detail }}</text>
+                </div>
+                <div class="price" if="{{ $item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
+                <div class="price-off" if="{{ !$item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
+            </list-item>
+        </list>
+    </div>
+    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="swipeBack">
+        <text class="count">{{ countText }}</text>
+        <text class="rate">{{ rateText }}</text>
+        <text class="title">Upgrades</text>
+        <list class="shop-list" ref="upgradeList">
+            <list-item class="shop-item" for="{{ upgradeItems }}" onclick="buy($item.id)">
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <div class="shop-text">
                     <text class="shop-name">{{ $item.title }}</text>

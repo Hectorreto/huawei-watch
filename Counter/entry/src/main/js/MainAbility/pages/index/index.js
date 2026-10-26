@@ -10,13 +10,14 @@ const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
+// building ones are sold in the shop, the rest in the upgrades view.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
-    { name: 'Golden finger', icon: 'finger', base: 15, tap: 1, cps: 0 },
-    { name: 'Cursor', icon: 'cursor', base: 25, tap: 0, cps: 1 },
-    { name: 'Grandma', icon: 'grandma', base: 150, tap: 0, cps: 5 },
-    { name: 'Farm', icon: 'farm', base: 1500, tap: 0, cps: 40 },
-    { name: 'Mine', icon: 'mine', base: 15000, tap: 0, cps: 250 }
+    { name: 'Tastier taps', icon: 'finger', building: false, base: 15, tap: 1, cps: 0 },
+    { name: 'Cursor', icon: 'cursor', building: true, base: 25, tap: 0, cps: 1 },
+    { name: 'Grandma', icon: 'grandma', building: true, base: 150, tap: 0, cps: 5 },
+    { name: 'Farm', icon: 'farm', building: true, base: 1500, tap: 0, cps: 40 },
+    { name: 'Mine', icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 }
 ];
 const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
@@ -141,6 +142,7 @@ export default {
         golden: '',
         plusText: '+1',
         items: [],
+        upgradeItems: [],
         cookieSrc: COOKIE,
         plus: ''
     },
@@ -297,7 +299,7 @@ export default {
     refreshStats() {
         let buildings = 0;
         UPGRADES.forEach((u, i) => {
-            if (u.cps > 0) {
+            if (u.building) {
                 buildings += this.owned[i];
             }
         });
@@ -307,12 +309,18 @@ export default {
             ['Cookies per second', format(this.cps * this.multiplier()), 'cps'],
             ['Taps', format(this.taps), 'taps'],
             ['Buildings', String(buildings), 'buildings'],
-            ['Golden fingers', String(this.owned[0]), 'fingers'],
+            ['Tastier taps', String(this.owned[0]), 'fingers'],
             ['Golden cookies', String(this.goldenClicks), 'golden'],
             ['Awards', awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
             ['Time played', formatTime(this.playSeconds), 'time']
         ];
         this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
+    },
+    openUpgrades() {
+        this.menu = false;
+        this.refreshItems();
+        this.view = 'upgrades';
+        this.focusCrown('upgradeList');
     },
     openShop() {
         this.menu = false;
@@ -406,7 +414,7 @@ export default {
     setCount(count) {
         this.count = count;
         this.countText = format(count);
-        if (this.view === 'shop') {
+        if (this.view === 'shop' || this.view === 'upgrades') {
             this.refreshItems();
         }
         this.checkAchievements();
@@ -453,18 +461,24 @@ export default {
         }
     },
     // Rebuilt as a new array: lite does not reliably notice changes inside array items.
+    // id is the index in UPGRADES, which buy() needs because each view lists only some of them.
     refreshItems() {
-        this.items = UPGRADES.map((u, i) => {
+        const items = [];
+        const upgradeItems = [];
+        UPGRADES.forEach((u, i) => {
             const price = this.price(i);
             const gain = u.tap > 0 ? '+' + u.tap + '/tap' : '+' + u.cps + '/s';
-            return {
+            (u.building ? items : upgradeItems).push({
+                id: i,
                 icon: '/common/shop/' + u.icon + '.png',
                 title: u.name,
                 detail: gain + ' (' + this.owned[i] + ')',
                 price: format(price),
                 affordable: this.count >= price
-            };
+            });
         });
+        this.items = items;
+        this.upgradeItems = upgradeItems;
     },
     // The grid is a list of rows of GRID_COLUMNS tiles, so it scrolls if categories are added.
     refreshAchievements() {
