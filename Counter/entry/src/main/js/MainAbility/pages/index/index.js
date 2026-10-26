@@ -1,8 +1,6 @@
 import storage from '@system.storage';
 import vibrator from '@system.vibrator';
 
-const COOKIE = '/common/cookie.png';
-const COOKIE_PRESSED = '/common/cookie_pressed.png';
 const PRESS_MS = 120;
 // Saving on every tap or tick would write flash constantly; save once taps pause,
 // and every few seconds while cookies are produced on their own.
@@ -17,7 +15,7 @@ const TEXTS = {
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played',
-        vibration: 'Vibration', theme: 'Theme', classic: 'Classic',
+        vibration: 'Vibration', theme: 'Theme',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
         cancel: 'Cancel', resetConfirm: 'Reset'
@@ -28,13 +26,34 @@ const TEXTS = {
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado',
-        vibration: 'Vibración', theme: 'Tema', classic: 'Clásico',
+        vibration: 'Vibración', theme: 'Tema',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
         cancel: 'Cancelar', resetConfirm: 'Resetear'
     }
 };
 const LANGUAGES = ['en', 'es'];
+
+// The cookie the player taps. Each id has five images in /common/themes/: <id>.png (466 px, on black),
+// <id>_pressed.png (the same at 438 px), <id>_small.png (170 px, the menu centre),
+// <id>_icon.png (64 px, the theme list) and <id>_thumb.png (40 px, the settings row).
+// The id is what the settings save, so ids must not change. The first one is the default.
+const THEMES = [
+    { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
+    { id: 'cookie', name: { en: 'A cookie', es: 'Una galleta' } },
+    { id: 'donut', name: { en: 'Everyday', es: 'Para diario' } },
+    { id: 'concha', name: { en: 'Concha', es: 'Concha' } },
+    { id: 'gingerbread', name: { en: 'Gingerbread', es: 'Jengibre' } },
+    { id: 'cinnamon', name: { en: 'For the cold', es: 'Para el frío' } },
+    { id: 'skull', name: { en: 'Day of the Dead', es: 'Día de muertos' } },
+    { id: 'rosca', name: { en: 'Kings\' Day', es: 'Día de reyes' } },
+    { id: 'bunuelo', name: { en: 'Christmas', es: 'Navidad' } },
+    { id: 'pan_de_muerto', name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
+];
+
+function themePath(id, suffix) {
+    return '/common/themes/' + id + suffix + '.png';
+}
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // building ones are sold in the shop, the rest in the upgrades view.
@@ -149,6 +168,10 @@ export default {
         lang: 'en',
         t: TEXTS.en,
         vibration: true,
+        theme: THEMES[0].id,
+        themeItems: [],
+        cookieSmall: themePath(THEMES[0].id, '_small'),
+        themeThumb: themePath(THEMES[0].id, '_thumb'),
         count: 0,
         countText: '0',
         baked: 0,
@@ -173,23 +196,24 @@ export default {
         plusText: '+1',
         items: [],
         upgradeItems: [],
-        cookieSrc: COOKIE,
+        cookieSrc: themePath(THEMES[0].id, ''),
         plus: ''
     },
     onInit() {
         this.achieved = ACHIEVEMENTS.map(() => false);
         this.setOwned(this.owned);
         goldenIn = nextGolden();
-        // "vibration,language", e.g. "1,en". Settings are not part of the game,
+        // "vibration,language,theme", e.g. "1,en,concha". Settings are not part of the game,
         // so they load on their own and a reset keeps them.
         load('settings', '', (settings) => {
             const parts = settings.split(',');
-            // Older saves started with a sound setting, which no longer exists.
-            if (parts.length === 3) {
+            // Older saves started with a sound setting, which no longer exists: "sound,vibration,language".
+            if (parts.length === 3 && LANGUAGES.indexOf(parts[2]) >= 0) {
                 parts.shift();
             }
             this.vibration = parts[0] !== '0';
             this.setLanguage(LANGUAGES.indexOf(parts[1]) >= 0 ? parts[1] : 'en');
+            this.setTheme(parts[2]);
         });
         // Chained so the offline earnings use the loaded upgrades, and achievements
         // are checked against the whole save.
@@ -314,10 +338,10 @@ export default {
         this.bake(this.tapPower * this.multiplier());
         this.vibrate('short');
 
-        this.cookieSrc = COOKIE_PRESSED;
+        this.cookieSrc = themePath(this.theme, '_pressed');
         clearTimeout(pressTimer);
         pressTimer = setTimeout(() => {
-            this.cookieSrc = COOKIE;
+            this.cookieSrc = themePath(this.theme, '');
         }, PRESS_MS);
 
         this.plus = this.plus === 'a' ? 'b' : 'a';
@@ -439,9 +463,49 @@ export default {
         this.refreshItems();
         this.refreshStats();
         this.refreshAchievements();
+        this.refreshThemes();
+    },
+    openThemes() {
+        this.refreshThemes();
+        this.view = 'themes';
+        this.focusCrown('themeList');
+    },
+    // Rebuilt as a new array, like the shop, so the check moves to the chosen theme.
+    // id is the index in THEMES, as with the shop.
+    refreshThemes() {
+        this.themeItems = THEMES.map((th, i) => ({
+            id: i,
+            icon: themePath(th.id, '_icon'),
+            title: th.name[this.lang],
+            chosen: th.id === this.theme
+        }));
+    },
+    chooseTheme(index) {
+        this.vibrate('short');
+        this.setTheme(THEMES[index].id);
+        this.saveSettings();
+        this.openSettings();
+    },
+    // An unknown id (no theme saved yet, or one that was removed) falls back to the first theme.
+    setTheme(id) {
+        const theme = THEMES.some((th) => th.id === id) ? id : THEMES[0].id;
+        this.theme = theme;
+        this.cookieSrc = themePath(theme, '');
+        this.cookieSmall = themePath(theme, '_small');
+        this.themeThumb = themePath(theme, '_thumb');
+        this.refreshThemes();
+    },
+    // A sideways swipe in the theme list goes back to the settings, after the swipe event ends
+    // (see swipeCategory).
+    swipeThemes(e) {
+        if (e.direction === 'left' || e.direction === 'right') {
+            setTimeout(() => {
+                this.openSettings();
+            }, 0);
+        }
     },
     saveSettings() {
-        storage.set({ key: 'settings', value: [this.vibration ? 1 : 0, this.lang].join(',') });
+        storage.set({ key: 'settings', value: [this.vibration ? 1 : 0, this.lang, this.theme].join(',') });
     },
     openResetConfirm() {
         this.view = 'confirmReset';

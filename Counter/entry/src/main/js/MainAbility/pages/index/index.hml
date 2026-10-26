@@ -14,7 +14,7 @@
             <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
         </div>
         <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
-        <image class="menu-cookie" if="{{ menu }}" src="/common/cookie_small.png" onclick="closeMenu" onswipe="swipeCookie"></image>
+        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="swipeCookie"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
         <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png" onclick="openSettings"></image>
@@ -125,10 +125,12 @@
                     <div class="toggle-off" if="{{ !vibration }}"><div class="knob"></div></div>
                 </div>
             </list-item>
-            <list-item class="settings-item">
+            <list-item class="settings-item" onclick="openThemes">
                 <image class="settings-icon" src="/common/settings/theme.png"></image>
                 <text class="settings-label">{{ t.theme }}</text>
-                <text class="settings-value">{{ t.classic }}</text>
+                <div class="settings-right">
+                    <image class="theme-thumb" src="{{ themeThumb }}"></image>
+                </div>
             </list-item>
             <list-item class="settings-item" onclick="toggleLanguage">
                 <image class="settings-icon" src="/common/settings/language.png"></image>
@@ -138,6 +140,16 @@
             <list-item class="settings-item" onclick="openResetConfirm">
                 <image class="settings-icon" src="/common/settings/reset.png"></image>
                 <text class="settings-danger">{{ t.reset }}</text>
+            </list-item>
+        </list>
+    </div>
+    <div class="settings-view" if="{{ view === 'themes' }}" onswipe="swipeThemes">
+        <text class="title">{{ t.theme }}</text>
+        <list class="settings-list" ref="themeList">
+            <list-item class="shop-item" for="{{ themeItems }}" onclick="chooseTheme($item.id)">
+                <image class="shop-icon" src="{{ $item.icon }}"></image>
+                <text class="theme-name">{{ $item.title }}</text>
+                <image class="status" if="{{ $item.chosen }}" src="/common/awards/check.png"></image>
             </list-item>
         </list>
     </div>

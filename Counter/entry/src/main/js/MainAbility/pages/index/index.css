@@ -426,6 +426,20 @@
   color: #f5c16c;
   text-align: right;
 }
+.theme-thumb {
+  width: 40px;
+  height: 40px;
+  margin-right: 14px;
+}
+/* Theme list: shop cards with the cookie, its name, and a check on the chosen one.
+   194 px fits "Day of the Dead" at 24 px. */
+.theme-name {
+  width: 194px;
+  height: 34px;
+  margin-left: 12px;
+  font-size: 24px;
+  color: #ffffff;
+}
 .settings-right {
   width: 96px;
   height: 40px;
