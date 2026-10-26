@@ -1,13 +1,9 @@
 import storage from '@system.storage';
 import vibrator from '@system.vibrator';
-// Not in the Lite Wearable SDK typings; it compiles to requireModule('@system.audio'), which is
-// empty if the watch has no such module, so the tap sound is only tried when it exists.
-import audio from '@system.audio';
 
 const COOKIE = '/common/cookie.png';
 const COOKIE_PRESSED = '/common/cookie_pressed.png';
 const PRESS_MS = 120;
-const CLICK_SOUND = '/common/click.wav';
 // Saving on every tap or tick would write flash constantly; save once taps pause,
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
@@ -21,7 +17,7 @@ const TEXTS = {
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played',
-        sound: 'Sound', vibration: 'Vibration', theme: 'Theme', classic: 'Classic',
+        vibration: 'Vibration', theme: 'Theme', classic: 'Classic',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
         cancel: 'Cancel', resetConfirm: 'Reset'
@@ -32,7 +28,7 @@ const TEXTS = {
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado',
-        sound: 'Sonido', vibration: 'Vibración', theme: 'Tema', classic: 'Clásico',
+        vibration: 'Vibración', theme: 'Tema', classic: 'Clásico',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
         cancel: 'Cancelar', resetConfirm: 'Resetear'
@@ -152,7 +148,6 @@ export default {
         menu: false,
         lang: 'en',
         t: TEXTS.en,
-        sound: true,
         vibration: true,
         count: 0,
         countText: '0',
@@ -185,13 +180,16 @@ export default {
         this.achieved = ACHIEVEMENTS.map(() => false);
         this.setOwned(this.owned);
         goldenIn = nextGolden();
-        // "sound,vibration,language", e.g. "1,1,en". Settings are not part of the game,
+        // "vibration,language", e.g. "1,en". Settings are not part of the game,
         // so they load on their own and a reset keeps them.
         load('settings', '', (settings) => {
             const parts = settings.split(',');
-            this.sound = parts[0] !== '0';
-            this.vibration = parts[1] !== '0';
-            this.setLanguage(LANGUAGES.indexOf(parts[2]) >= 0 ? parts[2] : 'en');
+            // Older saves started with a sound setting, which no longer exists.
+            if (parts.length === 3) {
+                parts.shift();
+            }
+            this.vibration = parts[0] !== '0';
+            this.setLanguage(LANGUAGES.indexOf(parts[1]) >= 0 ? parts[1] : 'en');
         });
         // Chained so the offline earnings use the loaded upgrades, and achievements
         // are checked against the whole save.
@@ -308,17 +306,6 @@ export default {
             vibrator.vibrate({ mode: mode });
         }
     },
-    playClick() {
-        if (!this.sound || !audio) {
-            return;
-        }
-        try {
-            audio.src = CLICK_SOUND;
-            audio.play();
-        } catch (e) {
-            console.error('click sound: ' + e);
-        }
-    },
     multiplier() {
         return this.frenzyLeft > 0 ? FRENZY_MULT : 1;
     },
@@ -326,7 +313,6 @@ export default {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
         this.vibrate('short');
-        this.playClick();
 
         this.cookieSrc = COOKIE_PRESSED;
         clearTimeout(pressTimer);
@@ -437,10 +423,6 @@ export default {
         this.view = 'settings';
         this.focusCrown('settingsList');
     },
-    toggleSound() {
-        this.sound = !this.sound;
-        this.saveSettings();
-    },
     toggleVibration() {
         this.vibration = !this.vibration;
         this.saveSettings();
@@ -459,7 +441,7 @@ export default {
         this.refreshAchievements();
     },
     saveSettings() {
-        storage.set({ key: 'settings', value: [this.sound ? 1 : 0, this.vibration ? 1 : 0, this.lang].join(',') });
+        storage.set({ key: 'settings', value: [this.vibration ? 1 : 0, this.lang].join(',') });
     },
     openResetConfirm() {
         this.view = 'confirmReset';

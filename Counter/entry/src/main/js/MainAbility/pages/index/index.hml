@@ -117,14 +117,6 @@
     <div class="settings-view" if="{{ view === 'settings' }}" onswipe="swipeBack">
         <text class="title">{{ t.settings }}</text>
         <list class="settings-list" ref="settingsList">
-            <list-item class="settings-item" onclick="toggleSound">
-                <image class="settings-icon" src="/common/settings/sound.png"></image>
-                <text class="settings-label">{{ t.sound }}</text>
-                <div class="settings-right">
-                    <div class="toggle-on" if="{{ sound }}"><div class="knob"></div></div>
-                    <div class="toggle-off" if="{{ !sound }}"><div class="knob"></div></div>
-                </div>
-            </list-item>
             <list-item class="settings-item" onclick="toggleVibration">
                 <image class="settings-icon" src="/common/settings/vibration.png"></image>
                 <text class="settings-label">{{ t.vibration }}</text>
