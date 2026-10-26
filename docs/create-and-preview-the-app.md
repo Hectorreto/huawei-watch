@@ -54,7 +54,7 @@ Driving the wizard with computer use: DevEco Studio is granted at **full** tier 
 - A sideways swipe in a category goes back to the grid, and in the grid back to the cookie. Switching from the category to the grid inside the swipe handler left the grid tiles ignoring taps in the Previewer (from the menu they worked), so `swipeCategory` switches in a `setTimeout(…, 0)`.
 - The icons in `common/awards/` are 56 px squares cut from the concept icon sheet with the near-black background made transparent, like the shop icons; the buildings reuse `common/shop/`. `check.png` (36 px) is the gold "Comprado" circle, cut round; `lock.png` (36 px) is the "Bloqueado" lock with its grey tile (about RGB 26,26,25) made transparent.
 
-Checked in the Previewer; not yet on the watch.
+Confirmed on the GT 6 Pro (October 2026): the grid, the category lists, checks, locks, progress bars, crown scrolling and both swipes back work.
 
 **Crown:** every list (shop, awards grid, category) has a `ref`, and opening their view calls `this.$refs.<ref>.rotation({ focus: true })` 50 ms later, because the `if` view has to render before its list exists. With the focus, turning the crown scrolls the list. `rotation()` on `list` is in the lite typings since API 4. `setMonitorForCrownEvents()` (raw crown events for the page) was not used because it only exists since API 24, above our compatible SDK. Confirmed on the GT 6 Pro (October 2026): the crown scrolls both lists, and the shop keeps the focus although its items are rebuilt every second.
 
