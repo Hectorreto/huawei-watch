@@ -34,8 +34,9 @@ const TEXTS = {
 };
 const LANGUAGES = ['en', 'es'];
 
-// The cookie the player taps. Each id has one small pixel-art image, /common/themes/<id>.png,
-// that every view scales to its own size (big cookie, pressed cookie, menu, list, settings row).
+// The cookie the player taps. Each id has two pixel-art images in /common/themes/, scaled up with
+// nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big and pressed
+// cookie) and <id>_small.png (170 px, menu centre, theme list and settings row).
 // The id is what the settings save, so ids must not change. The first one is the default.
 const THEMES = [
     { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
@@ -50,8 +51,8 @@ const THEMES = [
     { id: 'pan_de_muerto', name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
 ];
 
-function themePath(id) {
-    return '/common/themes/' + id + '.png';
+function themePath(id, suffix) {
+    return '/common/themes/' + id + (suffix || '') + '.png';
 }
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
@@ -194,6 +195,7 @@ export default {
         items: [],
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
+        cookieSmall: themePath(THEMES[0].id, '_small'),
         pressed: false,
         plus: ''
     },
@@ -473,7 +475,7 @@ export default {
     refreshThemes() {
         this.themeItems = THEMES.map((th, i) => ({
             id: i,
-            icon: themePath(th.id),
+            icon: themePath(th.id, '_small'),
             title: th.name[this.lang],
             chosen: th.id === this.theme
         }));
@@ -489,6 +491,7 @@ export default {
         const theme = THEMES.some((th) => th.id === id) ? id : THEMES[0].id;
         this.theme = theme;
         this.cookieSrc = themePath(theme);
+        this.cookieSmall = themePath(theme, '_small');
         this.refreshThemes();
     },
     // A sideways swipe in the theme list goes back to the settings, after the swipe event ends
