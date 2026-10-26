@@ -235,6 +235,42 @@
   color: #000000;
 }
 
+/* Stats: same header and list size as the shop; each card has a label, a gold value and
+   an icon on the right. */
+.stat-item {
+  width: 340px;
+  height: 76px;
+  margin-bottom: 8px;
+  flex-direction: row;
+  align-items: center;
+  background-color: #2b2018;
+  border-radius: 16px;
+}
+.stat-text {
+  width: 254px;
+  height: 66px;
+  margin-left: 16px;
+  flex-direction: column;
+  justify-content: center;
+}
+.stat-label {
+  width: 254px;
+  height: 28px;
+  font-size: 20px;
+  color: #ffffff;
+}
+.stat-value {
+  width: 254px;
+  height: 32px;
+  font-size: 24px;
+  color: #f5c16c;
+}
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  margin-left: 10px;
+}
+
 /* Awards grid: title and total, then rows of three category tiles. */
 .award-grid {
   width: 340px;

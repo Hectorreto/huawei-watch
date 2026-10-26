@@ -16,7 +16,7 @@
         <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
         <image class="menu-cookie" if="{{ menu }}" src="/common/cookie_small.png" onclick="closeMenu" onswipe="swipeCookie"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
-        <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png"></image>
+        <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png"></image>
         <image class="menu-close" if="{{ menu }}" src="/common/menu/close.png" onclick="closeMenu"></image>
         <image class="menu-awards" if="{{ menu }}" src="/common/menu/awards.png" onclick="openAchievements"></image>
@@ -43,6 +43,20 @@
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
+            </list-item>
+        </list>
+    </div>
+    <div class="shop-view" if="{{ view === 'stats' }}" onswipe="swipeBack">
+        <text class="count">{{ countText }}</text>
+        <text class="rate">{{ rateText }}</text>
+        <text class="title">Stats</text>
+        <list class="shop-list" ref="statsList">
+            <list-item class="stat-item" for="{{ statItems }}">
+                <div class="stat-text">
+                    <text class="stat-label">{{ $item.label }}</text>
+                    <text class="stat-value">{{ $item.value }}</text>
+                </div>
+                <image class="stat-icon" src="{{ $item.icon }}"></image>
             </list-item>
         </list>
     </div>

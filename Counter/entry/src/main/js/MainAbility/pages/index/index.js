@@ -94,6 +94,13 @@ function format(n) {
     return String(n);
 }
 
+// 1h 24m once past an hour, otherwise 5m 17s.
+function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor(seconds / 60) % 60;
+    return h > 0 ? h + 'h ' + m + 'm' : m + 'm ' + (seconds % 60) + 's';
+}
+
 function load(key, fallback, callback) {
     storage.get({ key: key, default: fallback, success: callback, fail: () => callback(fallback) });
 }
@@ -116,6 +123,8 @@ export default {
         baked: 0,
         taps: 0,
         goldenClicks: 0,
+        playSeconds: 0,
+        statItems: [],
         achieved: [],
         achievedText: '',
         awardRows: [],
@@ -147,11 +156,12 @@ export default {
                 // Add instead of assign so taps made before the read finishes are kept.
                 this.setCount(this.count + (parseInt(count, 10) || 0));
                 load('stats', '', (stats) => {
-                    const s = numbers(stats, 3);
+                    const s = numbers(stats, 4);
                     // Saves from before "stats" existed: count is the best guess for baked.
                     this.baked = Math.max(this.baked + s[0], this.count);
                     this.taps += s[1];
                     this.goldenClicks += s[2];
+                    this.playSeconds += s[3];
                     load('achieved', '', (achieved) => {
                         this.achieved = ACHIEVEMENTS.map((a, i) => achieved.charAt(i) === '1');
                         load('savedAt', '0', (savedAt) => {
@@ -200,6 +210,7 @@ export default {
         }
     },
     tick() {
+        this.playSeconds++;
         if (this.cps > 0) {
             this.bake(this.cps * this.multiplier());
             ticks++;
@@ -208,6 +219,9 @@ export default {
             }
         }
         this.tickGolden();
+        if (this.view === 'stats') {
+            this.refreshStats();
+        }
     },
     tickGolden() {
         if (this.frenzyLeft > 0) {
@@ -273,6 +287,32 @@ export default {
     },
     closeMenu() {
         this.menu = false;
+    },
+    openStats() {
+        this.menu = false;
+        this.refreshStats();
+        this.view = 'stats';
+        this.focusCrown('statsList');
+    },
+    refreshStats() {
+        let buildings = 0;
+        UPGRADES.forEach((u, i) => {
+            if (u.cps > 0) {
+                buildings += this.owned[i];
+            }
+        });
+        const awards = this.achieved.filter((a) => a).length;
+        const rows = [
+            ['Cookies baked', format(this.baked), 'baked'],
+            ['Cookies per second', format(this.cps * this.multiplier()), 'cps'],
+            ['Taps', format(this.taps), 'taps'],
+            ['Buildings', String(buildings), 'buildings'],
+            ['Golden fingers', String(this.owned[0]), 'fingers'],
+            ['Golden cookies', String(this.goldenClicks), 'golden'],
+            ['Awards', awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
+            ['Time played', formatTime(this.playSeconds), 'time']
+        ];
+        this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
     },
     openShop() {
         this.menu = false;
@@ -454,7 +494,7 @@ export default {
         }
         storage.set({ key: 'count', value: String(this.count) });
         storage.set({ key: 'owned', value: this.owned.join(',') });
-        storage.set({ key: 'stats', value: [this.baked, this.taps, this.goldenClicks].join(',') });
+        storage.set({ key: 'stats', value: [this.baked, this.taps, this.goldenClicks, this.playSeconds].join(',') });
         storage.set({ key: 'achieved', value: this.achieved.map((a) => (a ? '1' : '0')).join('') });
         storage.set({ key: 'savedAt', value: String(Date.now()) });
     }
