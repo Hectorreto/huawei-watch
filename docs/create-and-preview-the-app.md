@@ -85,7 +85,7 @@ Checked in the Previewer: the Vibration toggle, switching to Spanish (shop, awar
 
 Confirmed on the GT 6 Pro (October 2026): the cookie press, the "+1" rising and fading (so lite keyframes do apply `translateY` and `opacity`), the vibration on each tap, and the count surviving closing and reopening the app. The shop (scrolling list, buying, greyed-out rows), the production timer and saving `owned` also work on the watch.
 
-The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our cookie icon was drawn with a small pure-Python PNG script (Pillow is not installed on this PC).
+The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/element/string.json` ("Cookie Clicker"); the template's default is "label". The launcher icon is `resources/base/media/icon.png` (104x104) and `icon_small.png` (92x92), RGBA PNGs; the template's default is a blue square with four white squares. Our icon is a drawn cookie with a chocolate drizzle and a play triangle: the source (1254 px WebP on white) was decoded with `ffmpeg` to raw RGB, a pure-Python script (Pillow is not installed on this PC) flood-filled the white background from the borders (min channel above 225) to transparent and cropped to the cookie, and `ffmpeg` scaled it with `premultiply,scale=flags=area,unpremultiply` so the edge has no white halo.
 
 ## Previewer
 
