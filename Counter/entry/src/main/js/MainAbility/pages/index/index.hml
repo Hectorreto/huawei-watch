@@ -1,19 +1,28 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
-        <div class="cookie-box" onclick="increment" onswipe="swipeCookie">
+        <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="swipeCookie">
             <image class="cookie" src="{{ cookieSrc }}"></image>
         </div>
-        <div class="capsule">
+        <div class="capsule" if="{{ !menu }}">
             <text class="count">{{ countText }}</text>
             <text class="rate" if="{{ noticeText === '' && frenzyText === '' }}">{{ rateText }}</text>
             <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
             <text class="notice" if="{{ noticeText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
         </div>
-        <div class="plus-row">
+        <div class="plus-row" if="{{ !menu }}">
             <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
-            <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>        </div>
-        <image class="golden-left" if="{{ golden === 'left' }}" src="/common/golden.png" onclick="clickGolden"></image>
-        <image class="golden-right" if="{{ golden === 'right' }}" src="/common/golden.png" onclick="clickGolden"></image>
+            <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
+        </div>
+        <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
+        <image class="menu-cookie" if="{{ menu }}" src="/common/cookie_small.png" onclick="closeMenu" onswipe="swipeCookie"></image>
+        <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
+        <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png"></image>
+        <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png"></image>
+        <image class="menu-close" if="{{ menu }}" src="/common/menu/close.png" onclick="closeMenu"></image>
+        <image class="menu-awards" if="{{ menu }}" src="/common/menu/awards.png" onclick="openAchievements"></image>
+        <image class="menu-events" if="{{ menu }}" src="/common/menu/events.png"></image>
+        <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
+        <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
     </stack>
     <div class="view" if="{{ view === 'shop' }}">
         <text class="count">{{ countText }}</text>

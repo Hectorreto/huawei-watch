@@ -38,6 +38,56 @@
   background-color: #000000;
   border-radius: 48px;
 }
+/* Menu: a small cookie in the centre and six 100 px buttons on a 155 px circle around
+   it, starting with the shop at the top and going clockwise. */
+.menu-bg {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
+.menu-cookie {
+  width: 170px;
+  height: 170px;
+  left: 148px;
+  top: 148px;
+}
+.menu-shop {
+  width: 100px;
+  height: 100px;
+  left: 183px;
+  top: 28px;
+}
+.menu-stats {
+  width: 100px;
+  height: 100px;
+  left: 317px;
+  top: 106px;
+}
+.menu-settings {
+  width: 100px;
+  height: 100px;
+  left: 317px;
+  top: 261px;
+}
+.menu-close {
+  width: 100px;
+  height: 100px;
+  left: 183px;
+  top: 338px;
+}
+.menu-awards {
+  width: 100px;
+  height: 100px;
+  left: 49px;
+  top: 261px;
+}
+.menu-events {
+  width: 100px;
+  height: 100px;
+  left: 49px;
+  top: 106px;
+}
 /* Golden cookie over the edge of the big one, level with the screen centre. Lite has no
    binding for class or reliable binding for position, so each side is its own "if" image. */
 .golden-left {

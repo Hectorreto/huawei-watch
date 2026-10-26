@@ -94,6 +94,7 @@ function numbers(value, length) {
 export default {
     data: {
         view: 'cookie',
+        menu: false,
         count: 0,
         countText: '0',
         baked: 0,
@@ -204,8 +205,8 @@ export default {
             }
             return;
         }
-        // Only count down on the cookie view, so it never shows up unseen behind the shop.
-        if (this.view !== 'cookie') {
+        // Only count down on the big cookie, so it never shows up unseen behind the shop or the menu.
+        if (this.view !== 'cookie' || this.menu) {
             return;
         }
         goldenIn--;
@@ -245,20 +246,23 @@ export default {
             this.save();
         }, SAVE_DELAY_MS);
     },
-    // Swipe right for the shop, up for the awards (direction is where the finger moves).
+    // A sideways swipe opens the menu, or closes it if it is open.
     swipeCookie(e) {
-        if (e.direction === 'right') {
-            this.openShop();
-        } else if (e.direction === 'up') {
-            this.openAchievements();
+        if (e.direction === 'left' || e.direction === 'right') {
+            this.menu = !this.menu;
         }
     },
+    closeMenu() {
+        this.menu = false;
+    },
     openShop() {
+        this.menu = false;
         this.refreshItems();
         this.view = 'shop';
         this.focusCrown('shopList');
     },
     openAchievements() {
+        this.menu = false;
         this.refreshAchievements();
         this.view = 'achievements';
         this.focusCrown('achievementList');
