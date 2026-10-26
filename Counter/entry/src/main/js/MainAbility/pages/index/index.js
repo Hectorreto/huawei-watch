@@ -34,9 +34,8 @@ const TEXTS = {
 };
 const LANGUAGES = ['en', 'es'];
 
-// The cookie the player taps. Each id has five images in /common/themes/: <id>.png (466 px, on black),
-// <id>_pressed.png (the same at 438 px), <id>_small.png (170 px, the menu centre),
-// <id>_icon.png (64 px, the theme list) and <id>_thumb.png (40 px, the settings row).
+// The cookie the player taps. Each id has one small pixel-art image, /common/themes/<id>.png,
+// that every view scales to its own size (big cookie, pressed cookie, menu, list, settings row).
 // The id is what the settings save, so ids must not change. The first one is the default.
 const THEMES = [
     { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
@@ -51,8 +50,8 @@ const THEMES = [
     { id: 'pan_de_muerto', name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
 ];
 
-function themePath(id, suffix) {
-    return '/common/themes/' + id + suffix + '.png';
+function themePath(id) {
+    return '/common/themes/' + id + '.png';
 }
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
@@ -170,8 +169,6 @@ export default {
         vibration: true,
         theme: THEMES[0].id,
         themeItems: [],
-        cookieSmall: themePath(THEMES[0].id, '_small'),
-        themeThumb: themePath(THEMES[0].id, '_thumb'),
         count: 0,
         countText: '0',
         baked: 0,
@@ -196,7 +193,8 @@ export default {
         plusText: '+1',
         items: [],
         upgradeItems: [],
-        cookieSrc: themePath(THEMES[0].id, ''),
+        cookieSrc: themePath(THEMES[0].id),
+        pressed: false,
         plus: ''
     },
     onInit() {
@@ -338,10 +336,10 @@ export default {
         this.bake(this.tapPower * this.multiplier());
         this.vibrate('short');
 
-        this.cookieSrc = themePath(this.theme, '_pressed');
+        this.pressed = true;
         clearTimeout(pressTimer);
         pressTimer = setTimeout(() => {
-            this.cookieSrc = themePath(this.theme, '');
+            this.pressed = false;
         }, PRESS_MS);
 
         this.plus = this.plus === 'a' ? 'b' : 'a';
@@ -475,7 +473,7 @@ export default {
     refreshThemes() {
         this.themeItems = THEMES.map((th, i) => ({
             id: i,
-            icon: themePath(th.id, '_icon'),
+            icon: themePath(th.id),
             title: th.name[this.lang],
             chosen: th.id === this.theme
         }));
@@ -490,9 +488,7 @@ export default {
     setTheme(id) {
         const theme = THEMES.some((th) => th.id === id) ? id : THEMES[0].id;
         this.theme = theme;
-        this.cookieSrc = themePath(theme, '');
-        this.cookieSmall = themePath(theme, '_small');
-        this.themeThumb = themePath(theme, '_thumb');
+        this.cookieSrc = themePath(theme);
         this.refreshThemes();
     },
     // A sideways swipe in the theme list goes back to the settings, after the swipe event ends

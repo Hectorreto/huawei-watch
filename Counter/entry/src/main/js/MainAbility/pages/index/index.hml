@@ -1,7 +1,8 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
         <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="swipeCookie">
-            <image class="cookie" src="{{ cookieSrc }}"></image>
+            <image class="cookie" if="{{ !pressed }}" src="{{ cookieSrc }}"></image>
+            <image class="cookie-pressed" if="{{ pressed }}" src="{{ cookieSrc }}"></image>
         </div>
         <div class="capsule" if="{{ !menu }}">
             <text class="count">{{ countText }}</text>
@@ -14,7 +15,7 @@
             <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
         </div>
         <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
-        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="swipeCookie"></image>
+        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSrc }}" onclick="closeMenu" onswipe="swipeCookie"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
         <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png" onclick="openSettings"></image>
@@ -129,7 +130,7 @@
                 <image class="settings-icon" src="/common/settings/theme.png"></image>
                 <text class="settings-label">{{ t.theme }}</text>
                 <div class="settings-right">
-                    <image class="theme-thumb" src="{{ themeThumb }}"></image>
+                    <image class="theme-thumb" src="{{ cookieSrc }}"></image>
                 </div>
             </list-item>
             <list-item class="settings-item" onclick="toggleLanguage">
