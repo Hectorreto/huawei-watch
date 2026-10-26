@@ -1,23 +1,54 @@
 import storage from '@system.storage';
 import vibrator from '@system.vibrator';
+// Not in the Lite Wearable SDK typings; it compiles to requireModule('@system.audio'), which is
+// empty if the watch has no such module, so the tap sound is only tried when it exists.
+import audio from '@system.audio';
 
 const COOKIE = '/common/cookie.png';
 const COOKIE_PRESSED = '/common/cookie_pressed.png';
 const PRESS_MS = 120;
+const CLICK_SOUND = '/common/click.wav';
 // Saving on every tap or tick would write flash constantly; save once taps pause,
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
 
+// Every text the player sees, per language. Names in the tables below have one per language too.
+const TEXTS = {
+    en: {
+        shop: 'Shop', upgrades: 'Upgrades', stats: 'Stats', awards: 'Awards', settings: 'Settings',
+        perTap: '/tap', award: 'Award: ', away: ' away',
+        statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
+        statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
+        statAwards: 'Awards', statTime: 'Time played',
+        sound: 'Sound', vibration: 'Vibration', theme: 'Theme', classic: 'Classic',
+        language: 'Language', languageName: 'English', reset: 'Reset game',
+        resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
+        cancel: 'Cancel', resetConfirm: 'Reset'
+    },
+    es: {
+        shop: 'Tienda', upgrades: 'Mejoras', stats: 'Estadísticas', awards: 'Logros', settings: 'Ajustes',
+        perTap: '/toque', award: 'Logro: ', away: ' al volver',
+        statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
+        statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
+        statAwards: 'Logros', statTime: 'Tiempo jugado',
+        sound: 'Sonido', vibration: 'Vibración', theme: 'Tema', classic: 'Clásico',
+        language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
+        resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
+        cancel: 'Cancelar', resetConfirm: 'Resetear'
+    }
+};
+const LANGUAGES = ['en', 'es'];
+
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // building ones are sold in the shop, the rest in the upgrades view.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
-    { name: 'Tastier taps', icon: 'finger', building: false, base: 15, tap: 1, cps: 0 },
-    { name: 'Cursor', icon: 'cursor', building: true, base: 25, tap: 0, cps: 1 },
-    { name: 'Grandma', icon: 'grandma', building: true, base: 150, tap: 0, cps: 5 },
-    { name: 'Farm', icon: 'farm', building: true, base: 1500, tap: 0, cps: 40 },
-    { name: 'Mine', icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 }
+    { name: { en: 'Tastier taps', es: 'Mejor toque' }, icon: 'finger', building: false, base: 15, tap: 1, cps: 0 },
+    { name: { en: 'Cursor', es: 'Cursor' }, icon: 'cursor', building: true, base: 25, tap: 0, cps: 1 },
+    { name: { en: 'Grandma', es: 'Abuela' }, icon: 'grandma', building: true, base: 150, tap: 0, cps: 5 },
+    { name: { en: 'Farm', es: 'Granja' }, icon: 'farm', building: true, base: 1500, tap: 0, cps: 40 },
+    { name: { en: 'Mine', es: 'Mina' }, icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 }
 ];
 const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
@@ -36,11 +67,11 @@ const FOCUS_DELAY_MS = 50;
 
 // The awards grid: one tile per category. Icons are paths under /common/ without ".png".
 const CATEGORIES = [
-    { name: 'Clicks', icon: 'awards/clicks' },
-    { name: 'Cookies', icon: 'awards/cookies' },
-    { name: 'Buildings', icon: 'awards/buildings' },
-    { name: 'Speed', icon: 'awards/production' },
-    { name: 'Golden', icon: 'awards/golden' }
+    { name: { en: 'Clicks', es: 'Toques' }, icon: 'awards/clicks' },
+    { name: { en: 'Cookies', es: 'Galletas' }, icon: 'awards/cookies' },
+    { name: { en: 'Buildings', es: 'Edificios' }, icon: 'awards/buildings' },
+    { name: { en: 'Speed', es: 'Velocidad' }, icon: 'awards/production' },
+    { name: { en: 'Golden', es: 'Doradas' }, icon: 'awards/golden' }
 ];
 const GRID_COLUMNS = 3;
 
@@ -49,20 +80,20 @@ const GRID_COLUMNS = 3;
 // cat is the index in CATEGORIES.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
 const ACHIEVEMENTS = [
-    { name: 'First cookie', detail: 'Bake 1', cat: 0, icon: 'awards/first', goal: 1, value: (s) => s.baked },
-    { name: 'Baker', detail: 'Bake 100', cat: 1, icon: 'awards/baker', goal: 100, value: (s) => s.baked },
-    { name: 'Bakery', detail: 'Bake 1K', cat: 1, icon: 'awards/bakery', goal: 1e3, value: (s) => s.baked },
-    { name: 'Factory', detail: 'Bake 100K', cat: 1, icon: 'awards/factory', goal: 1e5, value: (s) => s.baked },
-    { name: 'Empire', detail: 'Bake 1M', cat: 1, icon: 'awards/empire', goal: 1e6, value: (s) => s.baked },
-    { name: 'Fast finger', detail: '1K taps', cat: 0, icon: 'awards/clicks', goal: 1e3, value: (s) => s.taps },
-    { name: 'First cursor', detail: 'Buy a Cursor', cat: 2, icon: 'shop/cursor', goal: 1, value: (s) => s.owned[1] },
-    { name: 'Granny', detail: 'Buy a Grandma', cat: 2, icon: 'shop/grandma', goal: 1, value: (s) => s.owned[2] },
-    { name: 'Farmer', detail: 'Buy a Farm', cat: 2, icon: 'shop/farm', goal: 1, value: (s) => s.owned[3] },
-    { name: 'Miner', detail: 'Buy a Mine', cat: 2, icon: 'shop/mine', goal: 1, value: (s) => s.owned[4] },
-    { name: 'Rolling', detail: '10 / s', cat: 3, icon: 'awards/production', goal: 10, value: (s) => s.cps },
-    { name: 'Production', detail: '100 / s', cat: 3, icon: 'awards/cps', goal: 100, value: (s) => s.cps },
-    { name: 'Lucky', detail: '1 golden cookie', cat: 4, icon: 'awards/golden', goal: 1, value: (s) => s.golden },
-    { name: 'Gold digger', detail: '10 golden', cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden }
+    { name: { en: 'First cookie', es: 'Primera galleta' }, detail: { en: 'Bake 1', es: 'Hornea 1' }, cat: 0, icon: 'awards/first', goal: 1, value: (s) => s.baked },
+    { name: { en: 'Baker', es: 'Panadero' }, detail: { en: 'Bake 100', es: 'Hornea 100' }, cat: 1, icon: 'awards/baker', goal: 100, value: (s) => s.baked },
+    { name: { en: 'Bakery', es: 'Panadería' }, detail: { en: 'Bake 1K', es: 'Hornea 1K' }, cat: 1, icon: 'awards/bakery', goal: 1e3, value: (s) => s.baked },
+    { name: { en: 'Factory', es: 'Fábrica' }, detail: { en: 'Bake 100K', es: 'Hornea 100K' }, cat: 1, icon: 'awards/factory', goal: 1e5, value: (s) => s.baked },
+    { name: { en: 'Empire', es: 'Imperio' }, detail: { en: 'Bake 1M', es: 'Hornea 1M' }, cat: 1, icon: 'awards/empire', goal: 1e6, value: (s) => s.baked },
+    { name: { en: 'Fast finger', es: 'Dedo veloz' }, detail: { en: '1K taps', es: '1K toques' }, cat: 0, icon: 'awards/clicks', goal: 1e3, value: (s) => s.taps },
+    { name: { en: 'First cursor', es: 'Primer cursor' }, detail: { en: 'Buy a Cursor', es: 'Compra un cursor' }, cat: 2, icon: 'shop/cursor', goal: 1, value: (s) => s.owned[1] },
+    { name: { en: 'Granny', es: 'Abuelita' }, detail: { en: 'Buy a Grandma', es: 'Compra una abuela' }, cat: 2, icon: 'shop/grandma', goal: 1, value: (s) => s.owned[2] },
+    { name: { en: 'Farmer', es: 'Granjero' }, detail: { en: 'Buy a Farm', es: 'Compra una granja' }, cat: 2, icon: 'shop/farm', goal: 1, value: (s) => s.owned[3] },
+    { name: { en: 'Miner', es: 'Minero' }, detail: { en: 'Buy a Mine', es: 'Compra una mina' }, cat: 2, icon: 'shop/mine', goal: 1, value: (s) => s.owned[4] },
+    { name: { en: 'Rolling', es: 'En marcha' }, detail: { en: '10 / s', es: '10 / s' }, cat: 3, icon: 'awards/production', goal: 10, value: (s) => s.cps },
+    { name: { en: 'Production', es: 'Producción' }, detail: { en: '100 / s', es: '100 / s' }, cat: 3, icon: 'awards/cps', goal: 100, value: (s) => s.cps },
+    { name: { en: 'Lucky', es: 'Suertudo' }, detail: { en: '1 golden cookie', es: '1 galleta dorada' }, cat: 4, icon: 'awards/golden', goal: 1, value: (s) => s.golden },
+    { name: { en: 'Gold digger', es: 'Buscaoro' }, detail: { en: '10 golden', es: '10 doradas' }, cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden }
 ];
 
 function iconPath(icon) {
@@ -119,6 +150,10 @@ export default {
     data: {
         view: 'cookie',
         menu: false,
+        lang: 'en',
+        t: TEXTS.en,
+        sound: true,
+        vibration: true,
         count: 0,
         countText: '0',
         baked: 0,
@@ -150,6 +185,14 @@ export default {
         this.achieved = ACHIEVEMENTS.map(() => false);
         this.setOwned(this.owned);
         goldenIn = nextGolden();
+        // "sound,vibration,language", e.g. "1,1,en". Settings are not part of the game,
+        // so they load on their own and a reset keeps them.
+        load('settings', '', (settings) => {
+            const parts = settings.split(',');
+            this.sound = parts[0] !== '0';
+            this.vibration = parts[1] !== '0';
+            this.setLanguage(LANGUAGES.indexOf(parts[2]) >= 0 ? parts[2] : 'en');
+        });
         // Chained so the offline earnings use the loaded upgrades, and achievements
         // are checked against the whole save.
         load('owned', '', (owned) => {
@@ -193,8 +236,8 @@ export default {
         const earned = this.cps * Math.min(seconds, OFFLINE_MAX_S);
         this.bake(earned);
         this.save();
-        vibrator.vibrate({ mode: 'long' });
-        this.showNotice('+' + format(earned) + ' away');
+        this.vibrate('long');
+        this.showNotice('+' + format(earned) + this.t.away);
     },
     showNotice(text) {
         notices.push(text);
@@ -251,7 +294,7 @@ export default {
         }
     },
     clickGolden() {
-        vibrator.vibrate({ mode: 'long' });
+        this.vibrate('long');
         this.golden = '';
         goldenIn = nextGolden();
         this.goldenClicks++;
@@ -260,13 +303,30 @@ export default {
         this.updateRates();
         this.checkAchievements();
     },
+    vibrate(mode) {
+        if (this.vibration) {
+            vibrator.vibrate({ mode: mode });
+        }
+    },
+    playClick() {
+        if (!this.sound || !audio) {
+            return;
+        }
+        try {
+            audio.src = CLICK_SOUND;
+            audio.play();
+        } catch (e) {
+            console.error('click sound: ' + e);
+        }
+    },
     multiplier() {
         return this.frenzyLeft > 0 ? FRENZY_MULT : 1;
     },
     increment() {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
-        vibrator.vibrate({ mode: 'short' });
+        this.vibrate('short');
+        this.playClick();
 
         this.cookieSrc = COOKIE_PRESSED;
         clearTimeout(pressTimer);
@@ -304,15 +364,16 @@ export default {
             }
         });
         const awards = this.achieved.filter((a) => a).length;
+        const t = this.t;
         const rows = [
-            ['Cookies baked', format(this.baked), 'baked'],
-            ['Cookies per second', format(this.cps * this.multiplier()), 'cps'],
-            ['Taps', format(this.taps), 'taps'],
-            ['Buildings', String(buildings), 'buildings'],
-            ['Tastier taps', String(this.owned[0]), 'fingers'],
-            ['Golden cookies', String(this.goldenClicks), 'golden'],
-            ['Awards', awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
-            ['Time played', formatTime(this.playSeconds), 'time']
+            [t.statBaked, format(this.baked), 'baked'],
+            [t.statCps, format(this.cps * this.multiplier()), 'cps'],
+            [t.statTaps, format(this.taps), 'taps'],
+            [t.statBuildings, String(buildings), 'buildings'],
+            [t.statTastier, String(this.owned[0]), 'fingers'],
+            [t.statGolden, String(this.goldenClicks), 'golden'],
+            [t.statAwards, awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
+            [t.statTime, formatTime(this.playSeconds), 'time']
         ];
         this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
     },
@@ -348,8 +409,8 @@ export default {
             }
             items.push({
                 icon: iconPath(a.icon),
-                title: a.name,
-                detail: a.detail,
+                title: a.name[this.lang],
+                detail: a.detail[this.lang],
                 done: this.achieved[i],
                 progress: !this.achieved[i] && a.goal > 1,
                 percent: Math.floor(value * 100 / a.goal),
@@ -357,7 +418,7 @@ export default {
             });
         });
         this.categoryItems = items;
-        this.categoryTitle = CATEGORIES[id].name;
+        this.categoryTitle = CATEGORIES[id].name[this.lang];
         this.categoryCount = done + ' / ' + items.length;
         this.view = 'category';
         this.focusCrown('categoryList');
@@ -371,6 +432,68 @@ export default {
             }, 0);
         }
     },
+    openSettings() {
+        this.menu = false;
+        this.view = 'settings';
+        this.focusCrown('settingsList');
+    },
+    toggleSound() {
+        this.sound = !this.sound;
+        this.saveSettings();
+    },
+    toggleVibration() {
+        this.vibration = !this.vibration;
+        this.saveSettings();
+        this.vibrate('short');
+    },
+    toggleLanguage() {
+        this.setLanguage(LANGUAGES[(LANGUAGES.indexOf(this.lang) + 1) % LANGUAGES.length]);
+        this.saveSettings();
+    },
+    // Lists that hold translated names are rebuilt, so they show the new language right away.
+    setLanguage(lang) {
+        this.lang = lang;
+        this.t = TEXTS[lang];
+        this.refreshItems();
+        this.refreshStats();
+        this.refreshAchievements();
+    },
+    saveSettings() {
+        storage.set({ key: 'settings', value: [this.sound ? 1 : 0, this.vibration ? 1 : 0, this.lang].join(',') });
+    },
+    openResetConfirm() {
+        this.view = 'confirmReset';
+    },
+    cancelReset() {
+        this.openSettings();
+    },
+    // A sideways swipe on the confirmation cancels, after the swipe event ends (see swipeCategory).
+    swipeConfirm(e) {
+        if (e.direction === 'left' || e.direction === 'right') {
+            setTimeout(() => {
+                this.cancelReset();
+            }, 0);
+        }
+    },
+    // Back to a new game. Settings are kept.
+    confirmReset() {
+        notices = [];
+        this.noticeText = '';
+        this.frenzyLeft = 0;
+        this.frenzyText = '';
+        this.golden = '';
+        goldenIn = nextGolden();
+        this.baked = 0;
+        this.taps = 0;
+        this.goldenClicks = 0;
+        this.playSeconds = 0;
+        this.achieved = ACHIEVEMENTS.map(() => false);
+        this.setOwned(UPGRADES.map(() => 0));
+        this.setCount(0);
+        this.save();
+        this.vibrate('long');
+        this.view = 'cookie';
+    },
     // Turning the crown scrolls the list that has the crown focus.
     focusCrown(ref) {
         setTimeout(() => {
@@ -380,10 +503,12 @@ export default {
             }
         }, FOCUS_DELAY_MS);
     },
-    // A sideways swipe goes back to the cookie.
+    // A sideways swipe goes back to the cookie, after the swipe event ends (see swipeCategory).
     swipeBack(e) {
         if (e.direction === 'left' || e.direction === 'right') {
-            this.closeView();
+            setTimeout(() => {
+                this.closeView();
+            }, 0);
         }
     },
     closeView() {
@@ -392,10 +517,10 @@ export default {
     buy(index) {
         const price = this.price(index);
         if (this.count < price) {
-            vibrator.vibrate({ mode: 'long' });
+            this.vibrate('long');
             return;
         }
-        vibrator.vibrate({ mode: 'short' });
+        this.vibrate('short');
         const owned = this.owned.slice();
         owned[index]++;
         this.count -= price;
@@ -451,12 +576,12 @@ export default {
             if (!achieved[i] && a.value(state) >= a.goal) {
                 achieved[i] = true;
                 changed = true;
-                this.showNotice('Award: ' + a.name);
+                this.showNotice(this.t.award + a.name[this.lang]);
             }
         });
         if (changed) {
             this.achieved = achieved;
-            vibrator.vibrate({ mode: 'long' });
+            this.vibrate('long');
             this.save();
         }
     },
@@ -467,11 +592,11 @@ export default {
         const upgradeItems = [];
         UPGRADES.forEach((u, i) => {
             const price = this.price(i);
-            const gain = u.tap > 0 ? '+' + u.tap + '/tap' : '+' + u.cps + '/s';
+            const gain = u.tap > 0 ? '+' + u.tap + this.t.perTap : '+' + u.cps + '/s';
             (u.building ? items : upgradeItems).push({
                 id: i,
                 icon: '/common/shop/' + u.icon + '.png',
-                title: u.name,
+                title: u.name[this.lang],
                 detail: gain + ' (' + this.owned[i] + ')',
                 price: format(price),
                 affordable: this.count >= price
@@ -495,7 +620,7 @@ export default {
             if (i % GRID_COLUMNS === 0) {
                 rows.push({ cats: [] });
             }
-            rows[rows.length - 1].cats.push({ id: i, name: c.name, icon: iconPath(c.icon), count: done[i] + ' / ' + total[i] });
+            rows[rows.length - 1].cats.push({ id: i, name: c.name[this.lang], icon: iconPath(c.icon), count: done[i] + ' / ' + total[i] });
         });
         this.awardRows = rows;
         this.achievedText = done.reduce((a, b) => a + b, 0) + ' / ' + ACHIEVEMENTS.length;

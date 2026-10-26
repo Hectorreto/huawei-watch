@@ -377,3 +377,138 @@
   height: 36px;
   margin-left: 8px;
 }
+
+/* Settings: title only, a little lower than the other views so the first card clears the
+   round edge. Each card has an icon, a label and on the right a toggle or a value. */
+.settings-view {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 50px;
+}
+.settings-list {
+  width: 340px;
+  height: 300px;
+}
+.settings-item {
+  width: 340px;
+  height: 76px;
+  margin-bottom: 8px;
+  flex-direction: row;
+  align-items: center;
+  background-color: #2b2018;
+  border-radius: 16px;
+}
+.settings-icon {
+  width: 48px;
+  height: 48px;
+  margin-left: 12px;
+}
+.settings-label {
+  width: 160px;
+  height: 34px;
+  margin-left: 12px;
+  font-size: 24px;
+  color: #ffffff;
+}
+.settings-danger {
+  width: 250px;
+  height: 34px;
+  margin-left: 12px;
+  font-size: 24px;
+  color: #ff6b5b;
+}
+.settings-value {
+  width: 96px;
+  height: 30px;
+  font-size: 20px;
+  color: #f5c16c;
+  text-align: right;
+}
+.settings-right {
+  width: 96px;
+  height: 40px;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+}
+/* A toggle is a pill with a white knob; on and off are two "if" divs, since lite cannot
+   bind class. */
+.toggle-on {
+  width: 64px;
+  height: 34px;
+  padding-left: 3px;
+  padding-right: 3px;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  background-color: #43b05c;
+  border-radius: 17px;
+}
+.toggle-off {
+  width: 64px;
+  height: 34px;
+  padding-left: 3px;
+  padding-right: 3px;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: #5a5a5a;
+  border-radius: 17px;
+}
+.knob {
+  width: 28px;
+  height: 28px;
+  background-color: #ffffff;
+  border-radius: 14px;
+}
+
+/* Reset confirmation: icon, question, warning, then Cancel and a red Reset. */
+.confirm-view {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.confirm-title {
+  width: 340px;
+  height: 44px;
+  margin-top: 12px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.confirm-detail {
+  width: 340px;
+  height: 30px;
+  font-size: 20px;
+  color: #9a9a9a;
+  text-align: center;
+}
+.confirm-buttons {
+  width: 300px;
+  height: 56px;
+  margin-top: 24px;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.confirm-cancel {
+  width: 140px;
+  height: 56px;
+  font-size: 24px;
+  color: #ffffff;
+  background-color: #5a5a5a;
+  border-radius: 28px;
+  text-align: center;
+}
+.confirm-reset {
+  width: 140px;
+  height: 56px;
+  font-size: 24px;
+  color: #ffffff;
+  background-color: #d9483b;
+  border-radius: 28px;
+  text-align: center;
+}
