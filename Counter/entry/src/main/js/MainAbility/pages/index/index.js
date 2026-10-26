@@ -33,24 +33,40 @@ const FRENZY_S = 30;
 // The list only exists once the view has rendered, so its crown focus is requested a bit later.
 const FOCUS_DELAY_MS = 50;
 
+// The awards grid: one tile per category. Icons are paths under /common/ without ".png".
+const CATEGORIES = [
+    { name: 'Clicks', icon: 'awards/clicks' },
+    { name: 'Cookies', icon: 'awards/cookies' },
+    { name: 'Buildings', icon: 'awards/buildings' },
+    { name: 'Speed', icon: 'awards/production' },
+    { name: 'Golden', icon: 'awards/golden' }
+];
+const GRID_COLUMNS = 3;
+
 // s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps.
+// An achievement is done when value(s) reaches goal; goals above 1 show a progress bar.
+// cat is the index in CATEGORIES.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
 const ACHIEVEMENTS = [
-    { name: 'First cookie', detail: 'Bake 1', done: (s) => s.baked >= 1 },
-    { name: 'Baker', detail: 'Bake 100', done: (s) => s.baked >= 100 },
-    { name: 'Bakery', detail: 'Bake 1K', done: (s) => s.baked >= 1e3 },
-    { name: 'Factory', detail: 'Bake 100K', done: (s) => s.baked >= 1e5 },
-    { name: 'Empire', detail: 'Bake 1M', done: (s) => s.baked >= 1e6 },
-    { name: 'Fast finger', detail: '1K taps', done: (s) => s.taps >= 1e3 },
-    { name: 'First cursor', detail: 'Buy a Cursor', done: (s) => s.owned[1] >= 1 },
-    { name: 'Granny', detail: 'Buy a Grandma', done: (s) => s.owned[2] >= 1 },
-    { name: 'Farmer', detail: 'Buy a Farm', done: (s) => s.owned[3] >= 1 },
-    { name: 'Miner', detail: 'Buy a Mine', done: (s) => s.owned[4] >= 1 },
-    { name: 'Rolling', detail: '10 / s', done: (s) => s.cps >= 10 },
-    { name: 'Production', detail: '100 / s', done: (s) => s.cps >= 100 },
-    { name: 'Lucky', detail: '1 golden cookie', done: (s) => s.golden >= 1 },
-    { name: 'Gold digger', detail: '10 golden', done: (s) => s.golden >= 10 }
+    { name: 'First cookie', detail: 'Bake 1', cat: 0, icon: 'awards/first', goal: 1, value: (s) => s.baked },
+    { name: 'Baker', detail: 'Bake 100', cat: 1, icon: 'awards/baker', goal: 100, value: (s) => s.baked },
+    { name: 'Bakery', detail: 'Bake 1K', cat: 1, icon: 'awards/bakery', goal: 1e3, value: (s) => s.baked },
+    { name: 'Factory', detail: 'Bake 100K', cat: 1, icon: 'awards/factory', goal: 1e5, value: (s) => s.baked },
+    { name: 'Empire', detail: 'Bake 1M', cat: 1, icon: 'awards/empire', goal: 1e6, value: (s) => s.baked },
+    { name: 'Fast finger', detail: '1K taps', cat: 0, icon: 'awards/clicks', goal: 1e3, value: (s) => s.taps },
+    { name: 'First cursor', detail: 'Buy a Cursor', cat: 2, icon: 'shop/cursor', goal: 1, value: (s) => s.owned[1] },
+    { name: 'Granny', detail: 'Buy a Grandma', cat: 2, icon: 'shop/grandma', goal: 1, value: (s) => s.owned[2] },
+    { name: 'Farmer', detail: 'Buy a Farm', cat: 2, icon: 'shop/farm', goal: 1, value: (s) => s.owned[3] },
+    { name: 'Miner', detail: 'Buy a Mine', cat: 2, icon: 'shop/mine', goal: 1, value: (s) => s.owned[4] },
+    { name: 'Rolling', detail: '10 / s', cat: 3, icon: 'awards/production', goal: 10, value: (s) => s.cps },
+    { name: 'Production', detail: '100 / s', cat: 3, icon: 'awards/cps', goal: 100, value: (s) => s.cps },
+    { name: 'Lucky', detail: '1 golden cookie', cat: 4, icon: 'awards/golden', goal: 1, value: (s) => s.golden },
+    { name: 'Gold digger', detail: '10 golden', cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden }
 ];
+
+function iconPath(icon) {
+    return '/common/' + icon + '.png';
+}
 
 let pressTimer = null;
 let saveTimer = null;
@@ -102,7 +118,10 @@ export default {
         goldenClicks: 0,
         achieved: [],
         achievedText: '',
-        achievementItems: [],
+        awardRows: [],
+        categoryTitle: '',
+        categoryCount: '',
+        categoryItems: [],
         owned: [0, 0, 0, 0, 0],
         tapPower: 1,
         cps: 0,
@@ -267,6 +286,43 @@ export default {
         this.view = 'achievements';
         this.focusCrown('achievementList');
     },
+    openCategory(id) {
+        const state = this.gameState();
+        let done = 0;
+        const items = [];
+        ACHIEVEMENTS.forEach((a, i) => {
+            if (a.cat !== id) {
+                return;
+            }
+            const value = Math.min(a.value(state), a.goal);
+            if (this.achieved[i]) {
+                done++;
+            }
+            items.push({
+                icon: iconPath(a.icon),
+                title: a.name,
+                detail: a.detail,
+                done: this.achieved[i],
+                progress: !this.achieved[i] && a.goal > 1,
+                percent: Math.floor(value * 100 / a.goal),
+                progressText: format(Math.floor(value)) + ' / ' + format(a.goal)
+            });
+        });
+        this.categoryItems = items;
+        this.categoryTitle = CATEGORIES[id].name;
+        this.categoryCount = done + ' / ' + items.length;
+        this.view = 'category';
+        this.focusCrown('categoryList');
+    },
+    // A sideways swipe in a category goes back to the grid. Switching views inside the swipe
+    // event left the grid tiles ignoring taps in the Previewer, so it waits for the event to end.
+    swipeCategory(e) {
+        if (e.direction === 'left' || e.direction === 'right') {
+            setTimeout(() => {
+                this.openAchievements();
+            }, 0);
+        }
+    },
     // Turning the crown scrolls the list that has the crown focus.
     focusCrown(ref) {
         setTimeout(() => {
@@ -333,15 +389,18 @@ export default {
         this.plusText = '+' + format(this.tapPower * this.multiplier());
         this.rateText = format(this.cps * this.multiplier()) + ' / s';
     },
+    gameState() {
+        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps };
+    },
     checkAchievements() {
         if (!loaded) {
             return;
         }
-        const state = { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps };
+        const state = this.gameState();
         const achieved = this.achieved.slice();
         let changed = false;
         ACHIEVEMENTS.forEach((a, i) => {
-            if (!achieved[i] && a.done(state)) {
+            if (!achieved[i] && a.value(state) >= a.goal) {
                 achieved[i] = true;
                 changed = true;
                 this.showNotice('Award: ' + a.name);
@@ -367,15 +426,25 @@ export default {
             };
         });
     },
+    // The grid is a list of rows of GRID_COLUMNS tiles, so it scrolls if categories are added.
     refreshAchievements() {
-        let done = 0;
-        this.achievementItems = ACHIEVEMENTS.map((a, i) => {
+        const done = CATEGORIES.map(() => 0);
+        const total = CATEGORIES.map(() => 0);
+        ACHIEVEMENTS.forEach((a, i) => {
+            total[a.cat]++;
             if (this.achieved[i]) {
-                done++;
+                done[a.cat]++;
             }
-            return { title: a.name, detail: a.detail, done: this.achieved[i] };
         });
-        this.achievedText = done + ' / ' + ACHIEVEMENTS.length;
+        const rows = [];
+        CATEGORIES.forEach((c, i) => {
+            if (i % GRID_COLUMNS === 0) {
+                rows.push({ cats: [] });
+            }
+            rows[rows.length - 1].cats.push({ id: i, name: c.name, icon: iconPath(c.icon), count: done[i] + ' / ' + total[i] });
+        });
+        this.awardRows = rows;
+        this.achievedText = done.reduce((a, b) => a + b, 0) + ' / ' + ACHIEVEMENTS.length;
     },
     save() {
         clearTimeout(saveTimer);

@@ -46,16 +46,36 @@
             </list-item>
         </list>
     </div>
-    <div class="view" if="{{ view === 'achievements' }}">
-        <text class="count">{{ achievedText }}</text>
-        <list class="shop" ref="achievementList">
-            <list-item class="item" for="{{ achievementItems }}">
-                <text class="item-name" if="{{ $item.done }}">{{ $item.title }}</text>
-                <text class="item-name-off" if="{{ !$item.done }}">{{ $item.title }}</text>
-                <text class="item-detail" if="{{ $item.done }}">{{ $item.detail }}</text>
-                <text class="item-detail-off" if="{{ !$item.done }}">{{ $item.detail }}</text>
+    <div class="shop-view" if="{{ view === 'achievements' }}" onswipe="swipeBack">
+        <text class="title">Awards</text>
+        <text class="rate">{{ achievedText }}</text>
+        <list class="award-grid" ref="achievementList">
+            <list-item class="award-row" for="{{ (ri, row) in awardRows }}">
+                <div class="award-tile" for="{{ (ci, cat) in row.cats }}" onclick="openCategory(cat.id)">
+                    <image class="award-tile-icon" src="{{ cat.icon }}"></image>
+                    <text class="award-tile-name">{{ cat.name }}</text>
+                    <text class="award-tile-count">{{ cat.count }}</text>
+                </div>
             </list-item>
         </list>
-        <text class="button-wide" onclick="closeView">Back</text>
+    </div>
+    <div class="shop-view" if="{{ view === 'category' }}" onswipe="swipeCategory">
+        <text class="title">{{ categoryTitle }}</text>
+        <text class="rate">{{ categoryCount }}</text>
+        <list class="award-list" ref="categoryList">
+            <list-item class="award-item" for="{{ categoryItems }}">
+                <image class="award-icon" src="{{ $item.icon }}"></image>
+                <div class="award-text">
+                    <text class="award-name">{{ $item.title }}</text>
+                    <text class="award-detail">{{ $item.detail }}</text>
+                    <div class="progress-row" if="{{ $item.progress }}">
+                        <progress class="bar" type="horizontal" percent="{{ $item.percent }}"></progress>
+                        <text class="progress-text">{{ $item.progressText }}</text>
+                    </div>
+                </div>
+                <image class="status" if="{{ $item.done }}" src="/common/awards/check.png"></image>
+                <image class="status" if="{{ !$item.done }}" src="/common/awards/lock.png"></image>
+            </list-item>
+        </list>
     </div>
 </div>
