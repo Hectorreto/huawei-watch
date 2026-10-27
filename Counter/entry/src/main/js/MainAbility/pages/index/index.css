@@ -117,34 +117,81 @@
   text-align: center;
 }
 
-/* "+N" below the capsule, in a small dark pill so it reads on the cookie. index.js swaps
-   which of two "if" texts exists, so each tap creates a new text and its animation starts
-   again (lite cannot bind class). */
+/* "+N" in white with a dark outline so it reads on the cookie. Lite text has no shadow or
+   stroke, so the outline is four dark copies 2 px off diagonally, under the white text.
+   index.js places each row at a random left/top and creates a new group in it per tap, so
+   the animations start again. The position is on the row, as the old fixed row was: a first
+   try with it on the animated text showed the "+N" and hid it at once. Each copy has its own
+   class with left/top, since a bound position on an animated text breaks the animation. */
 .plus-row {
-  width: 140px;
-  height: 40px;
-  left: 163px;
-  top: 165px;
+  width: 144px;
+  height: 44px;
 }
 .plus {
+  left: 2px;
+  top: 2px;
+  color: #ffffff;
   width: 140px;
   height: 40px;
   font-size: 30px;
-  color: #ffffff;
-  background-color: #000000;
-  border-radius: 20px;
   text-align: center;
-  animation-name: float;
-  animation-duration: 600ms;
+  animation-name: fade;
+  animation-duration: 1000ms;
   animation-fill-mode: forwards;
 }
-@keyframes float {
+.plus-outline-1 {
+  left: 0px;
+  top: 0px;
+  color: #1a0f08;
+  width: 140px;
+  height: 40px;
+  font-size: 30px;
+  text-align: center;
+  animation-name: fade;
+  animation-duration: 1000ms;
+  animation-fill-mode: forwards;
+}
+.plus-outline-2 {
+  left: 4px;
+  top: 0px;
+  color: #1a0f08;
+  width: 140px;
+  height: 40px;
+  font-size: 30px;
+  text-align: center;
+  animation-name: fade;
+  animation-duration: 1000ms;
+  animation-fill-mode: forwards;
+}
+.plus-outline-3 {
+  left: 0px;
+  top: 4px;
+  color: #1a0f08;
+  width: 140px;
+  height: 40px;
+  font-size: 30px;
+  text-align: center;
+  animation-name: fade;
+  animation-duration: 1000ms;
+  animation-fill-mode: forwards;
+}
+.plus-outline-4 {
+  left: 4px;
+  top: 4px;
+  color: #1a0f08;
+  width: 140px;
+  height: 40px;
+  font-size: 30px;
+  text-align: center;
+  animation-name: fade;
+  animation-duration: 1000ms;
+  animation-fill-mode: forwards;
+}
+@keyframes fade {
   from {
-    transform: translateY(20px);
     opacity: 1;
   }
   to {
-    transform: translateY(-10px);
     opacity: 0;
   }
 }

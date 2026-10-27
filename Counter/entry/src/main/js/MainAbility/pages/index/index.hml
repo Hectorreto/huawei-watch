@@ -9,10 +9,86 @@
             <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
             <text class="notice" if="{{ noticeText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
         </div>
-        <div class="plus-row" if="{{ !menu }}">
-            <text class="plus" if="{{ plus === 'a' }}">{{ plusText }}</text>
-            <text class="plus" if="{{ plus === 'b' }}">{{ plusText }}</text>
-        </div>
+        <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="swipeCookie">
+            <stack class="plus-row" if="{{ plus0 === 'a' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+            <stack class="plus-row" if="{{ plus0 === 'b' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+        </stack>
+        <stack class="plus-row" if="{{ plus1 !== '' && !menu }}" style="left: {{ plusX1 }}px; top: {{ plusY1 }}px;" onclick="increment" onswipe="swipeCookie">
+            <stack class="plus-row" if="{{ plus1 === 'a' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+            <stack class="plus-row" if="{{ plus1 === 'b' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+        </stack>
+        <stack class="plus-row" if="{{ plus2 !== '' && !menu }}" style="left: {{ plusX2 }}px; top: {{ plusY2 }}px;" onclick="increment" onswipe="swipeCookie">
+            <stack class="plus-row" if="{{ plus2 === 'a' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+            <stack class="plus-row" if="{{ plus2 === 'b' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+        </stack>
+        <stack class="plus-row" if="{{ plus3 !== '' && !menu }}" style="left: {{ plusX3 }}px; top: {{ plusY3 }}px;" onclick="increment" onswipe="swipeCookie">
+            <stack class="plus-row" if="{{ plus3 === 'a' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+            <stack class="plus-row" if="{{ plus3 === 'b' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+        </stack>
+        <stack class="plus-row" if="{{ plus4 !== '' && !menu }}" style="left: {{ plusX4 }}px; top: {{ plusY4 }}px;" onclick="increment" onswipe="swipeCookie">
+            <stack class="plus-row" if="{{ plus4 === 'a' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+            <stack class="plus-row" if="{{ plus4 === 'b' }}">
+                <text class="plus-outline-1">{{ plusText }}</text>
+                <text class="plus-outline-2">{{ plusText }}</text>
+                <text class="plus-outline-3">{{ plusText }}</text>
+                <text class="plus-outline-4">{{ plusText }}</text>
+                <text class="plus">{{ plusText }}</text>
+            </stack>
+        </stack>
         <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
         <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="swipeCookie"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>

@@ -5,6 +5,15 @@ import vibrator from '@system.vibrator';
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
+// Each tap shows its "+N" at a random spot on the cookie, below the capsule. The page has
+// PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
+// the animation in index.css. The area keeps the 144x44 row inside the round screen.
+const PLUS_SLOTS = 5;
+const PLUS_MS = 1000;
+const PLUS_X_MIN = 60;
+const PLUS_X_MAX = 262;
+const PLUS_Y_MIN = 180;
+const PLUS_Y_MAX = 340;
 
 // Every text the player sees, per language. Names in the tables below have one per language too.
 const TEXTS = {
@@ -115,6 +124,8 @@ function iconPath(icon) {
 }
 
 let saveTimer = null;
+let plusSlot = 0;
+let plusTimers = [];
 let tickTimer = null;
 let noticeTimer = null;
 let notices = [];
@@ -127,6 +138,10 @@ let loaded = false;
 
 function nextGolden() {
     return GOLDEN_MIN_S + Math.floor(Math.random() * (GOLDEN_MAX_S - GOLDEN_MIN_S + 1));
+}
+
+function randomBetween(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
 }
 
 function format(n) {
@@ -194,7 +209,9 @@ export default {
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
         cookieSmall: themePath(THEMES[0].id, '_small'),
-        plus: ''
+        plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
+        plusX0: 0, plusX1: 0, plusX2: 0, plusX3: 0, plusX4: 0,
+        plusY0: 0, plusY1: 0, plusY2: 0, plusY3: 0, plusY4: 0
     },
     onInit() {
         this.achieved = ACHIEVEMENTS.map(() => false);
@@ -335,12 +352,26 @@ export default {
         this.bake(this.tapPower * this.multiplier());
         this.vibrate('short');
 
-        this.plus = this.plus === 'a' ? 'b' : 'a';
+        this.showPlus();
 
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             this.save();
         }, SAVE_DELAY_MS);
+    },
+    // Moves the next slot to a random spot and swaps which of its two "if" texts exists, so a
+    // new text is created and its animation starts again (lite cannot bind class). The slot is
+    // removed once it has faded, since a text left on the cookie would still catch taps.
+    showPlus() {
+        const i = plusSlot;
+        plusSlot = (plusSlot + 1) % PLUS_SLOTS;
+        this['plusX' + i] = randomBetween(PLUS_X_MIN, PLUS_X_MAX);
+        this['plusY' + i] = randomBetween(PLUS_Y_MIN, PLUS_Y_MAX);
+        this['plus' + i] = this['plus' + i] === 'a' ? 'b' : 'a';
+        clearTimeout(plusTimers[i]);
+        plusTimers[i] = setTimeout(() => {
+            this['plus' + i] = '';
+        }, PLUS_MS);
     },
     // A sideways swipe opens the menu, or closes it if it is open.
     swipeCookie(e) {
