@@ -1,6 +1,6 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
-        <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="swipeCookie">
+        <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <image class="cookie" src="{{ cookieSrc }}"></image>
         </div>
         <div class="capsule" if="{{ !menu }}">
@@ -9,7 +9,7 @@
             <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
             <text class="notice" if="{{ noticeText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
         </div>
-        <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="swipeCookie">
+        <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus0 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>
                 <text class="plus-outline-2">{{ plusText }}</text>
@@ -25,7 +25,7 @@
                 <text class="plus">{{ plusText }}</text>
             </stack>
         </stack>
-        <stack class="plus-row" if="{{ plus1 !== '' && !menu }}" style="left: {{ plusX1 }}px; top: {{ plusY1 }}px;" onclick="increment" onswipe="swipeCookie">
+        <stack class="plus-row" if="{{ plus1 !== '' && !menu }}" style="left: {{ plusX1 }}px; top: {{ plusY1 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus1 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>
                 <text class="plus-outline-2">{{ plusText }}</text>
@@ -41,7 +41,7 @@
                 <text class="plus">{{ plusText }}</text>
             </stack>
         </stack>
-        <stack class="plus-row" if="{{ plus2 !== '' && !menu }}" style="left: {{ plusX2 }}px; top: {{ plusY2 }}px;" onclick="increment" onswipe="swipeCookie">
+        <stack class="plus-row" if="{{ plus2 !== '' && !menu }}" style="left: {{ plusX2 }}px; top: {{ plusY2 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus2 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>
                 <text class="plus-outline-2">{{ plusText }}</text>
@@ -57,7 +57,7 @@
                 <text class="plus">{{ plusText }}</text>
             </stack>
         </stack>
-        <stack class="plus-row" if="{{ plus3 !== '' && !menu }}" style="left: {{ plusX3 }}px; top: {{ plusY3 }}px;" onclick="increment" onswipe="swipeCookie">
+        <stack class="plus-row" if="{{ plus3 !== '' && !menu }}" style="left: {{ plusX3 }}px; top: {{ plusY3 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus3 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>
                 <text class="plus-outline-2">{{ plusText }}</text>
@@ -73,7 +73,7 @@
                 <text class="plus">{{ plusText }}</text>
             </stack>
         </stack>
-        <stack class="plus-row" if="{{ plus4 !== '' && !menu }}" style="left: {{ plusX4 }}px; top: {{ plusY4 }}px;" onclick="increment" onswipe="swipeCookie">
+        <stack class="plus-row" if="{{ plus4 !== '' && !menu }}" style="left: {{ plusX4 }}px; top: {{ plusY4 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus4 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>
                 <text class="plus-outline-2">{{ plusText }}</text>
@@ -89,8 +89,8 @@
                 <text class="plus">{{ plusText }}</text>
             </stack>
         </stack>
-        <div class="menu-bg" if="{{ menu }}" onswipe="swipeCookie"></div>
-        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="swipeCookie"></image>
+        <div class="menu-bg" if="{{ menu }}" onswipe="edgeSwipe" ontouchstart="touchStart"></div>
+        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
         <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png" onclick="openSettings"></image>
@@ -100,7 +100,7 @@
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
     </stack>
-    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="swipeBack">
+    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
         <text class="title">{{ t.shop }}</text>
@@ -122,7 +122,7 @@
             </list-item>
         </list>
     </div>
-    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="swipeBack">
+    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
         <text class="title">{{ t.upgrades }}</text>
@@ -144,7 +144,7 @@
             </list-item>
         </list>
     </div>
-    <div class="shop-view" if="{{ view === 'stats' }}" onswipe="swipeBack">
+    <div class="shop-view" if="{{ view === 'stats' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
         <text class="title">{{ t.stats }}</text>
@@ -158,7 +158,7 @@
             </list-item>
         </list>
     </div>
-    <div class="shop-view" if="{{ view === 'achievements' }}" onswipe="swipeBack">
+    <div class="shop-view" if="{{ view === 'achievements' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="title">{{ t.awards }}</text>
         <text class="rate">{{ achievedText }}</text>
         <list class="award-grid" ref="achievementList">
@@ -171,7 +171,7 @@
             </list-item>
         </list>
     </div>
-    <div class="shop-view" if="{{ view === 'category' }}" onswipe="swipeCategory">
+    <div class="shop-view" if="{{ view === 'category' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="title">{{ categoryTitle }}</text>
         <text class="rate">{{ categoryCount }}</text>
         <list class="award-list" ref="categoryList">
@@ -190,7 +190,7 @@
             </list-item>
         </list>
     </div>
-    <div class="settings-view" if="{{ view === 'settings' }}" onswipe="swipeBack">
+    <div class="settings-view" if="{{ view === 'settings' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="title">{{ t.settings }}</text>
         <list class="settings-list" ref="settingsList">
             <list-item class="settings-item" onclick="toggleVibration">
@@ -219,7 +219,7 @@
             </list-item>
         </list>
     </div>
-    <div class="settings-view" if="{{ view === 'themes' }}" onswipe="swipeThemes">
+    <div class="settings-view" if="{{ view === 'themes' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="title">{{ t.theme }}</text>
         <list class="settings-list" ref="themeList">
             <list-item class="shop-item" for="{{ themeItems }}" onclick="chooseTheme($item.id)">
@@ -229,7 +229,7 @@
             </list-item>
         </list>
     </div>
-    <div class="confirm-view" if="{{ view === 'confirmReset' }}" onswipe="swipeConfirm">
+    <div class="confirm-view" if="{{ view === 'confirmReset' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <image class="settings-icon" src="/common/settings/reset.png"></image>
         <text class="confirm-title">{{ t.resetTitle }}</text>
         <text class="confirm-detail">{{ t.resetDetail }}</text>

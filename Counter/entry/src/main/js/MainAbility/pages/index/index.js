@@ -87,6 +87,8 @@ const FRENZY_MULT = 7;
 const FRENZY_S = 30;
 // The list only exists once the view has rendered, so its crown focus is requested a bit later.
 const FOCUS_DELAY_MS = 50;
+// The only gesture is a swipe that starts this close to the left edge and goes towards the centre.
+const EDGE_PX = 60;
 
 // The awards grid: one tile per category. Icons are paths under /common/ without ".png".
 const CATEGORIES = [
@@ -125,6 +127,8 @@ function iconPath(icon) {
 
 let saveTimer = null;
 let plusSlot = 0;
+// Where the last touch started, for the edge swipe; -1 when the event gave no position.
+let touchX = -1;
 let plusTimers = [];
 let tickTimer = null;
 let noticeTimer = null;
@@ -373,10 +377,33 @@ export default {
             this['plus' + i] = '';
         }, PLUS_MS);
     },
-    // A sideways swipe opens the menu, or closes it if it is open.
-    swipeCookie(e) {
-        if (e.direction === 'left' || e.direction === 'right') {
+    // Lite touch events carry the position on the event itself (globalX), not in touches[].
+    touchStart(e) {
+        touchX = typeof e.globalX === 'number' ? e.globalX : -1;
+    },
+    // The app's only gesture: a swipe from the left edge towards the centre. On the cookie it
+    // opens the menu, or closes it if it is open; elsewhere it goes back one screen.
+    // Switching views inside the swipe event left the grid tiles ignoring taps in the
+    // Previewer, so the view changes after the event ends.
+    edgeSwipe(e) {
+        if (e.direction !== 'right' || touchX < 0 || touchX > EDGE_PX) {
+            return;
+        }
+        if (this.view === 'cookie') {
             this.menu = !this.menu;
+            return;
+        }
+        setTimeout(() => {
+            this.back();
+        }, 0);
+    },
+    back() {
+        if (this.view === 'category') {
+            this.openAchievements();
+        } else if (this.view === 'themes' || this.view === 'confirmReset') {
+            this.openSettings();
+        } else {
+            this.closeView();
         }
     },
     closeMenu() {
@@ -455,15 +482,6 @@ export default {
         this.view = 'category';
         this.focusCrown('categoryList');
     },
-    // A sideways swipe in a category goes back to the grid. Switching views inside the swipe
-    // event left the grid tiles ignoring taps in the Previewer, so it waits for the event to end.
-    swipeCategory(e) {
-        if (e.direction === 'left' || e.direction === 'right') {
-            setTimeout(() => {
-                this.openAchievements();
-            }, 0);
-        }
-    },
     openSettings() {
         this.menu = false;
         this.view = 'settings';
@@ -516,15 +534,6 @@ export default {
         this.cookieSmall = themePath(theme, '_small');
         this.refreshThemes();
     },
-    // A sideways swipe in the theme list goes back to the settings, after the swipe event ends
-    // (see swipeCategory).
-    swipeThemes(e) {
-        if (e.direction === 'left' || e.direction === 'right') {
-            setTimeout(() => {
-                this.openSettings();
-            }, 0);
-        }
-    },
     saveSettings() {
         storage.set({ key: 'settings', value: [this.vibration ? 1 : 0, this.lang, this.theme].join(',') });
     },
@@ -533,14 +542,6 @@ export default {
     },
     cancelReset() {
         this.openSettings();
-    },
-    // A sideways swipe on the confirmation cancels, after the swipe event ends (see swipeCategory).
-    swipeConfirm(e) {
-        if (e.direction === 'left' || e.direction === 'right') {
-            setTimeout(() => {
-                this.cancelReset();
-            }, 0);
-        }
     },
     // Back to a new game. Settings are kept.
     confirmReset() {
@@ -569,14 +570,6 @@ export default {
                 list.rotation({ focus: true });
             }
         }, FOCUS_DELAY_MS);
-    },
-    // A sideways swipe goes back to the cookie, after the swipe event ends (see swipeCategory).
-    swipeBack(e) {
-        if (e.direction === 'left' || e.direction === 'right') {
-            setTimeout(() => {
-                this.closeView();
-            }, 0);
-        }
     },
     closeView() {
         this.view = 'cookie';
