@@ -19,12 +19,6 @@
   width: 466px;
   height: 466px;
 }
-/* The same image, scaled smaller, while a tap is held. */
-.cookie-pressed {
-  width: 438px;
-  height: 438px;
-  margin: 14px;
-}
 /* Dark capsule so the count and the rate stay readable over the cookie.
    300 px fits the round screen at this height. */
 .capsule {

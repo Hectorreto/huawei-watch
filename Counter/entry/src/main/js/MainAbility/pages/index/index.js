@@ -1,7 +1,6 @@
 import storage from '@system.storage';
 import vibrator from '@system.vibrator';
 
-const PRESS_MS = 120;
 // Saving on every tap or tick would write flash constantly; save once taps pause,
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
@@ -35,7 +34,7 @@ const TEXTS = {
 const LANGUAGES = ['en', 'es'];
 
 // The cookie the player taps. Each id has two pixel-art images in /common/themes/, scaled up with
-// nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big and pressed
+// nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big
 // cookie) and <id>_small.png (170 px, menu centre, theme list and settings row).
 // The id is what the settings save, so ids must not change. The first one is the default.
 const THEMES = [
@@ -115,7 +114,6 @@ function iconPath(icon) {
     return '/common/' + icon + '.png';
 }
 
-let pressTimer = null;
 let saveTimer = null;
 let tickTimer = null;
 let noticeTimer = null;
@@ -196,7 +194,6 @@ export default {
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
         cookieSmall: themePath(THEMES[0].id, '_small'),
-        pressed: false,
         plus: ''
     },
     onInit() {
@@ -337,12 +334,6 @@ export default {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
         this.vibrate('short');
-
-        this.pressed = true;
-        clearTimeout(pressTimer);
-        pressTimer = setTimeout(() => {
-            this.pressed = false;
-        }, PRESS_MS);
 
         this.plus = this.plus === 'a' ? 'b' : 'a';
 
