@@ -1,5 +1,4 @@
 import storage from '@system.storage';
-import vibrator from '@system.vibrator';
 
 // Saving on every tap or tick would write flash constantly; save once taps pause,
 // and every few seconds while cookies are produced on their own.
@@ -23,7 +22,7 @@ const TEXTS = {
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played',
-        vibration: 'Vibration', theme: 'Theme',
+        theme: 'Theme',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
         cancel: 'Cancel', resetConfirm: 'Reset'
@@ -34,7 +33,7 @@ const TEXTS = {
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado',
-        vibration: 'Vibración', theme: 'Tema',
+        theme: 'Tema',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
         cancel: 'Cancelar', resetConfirm: 'Resetear'
@@ -184,7 +183,6 @@ export default {
         menu: false,
         lang: 'en',
         t: TEXTS.en,
-        vibration: true,
         theme: THEMES[0].id,
         themeItems: [],
         count: 0,
@@ -221,17 +219,18 @@ export default {
         this.achieved = ACHIEVEMENTS.map(() => false);
         this.setOwned(this.owned);
         goldenIn = nextGolden();
-        // "vibration,language,theme", e.g. "1,en,concha". Settings are not part of the game,
+        // "language,theme", e.g. "en,concha". Settings are not part of the game,
         // so they load on their own and a reset keeps them.
         load('settings', '', (settings) => {
             const parts = settings.split(',');
-            // Older saves started with a sound setting, which no longer exists: "sound,vibration,language".
-            if (parts.length === 3 && LANGUAGES.indexOf(parts[2]) >= 0) {
-                parts.shift();
+            // Older saves had settings that no longer exist before the language
+            // ("vibration,language,theme", and before that "sound,vibration,language").
+            let i = 0;
+            while (i < parts.length && LANGUAGES.indexOf(parts[i]) < 0) {
+                i++;
             }
-            this.vibration = parts[0] !== '0';
-            this.setLanguage(LANGUAGES.indexOf(parts[1]) >= 0 ? parts[1] : 'en');
-            this.setTheme(parts[2]);
+            this.setLanguage(i < parts.length ? parts[i] : 'en');
+            this.setTheme(parts[i + 1]);
         });
         // Chained so the offline earnings use the loaded upgrades, and achievements
         // are checked against the whole save.
@@ -276,7 +275,6 @@ export default {
         const earned = this.cps * Math.min(seconds, OFFLINE_MAX_S);
         this.bake(earned);
         this.save();
-        this.vibrate('long');
         this.showNotice('+' + format(earned) + this.t.away);
     },
     showNotice(text) {
@@ -334,7 +332,6 @@ export default {
         }
     },
     clickGolden() {
-        this.vibrate('long');
         this.golden = '';
         goldenIn = nextGolden();
         this.goldenClicks++;
@@ -343,18 +340,12 @@ export default {
         this.updateRates();
         this.checkAchievements();
     },
-    vibrate(mode) {
-        if (this.vibration) {
-            vibrator.vibrate({ mode: mode });
-        }
-    },
     multiplier() {
         return this.frenzyLeft > 0 ? FRENZY_MULT : 1;
     },
     increment() {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
-        this.vibrate('short');
 
         this.showPlus();
 
@@ -487,11 +478,6 @@ export default {
         this.view = 'settings';
         this.focusCrown('settingsList');
     },
-    toggleVibration() {
-        this.vibration = !this.vibration;
-        this.saveSettings();
-        this.vibrate('short');
-    },
     toggleLanguage() {
         this.setLanguage(LANGUAGES[(LANGUAGES.indexOf(this.lang) + 1) % LANGUAGES.length]);
         this.saveSettings();
@@ -521,7 +507,6 @@ export default {
         }));
     },
     chooseTheme(index) {
-        this.vibrate('short');
         this.setTheme(THEMES[index].id);
         this.saveSettings();
         this.openSettings();
@@ -535,7 +520,7 @@ export default {
         this.refreshThemes();
     },
     saveSettings() {
-        storage.set({ key: 'settings', value: [this.vibration ? 1 : 0, this.lang, this.theme].join(',') });
+        storage.set({ key: 'settings', value: [this.lang, this.theme].join(',') });
     },
     openResetConfirm() {
         this.view = 'confirmReset';
@@ -559,7 +544,6 @@ export default {
         this.setOwned(UPGRADES.map(() => 0));
         this.setCount(0);
         this.save();
-        this.vibrate('long');
         this.view = 'cookie';
     },
     // Turning the crown scrolls the list that has the crown focus.
@@ -577,10 +561,8 @@ export default {
     buy(index) {
         const price = this.price(index);
         if (this.count < price) {
-            this.vibrate('long');
             return;
         }
-        this.vibrate('short');
         const owned = this.owned.slice();
         owned[index]++;
         this.count -= price;
@@ -641,7 +623,6 @@ export default {
         });
         if (changed) {
             this.achieved = achieved;
-            this.vibrate('long');
             this.save();
         }
     },

@@ -193,14 +193,6 @@
     <div class="settings-view" if="{{ view === 'settings' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="title">{{ t.settings }}</text>
         <list class="settings-list" ref="settingsList">
-            <list-item class="settings-item" onclick="toggleVibration">
-                <image class="settings-icon" src="/common/settings/vibration.png"></image>
-                <text class="settings-label">{{ t.vibration }}</text>
-                <div class="settings-right">
-                    <div class="toggle-on" if="{{ vibration }}"><div class="knob"></div></div>
-                    <div class="toggle-off" if="{{ !vibration }}"><div class="knob"></div></div>
-                </div>
-            </list-item>
             <list-item class="settings-item" onclick="openThemes">
                 <image class="settings-icon" src="/common/settings/theme.png"></image>
                 <text class="settings-label">{{ t.theme }}</text>

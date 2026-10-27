@@ -24,4 +24,4 @@ Confirmed October 2026: after unpairing the watch from the Android phone and pai
 
 ## Install errors
 
-- **"Installation failed: 46. Invalid value entered for module.abilities.permissions."** The HAP declared `reqPermissions` with only `name` (`ohos.permission.VIBRATE`). The build accepts that, but the watch's installer rejects it. Each permission also needs `reason` and `usedScene` (`ability: [".MainAbility"]`, `when: "inuse"`), as in `Counter/entry/src/main/config.json`. With them, the watch installed the app (confirmed October 2026).
+- **"Installation failed: 46. Invalid value entered for module.abilities.permissions."** The HAP declared `reqPermissions` with only `name` (`ohos.permission.VIBRATE`). The build accepts that, but the watch's installer rejects it. Each permission also needs `reason` and `usedScene` (`ability: [".MainAbility"]`, `when: "inuse"`). With them, the watch installed the app (confirmed October 2026). The app no longer asks for any permission (vibration was removed), so `config.json` has no `reqPermissions`; a permission added later needs that same form.
