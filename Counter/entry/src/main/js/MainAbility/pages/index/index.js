@@ -4,7 +4,7 @@ import storage from '@system.storage';
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
-// Each tap shows its "+N" at a random spot on the cookie, below the capsule. The page has
+// Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
 // PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
 // the animation in index.css. The area keeps the 144x44 row inside the round screen.
 const PLUS_SLOTS = 5;
@@ -13,6 +13,14 @@ const PLUS_X_MIN = 60;
 const PLUS_X_MAX = 262;
 const PLUS_Y_MIN = 180;
 const PLUS_Y_MAX = 340;
+// The count and the line under it are laid out letter by letter along the round top edge.
+// Each letter is centred on a circle around the screen centre; width is its rough advance
+// as a share of the font size, since lite cannot measure text. Lite cannot rotate text,
+// so the letters stay upright.
+const SCREEN_CENTRE = 233;
+const COUNT_ARC = { radius: 215, font: 38, boxW: 44, boxH: 50 };
+const SUB_ARC = { radius: 177, font: 30, boxW: 36, boxH: 40 };
+const COUNT_DIGITS = 9;
 
 // Every text the player sees, per language. Names in the tables below have one per language too.
 const TEXTS = {
@@ -132,6 +140,9 @@ let plusTimers = [];
 let tickTimer = null;
 let noticeTimer = null;
 let notices = [];
+let arcCount = '';
+let arcSub = '';
+let arcSubGold = false;
 let ticks = 0;
 let goldenIn = 0;
 let goldenLeft = 0;
@@ -155,6 +166,71 @@ function format(n) {
         }
     }
     return String(n);
+}
+
+// The big count: up to COUNT_DIGITS digits with commas, then in thousands with K, M or B,
+// and past 999,999,999B in scientific notation.
+function formatCount(n) {
+    const limit = Math.pow(10, COUNT_DIGITS);
+    const units = ['', 'K', 'M', 'B'];
+    let v = Math.floor(n);
+    let i = 0;
+    while (v >= limit && i < units.length - 1) {
+        v = Math.floor(v / 1000);
+        i++;
+    }
+    if (v >= limit) {
+        return n.toExponential(2).replace('+', '');
+    }
+    let digits = String(v);
+    let text = '';
+    while (digits.length > 3) {
+        text = ',' + digits.slice(-3) + text;
+        digits = digits.slice(0, -3);
+    }
+    return digits + text + units[i];
+}
+
+function charWidth(c) {
+    if (c === ',' || c === '.' || c === ' ' || c === ':') {
+        return 0.3;
+    }
+    if (c === '/' || c === "'") {
+        return 0.4;
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return c === 'M' || c === 'W' ? 0.85 : 0.72;
+    }
+    if (c === 'm' || c === 'w') {
+        return 0.8;
+    }
+    if (c === 'i' || c === 'l' || c === 'j' || c === 'f' || c === 't' || c === 'r') {
+        return 0.35;
+    }
+    return 0.58;
+}
+
+// One { c, x, y, gold } per letter of text, with x/y the left/top of its box.
+function arcChars(text, arc, gold) {
+    const widths = [];
+    let total = 0;
+    for (let i = 0; i < text.length; i++) {
+        widths.push(charWidth(text.charAt(i)) * arc.font);
+        total += widths[i];
+    }
+    const out = [];
+    let at = -total / 2;
+    for (let i = 0; i < text.length; i++) {
+        const angle = (at + widths[i] / 2) / arc.radius;
+        at += widths[i];
+        out.push({
+            c: text.charAt(i),
+            gold: gold,
+            x: Math.round(SCREEN_CENTRE + arc.radius * Math.sin(angle) - arc.boxW / 2),
+            y: Math.round(SCREEN_CENTRE - arc.radius * Math.cos(angle) - arc.boxH / 2)
+        });
+    }
+    return out;
 }
 
 // 1h 24m once past an hour, otherwise 5m 17s.
@@ -187,6 +263,8 @@ export default {
         themeItems: [],
         count: 0,
         countText: '0',
+        countChars: [],
+        subChars: [],
         baked: 0,
         taps: 0,
         goldenClicks: 0,
@@ -285,6 +363,7 @@ export default {
     },
     nextNotice() {
         this.noticeText = notices.length > 0 ? notices.shift() : '';
+        this.updateArc();
         if (this.noticeText !== '') {
             clearTimeout(noticeTimer);
             noticeTimer = setTimeout(() => {
@@ -580,7 +659,8 @@ export default {
     },
     setCount(count) {
         this.count = count;
-        this.countText = format(count);
+        this.countText = formatCount(count);
+        this.updateArc();
         if (this.view === 'shop' || this.view === 'upgrades') {
             this.refreshItems();
         }
@@ -603,6 +683,22 @@ export default {
     updateRates() {
         this.plusText = '+' + format(this.tapPower * this.multiplier());
         this.rateText = format(this.cps * this.multiplier()) + ' / s';
+        this.updateArc();
+    },
+    // The curved count and the line under it (a notice, else the frenzy, else the rate).
+    // Rebuilt only when the text changes, as new arrays (see refreshItems).
+    updateArc() {
+        if (this.countText !== arcCount) {
+            arcCount = this.countText;
+            this.countChars = arcChars(arcCount, COUNT_ARC, false);
+        }
+        const gold = this.noticeText !== '' || this.frenzyText !== '';
+        const sub = this.noticeText !== '' ? this.noticeText : (this.frenzyText !== '' ? this.frenzyText : this.rateText);
+        if (sub !== arcSub || gold !== arcSubGold) {
+            arcSub = sub;
+            arcSubGold = gold;
+            this.subChars = arcChars(sub, SUB_ARC, gold);
+        }
     },
     gameState() {
         return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps };

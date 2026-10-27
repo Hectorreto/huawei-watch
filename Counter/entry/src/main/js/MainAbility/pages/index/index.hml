@@ -4,12 +4,17 @@
             <image class="cookie" src="{{ cookieSrc }}"></image>
         </div>
         <image class="vignette" if="{{ !menu }}" src="/common/vignette.png" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
-        <div class="capsule" if="{{ !menu }}">
-            <text class="count">{{ countText }}</text>
-            <text class="rate" if="{{ noticeText === '' && frenzyText === '' }}">{{ rateText }}</text>
-            <text class="notice" if="{{ noticeText !== '' }}">{{ noticeText }}</text>
-            <text class="notice" if="{{ noticeText === '' && frenzyText !== '' }}">{{ frenzyText }}</text>
-        </div>
+        <stack class="arc" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
+            <stack class="arc-count" for="{{ countChars }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px;">
+                <text class="arc-count-shadow">{{ $item.c }}</text>
+                <text class="arc-count-text">{{ $item.c }}</text>
+            </stack>
+            <stack class="arc-sub" for="{{ subChars }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px;">
+                <text class="arc-sub-shadow">{{ $item.c }}</text>
+                <text class="arc-sub-text" if="{{ !$item.gold }}">{{ $item.c }}</text>
+                <text class="arc-sub-gold" if="{{ $item.gold }}">{{ $item.c }}</text>
+            </stack>
+        </stack>
         <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <stack class="plus-row" if="{{ plus0 === 'a' }}">
                 <text class="plus-outline-1">{{ plusText }}</text>

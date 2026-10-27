@@ -27,17 +27,68 @@
   left: 0px;
   top: 0px;
 }
-/* Dark capsule so the count and the rate stay readable over the cookie.
-   300 px fits the round screen at this height. */
-.capsule {
-  width: 300px;
-  height: 96px;
-  left: 83px;
-  top: 50px;
-  flex-direction: column;
-  align-items: center;
-  background-color: #000000;
-  border-radius: 48px;
+/* The count and the line under it (rate, notice or frenzy) curve along the top edge with no
+   background, one box per letter placed by index.js (arcChars). The vignette darkens the
+   edge and each letter has a dark copy 2 px down-right under it, so they read on the cookie.
+   The arc area takes taps, so it counts them like the cookie. */
+.arc {
+  width: 466px;
+  height: 150px;
+  left: 0px;
+  top: 0px;
+}
+.arc-count {
+  width: 46px;
+  height: 52px;
+}
+.arc-count-shadow {
+  left: 2px;
+  top: 2px;
+  width: 44px;
+  height: 50px;
+  font-size: 38px;
+  color: #1a0f08;
+  text-align: center;
+}
+.arc-count-text {
+  left: 0px;
+  top: 0px;
+  width: 44px;
+  height: 50px;
+  font-size: 38px;
+  color: #ffffff;
+  text-align: center;
+}
+.arc-sub {
+  width: 38px;
+  height: 42px;
+}
+.arc-sub-shadow {
+  left: 2px;
+  top: 2px;
+  width: 36px;
+  height: 40px;
+  font-size: 30px;
+  color: #1a0f08;
+  text-align: center;
+}
+.arc-sub-text {
+  left: 0px;
+  top: 0px;
+  width: 36px;
+  height: 40px;
+  font-size: 30px;
+  color: #d0d0d0;
+  text-align: center;
+}
+.arc-sub-gold {
+  left: 0px;
+  top: 0px;
+  width: 36px;
+  height: 40px;
+  font-size: 30px;
+  color: #f5c16c;
+  text-align: center;
 }
 /* Menu: a small cookie in the centre and six 100 px buttons on a 155 px circle around
    it, starting with the shop at the top and going clockwise. */
@@ -115,13 +166,6 @@
   height: 40px;
   font-size: 30px;
   color: #9a9a9a;
-  text-align: center;
-}
-.notice {
-  width: 100%;
-  height: 40px;
-  font-size: 30px;
-  color: #f5c16c;
   text-align: center;
 }
 
