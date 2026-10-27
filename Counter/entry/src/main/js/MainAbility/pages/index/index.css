@@ -19,6 +19,14 @@
   width: 466px;
   height: 466px;
 }
+/* Black radial vignette over the cookie, the same for every theme. It covers the whole
+   screen, so it takes the cookie's taps and swipe. */
+.vignette {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
 /* Dark capsule so the count and the rate stay readable over the cookie.
    300 px fits the round screen at this height. */
 .capsule {

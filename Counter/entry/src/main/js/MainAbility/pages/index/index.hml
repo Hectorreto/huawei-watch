@@ -3,6 +3,7 @@
         <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
             <image class="cookie" src="{{ cookieSrc }}"></image>
         </div>
+        <image class="vignette" if="{{ !menu }}" src="/common/vignette.png" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <div class="capsule" if="{{ !menu }}">
             <text class="count">{{ countText }}</text>
             <text class="rate" if="{{ noticeText === '' && frenzyText === '' }}">{{ rateText }}</text>
