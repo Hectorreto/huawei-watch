@@ -31,4 +31,5 @@ How to write them:
 - Creating the debug certificate, app ID or debug profile, the signing config, or building the signed package → `docs/sign-the-app.md`
 - Installing the signed app on the watch with DevEco Assistant → `docs/install-on-the-watch.md`
 - Choosing the toolchain, signing an app or installing it on the Watch GT 6 Pro (Android, iPhone, Gadgetbridge) → `docs/choose-a-development-path.md`
+- Choosing how to draw something (canvas, components, images, animations), or running the drawing lab → `docs/compare-drawing-methods.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`
