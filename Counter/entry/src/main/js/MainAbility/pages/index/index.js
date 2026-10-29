@@ -43,6 +43,8 @@ const TESTS = [
     { id: 'e1', name: 'Count rects', view: 'canvas', size: 466 },
     { id: 'e2', name: 'Count, new canvas', view: 'canvas', size: 466 },
     { id: 'e3', name: 'Count, 10 per step', view: 'canvas', size: 466 },
+    { id: 'e4', name: 'Count, text only', view: 'text' },
+    { id: 'e5', name: 'Count, text every 50', view: 'canvas', size: 466 },
     { id: 'h1', name: '100 divs', view: 'cells' },
     { id: 'h4', name: 'Div anim 60', view: 'mover' },
     { id: 'i1', name: 'Image swap 60', view: 'image' },
@@ -285,7 +287,8 @@ export default {
     // COUNT_MAX or until the watch fails. With recreateEvery > 0 (a multiple of perStep) the
     // canvas is removed and a new one made every that many squares, to see whether that
     // resets the limit. One square per step failed at 362, while 1,000 in one step worked.
-    countRects(recreateEvery, perStep) {
+    // The count is shown every statusEvery steps.
+    countRects(recreateEvery, perStep, statusEvery) {
         let drawn = 0;
         let steps = 0;
         let canvases = 1;
@@ -310,8 +313,10 @@ export default {
                 return;
             }
             steps++;
-            this.status = drawn + ' rects' + (perStep > 1 ? ', ' + steps + ' steps' : '') +
-                (recreateEvery > 0 ? ', canvas ' + canvases : '');
+            if (steps % statusEvery === 0) {
+                this.status = drawn + ' rects' + (perStep > 1 ? ', ' + steps + ' steps' : '') +
+                    (recreateEvery > 0 ? ', canvas ' + canvases : '');
+            }
             if (recreateEvery > 0 && drawn % recreateEvery === 0) {
                 canvases++;
                 this.size = 0;
@@ -329,14 +334,38 @@ export default {
         };
         timer = setTimeout(begin, CANVAS_WAIT_MS);
     },
+    // No canvas: only the count text changes every FRAME_MS, to see whether the steps
+    // themselves (a bound text update and a timer each) are what runs out.
+    countText() {
+        let steps = 0;
+        const step = () => {
+            if (this.running === '') {
+                return;
+            }
+            if (steps >= COUNT_MAX) {
+                this.finish(steps + ' steps OK');
+                return;
+            }
+            steps++;
+            this.status = steps + ' steps, no canvas';
+            timer = setTimeout(step, FRAME_MS);
+        };
+        step();
+    },
     e1() {
-        this.countRects(0, 1);
+        this.countRects(0, 1, 1);
     },
     e2() {
-        this.countRects(RECREATE_EVERY, 1);
+        this.countRects(RECREATE_EVERY, 1, 1);
     },
     e3() {
-        this.countRects(0, 10);
+        this.countRects(0, 10, 1);
+    },
+    e4() {
+        this.countText();
+    },
+    e5() {
+        this.countRects(0, 1, 50);
     },
     c6() {
         timer = setTimeout(() => {
