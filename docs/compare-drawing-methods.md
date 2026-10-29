@@ -77,7 +77,10 @@ GT 6 Pro (October 2026), about 30-100 times slower than the Previewer:
 | h5 | **Crash / reboot** |
 | i1 | 51 ms/frame |
 | p1 | 35 ms/frame |
-| i2, i3, k1, q1 | Ran without crashing; what they showed is not recorded yet |
+| i2 | Works: the frames change by themselves |
+| i3 | Draws nothing, as in the Previewer |
+| k1 | Turns in place, in the positioned `stack` |
+| q1 | Draws a QR code |
 
 What this shows:
 
