@@ -31,8 +31,8 @@
     "js": [
       {
         "pages": [
-          "pages/lab/lab",
-          "pages/index/index"
+          "pages/index/index",
+          "pages/game/game"
         ],
         "name": ".MainAbility"
       }
