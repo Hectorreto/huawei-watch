@@ -1,0 +1,151 @@
+.container {
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+}
+.menu {
+  width: 466px;
+  height: 466px;
+}
+.title-item {
+  width: 466px;
+  height: 100px;
+  justify-content: center;
+  align-items: flex-end;
+}
+.title {
+  width: 300px;
+  height: 44px;
+  font-size: 30px;
+  color: #ffe119;
+  text-align: center;
+}
+.item {
+  width: 466px;
+  height: 84px;
+  flex-direction: column;
+  align-items: center;
+}
+.name {
+  width: 340px;
+  height: 40px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.result {
+  width: 340px;
+  height: 32px;
+  font-size: 24px;
+  color: #aaaaaa;
+  text-align: center;
+}
+.stage {
+  width: 466px;
+  height: 466px;
+}
+.canvas-100 {
+  width: 100px;
+  height: 100px;
+  left: 183px;
+  top: 183px;
+}
+.canvas-200 {
+  width: 200px;
+  height: 200px;
+  left: 133px;
+  top: 133px;
+}
+.canvas-466 {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
+.cells {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
+.mover {
+  width: 40px;
+  height: 40px;
+  top: 213px;
+  background-color: #ffe119;
+}
+.picture {
+  width: 170px;
+  height: 170px;
+  left: 148px;
+  top: 148px;
+}
+.clock {
+  width: 300px;
+  height: 300px;
+  left: 83px;
+  top: 83px;
+}
+.hand {
+  width: 40px;
+  height: 140px;
+  pivot-x: 20px;
+  pivot-y: 140px;
+}
+/* Lite allows transform only inside @keyframes, so this checks whether that can rotate an image. */
+.spinner {
+  width: 170px;
+  height: 170px;
+  left: 148px;
+  top: 148px;
+  animation-name: spin;
+  animation-duration: 2000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.arc {
+  width: 400px;
+  height: 400px;
+  left: 33px;
+  top: 33px;
+  total-width: 20px;
+  color: #46f0f0;
+  background-color: #333333;
+}
+.chart {
+  width: 260px;
+  height: 140px;
+  left: 103px;
+  top: 163px;
+}
+.qr {
+  width: 200px;
+  height: 200px;
+  left: 133px;
+  top: 133px;
+}
+.status {
+  width: 360px;
+  height: 36px;
+  left: 53px;
+  top: 400px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+  background-color: #000000;
+}
+/* Covers the whole test so any tap goes back to the list. */
+.tap {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
