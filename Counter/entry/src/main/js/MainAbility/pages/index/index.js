@@ -1,5 +1,9 @@
 import storage from '@system.storage';
 import router from '@system.router';
+// The concha as canvas rects: 4 colours drawn in rows (1,962 rects) and 8 colours as merged
+// rectangles (2,724 rects). Made by tools/make_concha_rects.js.
+import CONCHA_4 from './concha4.js';
+import CONCHA_8 from './concha8.js';
 
 // Drawing lab: each test draws one thing with one technique and times it, so canvas,
 // plain components and the other lite components can be compared on the watch.
@@ -14,6 +18,8 @@ const FRAMES = 60;
 const FRAME_MS = 16;
 // Canvas tests wait for the canvas element to exist before asking for its context.
 const CANVAS_WAIT_MS = 50;
+// Rects drawn per step by drawInParts: about 85 ms of JS on the watch (0.34 ms per fillRect).
+const DRAW_PART = 250;
 const PALETTE = [
     '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6',
     '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3'
@@ -30,6 +36,13 @@ const TESTS = [
     { id: 'c5', name: 'Canvas 3500 rects', view: 'canvas', size: 466 },
     { id: 'c6', name: 'Canvas anim 60', view: 'canvas', size: 200 },
     { id: 'c7', name: 'Canvas arcs+text', view: 'canvas', size: 466 },
+    { id: 'c8', name: 'Canvas 1500 rects', view: 'canvas', size: 466 },
+    { id: 'c9', name: 'Canvas 2000 rects', view: 'canvas', size: 466 },
+    { id: 'c10', name: 'Canvas 2500 rects', view: 'canvas', size: 466 },
+    { id: 'c11', name: '3500 rects in parts', view: 'canvas', size: 466 },
+    { id: 'd1', name: 'Concha 4 col', view: 'canvas', size: 466 },
+    { id: 'd2', name: 'Concha 4 col parts', view: 'canvas', size: 466 },
+    { id: 'd3', name: 'Concha 8 col parts', view: 'canvas', size: 466 },
     { id: 'h1', name: '100 divs', view: 'cells' },
     { id: 'h2', name: '400 divs', view: 'cells' },
     { id: 'h3', name: '1000 divs', view: 'cells' },
@@ -43,20 +56,45 @@ const TESTS = [
     { id: 'q1', name: 'qrcode', view: 'qrcode' }
 ];
 
-// Squares in a grid filling the 466 px screen, as plain data for both canvas and divs.
-function grid(n, shift) {
+// Square i of n in a grid filling the 466 px screen. Canvas tests ask for one at a time,
+// so they keep no array; the div tests bind the whole list.
+function gridCell(i, n, shift) {
     const cols = Math.ceil(Math.sqrt(n));
     const size = Math.floor(466 / cols);
+    return {
+        x: (i % cols) * size,
+        y: Math.floor(i / cols) * size,
+        s: size - 1,
+        c: PALETTE[(i * 7 + (shift || 0)) % PALETTE.length]
+    };
+}
+
+function grid(n, shift) {
     const cells = [];
     for (let i = 0; i < n; i++) {
-        cells.push({
-            x: (i % cols) * size,
-            y: Math.floor(i / cols) * size,
-            s: size - 1,
-            c: PALETTE[(i * 7 + (shift || 0)) % PALETTE.length]
-        });
+        cells.push(gridCell(i, n, shift));
     }
     return cells;
+}
+
+function drawCell(ctx, i, n) {
+    const cell = gridCell(i, n);
+    ctx.fillStyle = cell.c;
+    ctx.fillRect(cell.x, cell.y, cell.s, cell.s);
+}
+
+// Draws rect i of a cookie from tools/make_concha_rects.js, scaled from its art grid to 466 px.
+function drawArtRect(ctx, art, i) {
+    const o = i * 5;
+    const scale = 466 / art.size;
+    const x = art.rects.charCodeAt(o) - 48;
+    const y = art.rects.charCodeAt(o + 1) - 48;
+    const x0 = Math.floor(x * scale);
+    const y0 = Math.floor(y * scale);
+    const x1 = Math.floor((x + art.rects.charCodeAt(o + 2) - 48) * scale);
+    const y1 = Math.floor((y + art.rects.charCodeAt(o + 3) - 48) * scale);
+    ctx.fillStyle = art.colours[art.rects.charCodeAt(o + 4) - 48];
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
 }
 
 // Last result per test id, and the timer of the running test.
@@ -184,11 +222,42 @@ export default {
     },
     canvasGrid(n) {
         this.withCanvas((ctx) => {
-            grid(n).forEach((cell) => {
-                ctx.fillStyle = cell.c;
-                ctx.fillRect(cell.x, cell.y, cell.s, cell.s);
-            });
+            for (let i = 0; i < n; i++) {
+                drawCell(ctx, i, n);
+            }
         });
+    },
+    // Calls drawOne(ctx, i) for count rects, DRAW_PART at a time with a 0 ms timeout in
+    // between, so JS never blocks for long; tells a long draw apart from too many rects.
+    drawInParts(count, drawOne) {
+        timer = setTimeout(() => {
+            const ctx = this.$refs.cv.getContext('2d');
+            const t0 = Date.now();
+            let js = 0;
+            let i = 0;
+            const part = () => {
+                if (this.running === '') {
+                    return;
+                }
+                const p0 = Date.now();
+                const end = Math.min(i + DRAW_PART, count);
+                try {
+                    for (; i < end; i++) {
+                        drawOne(ctx, i);
+                    }
+                } catch (e) {
+                    this.finish('error ' + e);
+                    return;
+                }
+                js += Date.now() - p0;
+                if (i < count) {
+                    timer = setTimeout(part, 0);
+                } else {
+                    timer = setTimeout(() => this.finish('js ' + js + ' / all ' + (Date.now() - t0) + ' ms'), 0);
+                }
+            };
+            part();
+        }, CANVAS_WAIT_MS);
     },
     // Calls step(i) for FRAMES frames, FRAME_MS apart, and reports the
     // average time per frame.
@@ -240,6 +309,31 @@ export default {
     },
     c5() {
         this.canvasGrid(3500);
+    },
+    c8() {
+        this.canvasGrid(1500);
+    },
+    c9() {
+        this.canvasGrid(2000);
+    },
+    c10() {
+        this.canvasGrid(2500);
+    },
+    c11() {
+        this.drawInParts(3500, (ctx, i) => drawCell(ctx, i, 3500));
+    },
+    d1() {
+        this.withCanvas((ctx) => {
+            for (let i = 0; i < CONCHA_4.count; i++) {
+                drawArtRect(ctx, CONCHA_4, i);
+            }
+        });
+    },
+    d2() {
+        this.drawInParts(CONCHA_4.count, (ctx, i) => drawArtRect(ctx, CONCHA_4, i));
+    },
+    d3() {
+        this.drawInParts(CONCHA_8.count, (ctx, i) => drawArtRect(ctx, CONCHA_8, i));
     },
     c6() {
         timer = setTimeout(() => {

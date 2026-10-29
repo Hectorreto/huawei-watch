@@ -12,6 +12,8 @@ The branch `lab-dibujo` turns the app into a list of tests ("Drawing lab"); its 
 - `js N ms`: time spent in the drawing calls. `all N ms`: until a 0 ms `setTimeout` runs after them. `N ms/frame`: average over 60 frames (30 for `h5`) asked for every 16 ms (`FRAME_MS`), so 16 is full speed and more means drawing falls behind. A first version chained frames with 0 ms timeouts: the Previewer ran all 60 before drawing any and reported 0 ms/frame.
 - Rows pass their index to `run`, since the Previewer ignores string arguments from `onclick`.
 - `for` and `if` cannot be on the same element (build error at that line); the `div` grid is a `for` inside an `if` `stack`.
+- Canvas tests draw one grid cell at a time (`gridCell`) instead of building the whole array first, so the rect count is the only thing that grows. c5 built a 3,500-object array when it crashed the watch.
+- **Cookie as rects:** `tools/make_concha_rects.js` (run with DevEco's `tools/node/node.exe`, no packages) reads a 466 px theme PNG, finds its art grid (94x94 for the concha) by trying which nearest-neighbour upscale matches best, reduces the colours with median cut and writes `pages/index/concha4.js` / `concha8.js`: `{ size, colours, count, rects }`, where `rects` is a string of five characters per rect (x, y, width, height, colour index, each `String.fromCharCode(48 + value)`), decoded by `drawArtRect` without building objects. Usage: `node tools/make_concha_rects.js <png> <out.js> <colours> <pixels|runs|rects|layered>`. The concha has 6,739 opaque pixels, and the JPEG noise leaves short runs, so merging barely helps: with 16 colours, 3,938 runs or 3,478 merged rectangles (the earlier reboot used about this many); 8 colours, 2,724 rectangles; 4 colours, 1,962 with `layered` (each row first drawn as one run of the main colour, the other colours over it). In the Previewer both concha versions look right; 8 colours keeps the orange crust, 4 colours makes it dark brown.
 - Values the page keeps outside `data` (`results`, `timer`) are module variables, as in the game. As non-function properties of the page object they did not reach `this`, and the list stayed empty in the Previewer.
 
 | Id | What | Compare with |
@@ -20,6 +22,10 @@ The branch `lab-dibujo` turns the app into a list of tests ("Drawing lab"); its 
 | c3, c4, c5 | Full-screen canvas with 100 / 1,000 / 3,500 `fillRect` | h1, h3 |
 | c6 | 200 px canvas, a square moving 60 frames | h4 |
 | c7 | Canvas `arc`, lines, `stroke`, `fillText` | |
+| c8, c9, c10 | Full-screen canvas with 1,500 / 2,000 / 2,500 `fillRect` | where between c4 and c5 it breaks |
+| c11 | The 3,500 rects of c5, drawn `DRAW_PART` (250) at a time with a 0 ms timeout in between | c5: a long blocking draw or too many rects? |
+| d1 | The concha in 4 colours, 1,962 rects, in one go | |
+| d2, d3 | The concha in 4 colours (1,962 rects) / 8 colours (2,724 rects), in parts like c11 | d1 |
 | h1, h2, h3 | 100 / 400 / 1,000 `div`s with bound position, size and colour | c3, c4 |
 | h4 | One `div` moving 60 frames through a bound `left` | c6 |
 | h5 | Rebuilding the 100 `div`s with new colours, 30 frames | |
@@ -48,6 +54,9 @@ Previewer (October 2026):
 | c5 | js 12 / all 12 ms |
 | c6 | 30 ms/frame |
 | c7 | Circle, triangle and text all draw |
+| c11 | js 13 / all 13 ms; the canvas keeps what each part drew |
+| d1 | js 30 / all 30 ms |
+| d3 | js 56 / all 57 ms |
 | h1 | 100 `div`s draw; all 8 ms |
 | h2 | **JS heap out of memory** (`ERR_OUT_OF_MEMORY`, `JS HEAP OOM`); the Previewer engine crashed. h3 was not run, since it needs even more |
 | h4 | 30 ms/frame |
@@ -79,6 +88,7 @@ GT 6 Pro (October 2026), about 30-100 times slower than the Previewer:
 | p1 | 35 ms/frame |
 | i2 | Works: the frames change by themselves |
 | i3 | Draws nothing, as in the Previewer |
+| c8-c11, d1-d3 | Not run yet |
 | k1 | Turns in place, in the positioned `stack` |
 | q1 | Draws a QR code |
 
