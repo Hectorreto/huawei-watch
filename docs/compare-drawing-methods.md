@@ -2,7 +2,7 @@
 
 Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: `canvas`, plain components (`div`s placed with a bound `style`), or other lite components.
 
-**Warning: do not run tests that reboot the watch over and over.** After several reboots in a row (October 2026) the GT 6 Pro showed a message that it would reset to factory settings in a few seconds; the watch then had to be paired with the Android phone again and the app reinstalled. The tests that rebooted it are out of the lab (see **Removed tests**), and new crash tests should be run once each, not repeated to get a screenshot.
+**Warning: do not run tests that reboot the watch over and over.** After several reboots in a row (October 2026) the GT 6 Pro showed a message that it would reset to factory settings in a few seconds; the watch then had to be paired with the Android phone again and the app reinstalled. The tests had been run one right after another, reopening the app as soon as the watch was back on, so the likely trigger is several reboots in a short time (many devices take that as a boot failure and offer a reset); not confirmed. The tests that rebooted it are out of the lab (see **Removed tests**). Run a new crash test once, not again to get a screenshot, and after a reboot wait a few minutes before the next one.
 
 ## Conclusions
 
