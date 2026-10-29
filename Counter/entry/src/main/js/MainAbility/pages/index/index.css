@@ -93,11 +93,17 @@
   pivot-y: 140px;
 }
 /* Lite allows transform only inside @keyframes, so this checks whether that can rotate an image. */
-.spinner {
+/* The animated image loses its own left/top (it showed in the top-left corner, turning), so
+   a stack holds the position and the image sits at 0,0 inside it. */
+.spinner-box {
   width: 170px;
   height: 170px;
   left: 148px;
   top: 148px;
+}
+.spinner {
+  width: 170px;
+  height: 170px;
   animation-name: spin;
   animation-duration: 2000ms;
   animation-iteration-count: infinite;

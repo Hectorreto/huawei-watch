@@ -26,7 +26,7 @@ The branch `lab-dibujo` turns the app into a list of tests ("Drawing lab"); its 
 | i1 | Swapping an `image` src 60 times | |
 | i2 | `image-animator` with the 10 theme images | look whether frames change |
 | i3 | `analog-clock` + `clock-hand` (rotates an image by the time) | look whether the hand turns |
-| k1 | `@keyframes` `rotate` on an `image` | look whether it turns |
+| k1 | `@keyframes` `rotate` on an `image` in a positioned `stack` | look whether it turns in place |
 | p1 | `progress type="arc"` animated, and a line `chart` | |
 | q1 | `qrcode` | |
 
@@ -55,12 +55,14 @@ Previewer (October 2026):
 | i1 | 30 ms/frame |
 | i2 | Works: the frames change by themselves |
 | i3 | Draws nothing (no face, no hand) |
-| k1 | The image jumps to the top-left corner (it loses its `left`/`top`) and does not visibly turn |
+| k1 | Turns in place. With `left`/`top` on the animated `image` itself it turned, but in the top-left corner (the animation drops its own position); inside a positioned `stack` (`spinner-box`) at 0,0 it turns where it should |
 | p1 | Arc and line chart draw; 29 ms/frame |
 | q1 | Draws a QR code |
 
 So far in the Previewer: canvas is several times faster than `div`s for many squares (100 squares: 1 ms against 8 ms), and `div`s are limited by the JS heap to a few hundred. Simple animations (one moving square, an image swap, the arc) all ran at about 30 ms/frame, which seems to be the Previewer's timer floor. The Previewer runs on a PC, so only the watch tells the real costs.
 
 Not yet run on the watch. Run the tests in order (c1 first): each canvas test can reboot the watch, and h2 and h3 will probably run out of memory.
+
+So images can be rotated with `@keyframes` (full turns or fixed angles, not to an angle chosen at runtime, since `transform` is only allowed inside `@keyframes`).
 
 Previewer quirks while testing: the first tap after scrolling the list is often ignored, and a long fast drag does not scroll it (shorter drags do).
