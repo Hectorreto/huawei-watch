@@ -59,10 +59,32 @@ Previewer (October 2026):
 | p1 | Arc and line chart draw; 29 ms/frame |
 | q1 | Draws a QR code |
 
-So far in the Previewer: canvas is several times faster than `div`s for many squares (100 squares: 1 ms against 8 ms), and `div`s are limited by the JS heap to a few hundred. Simple animations (one moving square, an image swap, the arc) all ran at about 30 ms/frame, which seems to be the Previewer's timer floor. The Previewer runs on a PC, so only the watch tells the real costs.
-
-Not yet run on the watch. Run the tests in order (c1 first): each canvas test can reboot the watch, and h2 and h3 will probably run out of memory.
-
 So images can be rotated with `@keyframes` (full turns or fixed angles, not to an angle chosen at runtime, since `transform` is only allowed inside `@keyframes`).
+
+GT 6 Pro (October 2026), about 30-100 times slower than the Previewer:
+
+| Id | Result |
+|---|---|
+| c1, c2 | js 1 / all 1 ms. A canvas, even full-screen, is fine |
+| c3 | js 35 / all 54 ms |
+| c4 | js 339 / all 487 ms |
+| c5 | **Crash / reboot** |
+| c6 | 33 ms/frame |
+| c7 | js 2 / all 2 ms |
+| h1 | all 544 ms |
+| h2, h3 | Mostly turned the watch off (sometimes only closed the app) |
+| h4 | 34 ms/frame |
+| h5 | **Crash / reboot** |
+| i1 | 51 ms/frame |
+| p1 | 35 ms/frame |
+| i2, i3, k1, q1 | Ran without crashing; what they showed is not recorded yet |
+
+What this shows:
+
+- **Canvas is about 10 times faster than `div`s** for the same 100 squares (54 ms against 544 ms), and uses no `data` memory per square.
+- **Each `fillRect` costs about 0.34 ms** on the watch (100 → 35 ms, 1,000 → 339 ms), so a drawing of a few hundred rects is fine, 1,000 takes half a second, and 3,500 crashes the watch. The earlier concha reboot (3,480 rects) was the number of rects, not the canvas or its size. Where between 1,000 and 3,500 it breaks, and whether by count or by time, is not known.
+- **`div`s are limited by the 512 KB JS heap**: 100 work (slowly), 400 and 1,000 crash. Rebuilding 100 `div`s 30 times (h5) also crashed, so replacing bound arrays repeatedly runs out of memory too.
+- **Small animations run at about 33 ms/frame (30 fps)** with canvas, a `div` or the arc; swapping an image src is slower (51 ms).
+- When the watch turns off, the `storage` writes of the last tests are lost (their rows show `-` again, and the crash marker may be lost too), so a test that reboots the watch is not always marked `CRASH / reboot`. Write down crashes by hand.
 
 Previewer quirks while testing: the first tap after scrolling the list is often ignored, and a long fast drag does not scroll it (shorter drags do).
