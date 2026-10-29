@@ -10,7 +10,7 @@ Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: 
 
 - **Canvas is the fastest way to draw shapes**, about 10 times faster than `div`s (100 squares: 54 ms against 544 ms on the watch), but **only up to about 1,000 `fillRect` per canvas**. Each `fillRect` costs about 0.34 ms. 1,000 in one go worked (half a second); 1,500, 2,000, 2,500 and 3,500 rebooted the watch. Drawing in parts of 250 with a 0 ms timeout between them does not help: 3,500 in parts rebooted it before a quarter (under ~875 rects), the 4-colour concha in parts at about half (~980 of 1,962), the 8-colour one before half (under ~1,360 of 2,724). So the limit is the number of rects drawn on one canvas, not how long JS blocks; the canvas seems to keep every draw call (the Previewer keeps what each part drew). Lite `canvas` likely stores the calls and replays them, so memory grows with each one.
 - So **pixel art stays as pre-scaled PNG images**: the 94x94 concha needs 1,962 rects even with 4 colours. The earlier full-screen concha reboot (3,480 rects) was this limit.
-- **Many small steps fail much sooner:** one square per 16 ms step, with the count text updated each step, went black at 352-364 squares (e1), while 1,000 squares in one go worked. Making a new canvas every 100 squares only got to 392-405 (e2), so it is not the rects on one canvas. Something that every step does piles up: drawing on a canvas, updating a bound text, or the timer. e3-e5 are to tell which. Until then, do not run a loop that updates the screen for more than a few hundred steps.
+- **Many small steps fail, canvas or not:** every test that schedules each step with a new `setTimeout` (16 ms) went black after 350-430 steps: drawing one square per step (352-364), with a new canvas every 100 squares (392-405), with the count text updated only every 50 steps (350), and with no canvas at all, only a text update (426). What they share is a new `setTimeout` per step, so the likely cause is that timers are not freed; e6 and e7 repeat e4 and e1 with one `setInterval` to check. Until then, do not chain more than a few hundred `setTimeout`s; the game uses one `setInterval`.
 - **Not known yet:** whether an animation that keeps drawing on the same canvas (2 rects per frame) reboots the watch after ~500 frames, and whether recreating the canvas (`if` off and on) starts the count again. Find out before using canvas for anything that redraws for long.
 - **`div`s are limited by the 512 KB JS heap**: each item bound in `data` costs about 1 KB. 100 work (slowly); 400 and 1,000 turned the watch off; rebuilding 100 `div`s 30 times also rebooted it.
 - **Small animations run at about 33 ms/frame (30 fps)** with a canvas, a `div` or the `progress` arc; swapping an `image` src is slower (51 ms/frame).
@@ -43,9 +43,11 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 | c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | js 2 / all 2 ms |
 | e1 | Count rects: one 10 px square every 16 ms inside the round screen (colour changes every 100), the count shown at the bottom, until 5,000 or a crash | runs | **black screen at 362, 352 and 364** |
 | e2 | Like e1, but every 100 squares the canvas is removed (`if`) and a new one made: does that reset the limit? | a new, empty canvas every 100; the count goes on | **black screen at 392 and 405**: barely later, so a new canvas does not reset it |
-| e3 | Like e1, but 10 squares per step: is the limit the number of steps (frames) or of rects? | runs | not run yet |
-| e4 | No canvas: only the count text changes every 16 ms (a bound text update and a timer per step) | runs | not run yet |
-| e5 | Like e1, but the count text only changes every 50 squares | runs | not run yet |
+| e3 | Like e1, but 10 squares per step: is the limit the number of steps (frames) or of rects? | runs | **about 1,100**, slowing down near the end (unclear whether that was rects or steps; it stops itself at 500 steps) |
+| e4 | No canvas: only the count text changes every 16 ms (a bound text update and a timer per step) | runs | **black screen at 426**, with no canvas at all |
+| e5 | Like e1, but the count text only changes every 50 squares | runs | **black screen at 350** |
+| e6 | Like e4, but one `setInterval` instead of a new `setTimeout` per step | runs | not run yet |
+| e7 | Like e1, but one `setInterval` instead of a new `setTimeout` per step | runs | not run yet |
 | h1 | 100 `div`s with bound position, size and colour | all 8 ms | all 544 ms |
 | h4 | One `div` moving 60 frames through a bound `left` | 30 ms/frame | 34 ms/frame |
 | i1 | Swapping an `image` src 60 times | 30 ms/frame | 51 ms/frame |
