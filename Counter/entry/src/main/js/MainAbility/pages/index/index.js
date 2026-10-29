@@ -47,6 +47,8 @@ const TESTS = [
     { id: 'e5', name: 'Count, text every 50', view: 'canvas', size: 466 },
     { id: 'e6', name: 'Interval, text only', view: 'text' },
     { id: 'e7', name: 'Interval, rects', view: 'canvas', size: 466 },
+    { id: 'e8', name: 'Paced 100 ms', view: 'canvas', size: 466 },
+    { id: 'e9', name: 'Paced 250 ms', view: 'canvas', size: 466 },
     { id: 'h1', name: '100 divs', view: 'cells' },
     { id: 'h4', name: 'Div anim 60', view: 'mover' },
     { id: 'i1', name: 'Image swap 60', view: 'image' },
@@ -354,11 +356,13 @@ export default {
         };
         step();
     },
-    // Like countText (and, withRects, like e1), but driven by one setInterval instead of a
-    // new setTimeout per step: every setTimeout-per-step test died after 350-430 steps,
-    // with or without a canvas or text updates.
-    countInterval(withRects) {
+    // Like countText (and, withRects, like e1), but driven by one setInterval every intervalMs
+    // instead of a new setTimeout per step, and showing the seconds since it started. Every
+    // test that redraws every 16 ms died after 350-490 steps, with or without a canvas, text
+    // updates or a new timer per step; a slower interval tells a time limit from a step limit.
+    countInterval(withRects, intervalMs) {
         let steps = 0;
+        let t0 = 0;
         let ctx = null;
         const step = () => {
             if (this.running === '') {
@@ -382,20 +386,27 @@ export default {
                 return;
             }
             steps++;
-            this.status = steps + (withRects ? ' rects' : ' steps') + ', interval';
+            this.status = steps + (withRects ? ' rects' : ' steps') + ', ' + Math.floor((Date.now() - t0) / 1000) + ' s';
         };
         timer = setTimeout(() => {
             if (withRects) {
                 ctx = this.$refs.cv.getContext('2d');
             }
-            timer = setInterval(step, FRAME_MS);
+            t0 = Date.now();
+            timer = setInterval(step, intervalMs);
         }, CANVAS_WAIT_MS);
     },
     e6() {
-        this.countInterval(false);
+        this.countInterval(false, FRAME_MS);
     },
     e7() {
-        this.countInterval(true);
+        this.countInterval(true, FRAME_MS);
+    },
+    e8() {
+        this.countInterval(true, 100);
+    },
+    e9() {
+        this.countInterval(true, 250);
     },
     e1() {
         this.countRects(0, 1, 1);
