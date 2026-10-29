@@ -38,6 +38,8 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 | c4 | Full-screen canvas, 1,000 `fillRect` | js 3 / all 3 ms | js 339 / all 487 ms |
 | c6 | 200 px canvas, a square moving 60 frames | 30 ms/frame | 33 ms/frame |
 | c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | js 2 / all 2 ms |
+| e1 | Count rects: one 10 px square every 16 ms inside the round screen (colour changes every 100), the count shown at the bottom, until 5,000 or a crash; read the exact limit off the screen | runs | not run yet |
+| e2 | Like e1, but every 500 squares the canvas is removed (`if`) and a new one made: does that reset the limit? | at 500 a new, empty canvas appears and the count goes on | not run yet |
 | h1 | 100 `div`s with bound position, size and colour | all 8 ms | all 544 ms |
 | h4 | One `div` moving 60 frames through a bound `left` | 30 ms/frame | 34 ms/frame |
 | i1 | Swapping an `image` src 60 times | 30 ms/frame | 51 ms/frame |

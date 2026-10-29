@@ -14,6 +14,14 @@ const FRAMES = 60;
 const FRAME_MS = 16;
 // Canvas tests wait for the canvas element to exist before asking for its context.
 const CANVAS_WAIT_MS = 50;
+// Counting tests: one COUNT_CELL px square per step inside the round screen, the colour
+// changing every COUNT_COLOUR_EVERY squares, with the count on screen so the watch itself
+// shows how far it got. They stop on their own at COUNT_MAX.
+const COUNT_CELL = 10;
+const COUNT_COLOUR_EVERY = 100;
+const COUNT_MAX = 5000;
+// The recreate test removes the canvas and makes a new one every RECREATE_EVERY squares.
+const RECREATE_EVERY = 500;
 const PALETTE = [
     '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6',
     '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3'
@@ -31,6 +39,8 @@ const TESTS = [
     { id: 'c4', name: 'Canvas 1000 rects', view: 'canvas', size: 466 },
     { id: 'c6', name: 'Canvas anim 60', view: 'canvas', size: 200 },
     { id: 'c7', name: 'Canvas arcs+text', view: 'canvas', size: 466 },
+    { id: 'e1', name: 'Count rects', view: 'canvas', size: 466 },
+    { id: 'e2', name: 'Count, new canvas', view: 'canvas', size: 466 },
     { id: 'h1', name: '100 divs', view: 'cells' },
     { id: 'h4', name: 'Div anim 60', view: 'mover' },
     { id: 'i1', name: 'Image swap 60', view: 'image' },
@@ -60,6 +70,29 @@ function grid(n, shift) {
         cells.push(gridCell(i, n, shift));
     }
     return cells;
+}
+
+// Top-left corners of the COUNT_CELL grid cells whose centre is on the round screen, row by
+// row; filled on first use.
+let roundCells = null;
+
+function roundCell(k) {
+    if (!roundCells) {
+        roundCells = [];
+        const cols = Math.floor(466 / COUNT_CELL);
+        for (let i = 0; i < cols * cols; i++) {
+            const x = (i % cols) * COUNT_CELL;
+            const y = Math.floor(i / cols) * COUNT_CELL;
+            const dx = x + COUNT_CELL / 2 - 233;
+            const dy = y + COUNT_CELL / 2 - 233;
+            if (dx * dx + dy * dy < 225 * 225) {
+                roundCells.push(i);
+            }
+        }
+    }
+    const cols = Math.floor(466 / COUNT_CELL);
+    const i = roundCells[k % roundCells.length];
+    return { x: (i % cols) * COUNT_CELL, y: Math.floor(i / cols) * COUNT_CELL };
 }
 
 function drawCell(ctx, i, n) {
@@ -245,6 +278,54 @@ export default {
     },
     c4() {
         this.canvasGrid(1000);
+    },
+    // Draws one square every FRAME_MS on a full-screen canvas, showing the count, until
+    // COUNT_MAX or until the watch fails. With recreateEvery > 0 the canvas is removed and a
+    // new one made every that many squares, to see whether that resets the rect limit.
+    countRects(recreateEvery) {
+        let drawn = 0;
+        let canvases = 1;
+        let ctx = null;
+        const step = () => {
+            if (this.running === '') {
+                return;
+            }
+            if (drawn === COUNT_MAX) {
+                this.finish(COUNT_MAX + ' rects OK');
+                return;
+            }
+            try {
+                const cell = roundCell(drawn);
+                ctx.fillStyle = PALETTE[Math.floor(drawn / COUNT_COLOUR_EVERY) % PALETTE.length];
+                ctx.fillRect(cell.x, cell.y, COUNT_CELL - 1, COUNT_CELL - 1);
+            } catch (e) {
+                this.finish('error at ' + drawn + ': ' + e);
+                return;
+            }
+            drawn++;
+            this.status = drawn + ' rects' + (recreateEvery > 0 ? ', canvas ' + canvases : '');
+            if (recreateEvery > 0 && drawn % recreateEvery === 0) {
+                canvases++;
+                this.size = 0;
+                timer = setTimeout(() => {
+                    this.size = 466;
+                    timer = setTimeout(begin, CANVAS_WAIT_MS);
+                }, CANVAS_WAIT_MS);
+            } else {
+                timer = setTimeout(step, FRAME_MS);
+            }
+        };
+        const begin = () => {
+            ctx = this.$refs.cv.getContext('2d');
+            step();
+        };
+        timer = setTimeout(begin, CANVAS_WAIT_MS);
+    },
+    e1() {
+        this.countRects(0);
+    },
+    e2() {
+        this.countRects(RECREATE_EVERY);
     },
     c6() {
         timer = setTimeout(() => {
