@@ -10,6 +10,7 @@ Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: 
 
 - **Canvas is the fastest way to draw shapes**, about 10 times faster than `div`s (100 squares: 54 ms against 544 ms on the watch), but **only up to about 1,000 `fillRect` per canvas**. Each `fillRect` costs about 0.34 ms. 1,000 in one go worked (half a second); 1,500, 2,000, 2,500 and 3,500 rebooted the watch. Drawing in parts of 250 with a 0 ms timeout between them does not help: 3,500 in parts rebooted it before a quarter (under ~875 rects), the 4-colour concha in parts at about half (~980 of 1,962), the 8-colour one before half (under ~1,360 of 2,724). So the limit is the number of rects drawn on one canvas, not how long JS blocks; the canvas seems to keep every draw call (the Previewer keeps what each part drew). Lite `canvas` likely stores the calls and replays them, so memory grows with each one.
 - So **pixel art stays as pre-scaled PNG images**: the 94x94 concha needs 1,962 rects even with 4 colours. The earlier full-screen concha reboot (3,480 rects) was this limit.
+- **Drawing in many steps fails much sooner:** one square per 16 ms step on one canvas went black at 362 squares (e1), while 1,000 in one go worked. So what piles up is not only the rects but each step or frame that draws on the canvas. e2 and e3 are to tell which. Until then, do not keep drawing on one canvas for long.
 - **Not known yet:** whether an animation that keeps drawing on the same canvas (2 rects per frame) reboots the watch after ~500 frames, and whether recreating the canvas (`if` off and on) starts the count again. Find out before using canvas for anything that redraws for long.
 - **`div`s are limited by the 512 KB JS heap**: each item bound in `data` costs about 1 KB. 100 work (slowly); 400 and 1,000 turned the watch off; rebuilding 100 `div`s 30 times also rebooted it.
 - **Small animations run at about 33 ms/frame (30 fps)** with a canvas, a `div` or the `progress` arc; swapping an `image` src is slower (51 ms/frame).
@@ -40,8 +41,9 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 | c4 | Full-screen canvas, 1,000 `fillRect` | js 3 / all 3 ms | js 339 / all 487 ms |
 | c6 | 200 px canvas, a square moving 60 frames | 30 ms/frame | 33 ms/frame |
 | c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | js 2 / all 2 ms |
-| e1 | Count rects: one 10 px square every 16 ms inside the round screen (colour changes every 100), the count shown at the bottom, until 5,000 or a crash; read the exact limit off the screen | runs | not run yet |
-| e2 | Like e1, but every 500 squares the canvas is removed (`if`) and a new one made: does that reset the limit? | at 500 a new, empty canvas appears and the count goes on | not run yet |
+| e1 | Count rects: one 10 px square every 16 ms inside the round screen (colour changes every 100), the count shown at the bottom, until 5,000 or a crash | runs | **black screen at 362** |
+| e2 | Like e1, but every 100 squares the canvas is removed (`if`) and a new one made: does that reset the limit? | a new, empty canvas every 100; the count goes on | not run yet |
+| e3 | Like e1, but 10 squares per step: is the limit the number of steps (frames) or of rects? | runs | not run yet |
 | h1 | 100 `div`s with bound position, size and colour | all 8 ms | all 544 ms |
 | h4 | One `div` moving 60 frames through a bound `left` | 30 ms/frame | 34 ms/frame |
 | i1 | Swapping an `image` src 60 times | 30 ms/frame | 51 ms/frame |
