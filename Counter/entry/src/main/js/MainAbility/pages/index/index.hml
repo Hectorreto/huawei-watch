@@ -1,7 +1,7 @@
 <div class="container">
     <list class="menu" if="{{ running === '' }}">
         <list-item class="title-item">
-            <text class="title">Drawing lab</text>
+            <text class="title">{{ title }}</text>
         </list-item>
         <list-item class="item" for="{{ tests }}" onclick="run($item.index)">
             <text class="name">{{ $item.name }}</text>

@@ -1,5 +1,6 @@
 import storage from '@system.storage';
 import router from '@system.router';
+import brightness from '@system.brightness';
 
 // Drawing lab: each test draws one thing with one technique and times it, so canvas,
 // plain components and the other lite components can be compared on the watch.
@@ -132,6 +133,7 @@ function encode(byId) {
 
 export default {
     data: {
+        title: 'Drawing lab',
         tests: [],
         running: '',
         view: '',
@@ -147,6 +149,18 @@ export default {
         chartOptions: {}
     },
     onInit() {
+        // Long tests ran into the screen timeout, which looked like a crash; keep it on while the
+        // lab is open. The list title says so if that fails.
+        try {
+            brightness.setKeepScreenOn({
+                keepScreenOn: true,
+                fail: (data, code) => {
+                    this.title = 'Screen-on failed ' + code;
+                }
+            });
+        } catch (e) {
+            this.title = 'Screen-on error';
+        }
         // The list shows at once; saved results and a crash marker fill it in when storage answers.
         this.showList();
         this.frames = THEMES.map((id) => ({ src: '/common/themes/' + id + '_small.png' }));
