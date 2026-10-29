@@ -1,6 +1,19 @@
 # Compare ways of drawing on the watch
 
-Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: `canvas`, plain components (`div`s placed with a bound `style`), or other lite components. Background: a full-screen `canvas` with 3,480 `fillRect` rebooted the watch, and images written at runtime were slow (see "Canvas reboots the watch" and "Images built at runtime" in `create-and-preview-the-app.md`).
+Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: `canvas`, plain components (`div`s placed with a bound `style`), or other lite components.
+
+**Warning: do not run tests that reboot the watch over and over.** After several reboots in a row (October 2026) the GT 6 Pro showed a message that it would reset to factory settings in a few seconds; the watch then had to be paired with the Android phone again and the app reinstalled. The tests that rebooted it are out of the lab (see **Removed tests**), and new crash tests should be run once each, not repeated to get a screenshot.
+
+## Conclusions
+
+- **Canvas is the fastest way to draw shapes**, about 10 times faster than `div`s (100 squares: 54 ms against 544 ms on the watch), but **only up to about 1,000 `fillRect` per canvas**. Each `fillRect` costs about 0.34 ms. 1,000 in one go worked (half a second); 1,500, 2,000, 2,500 and 3,500 rebooted the watch. Drawing in parts of 250 with a 0 ms timeout between them does not help: 3,500 in parts rebooted it before a quarter (under ~875 rects), the 4-colour concha in parts at about half (~980 of 1,962), the 8-colour one before half (under ~1,360 of 2,724). So the limit is the number of rects drawn on one canvas, not how long JS blocks; the canvas seems to keep every draw call (the Previewer keeps what each part drew). Lite `canvas` likely stores the calls and replays them, so memory grows with each one.
+- So **pixel art stays as pre-scaled PNG images**: the 94x94 concha needs 1,962 rects even with 4 colours. The earlier full-screen concha reboot (3,480 rects) was this limit.
+- **Not known yet:** whether an animation that keeps drawing on the same canvas (2 rects per frame) reboots the watch after ~500 frames, and whether recreating the canvas (`if` off and on) starts the count again. Find out before using canvas for anything that redraws for long.
+- **`div`s are limited by the 512 KB JS heap**: each item bound in `data` costs about 1 KB. 100 work (slowly); 400 and 1,000 turned the watch off; rebuilding 100 `div`s 30 times also rebooted it.
+- **Small animations run at about 33 ms/frame (30 fps)** with a canvas, a `div` or the `progress` arc; swapping an `image` src is slower (51 ms/frame).
+- **`image-animator`** plays a list of images by itself. **`@keyframes` `rotate`** turns an image in place, if the image sits at 0,0 inside a positioned `stack` (on the image itself, the animation drops its `left`/`top` and it turns in the top-left corner); only fixed angles or full turns, since `transform` is only allowed inside `@keyframes`. **`progress type="arc"`**, **`chart`** and **`qrcode`** work. **`analog-clock`** draws nothing, in the Previewer or on the watch.
+
+Lite Wearable components (from `lib/templater/lite_component_map.js`): `div`, `stack`, `list`/`list-item`, `swiper`, `tabs`, `text`, `marquee`, `image`, `image-animator`, `analog-clock`/`clock-hand`, `progress`, `chart`, `qrcode`, `input`, `slider`, `switch`, `picker-view` and `canvas`. No `svg`.
 
 ## The lab
 
@@ -8,96 +21,43 @@ The branch `lab-dibujo` turns the app into a list of tests ("Drawing lab"); its 
 
 - **The lab has to be `pages/index/index`.** A first try added it as `pages/lab/lab`, first in `config.json` `pages`; the HAP contained it, but the watch still opened the game. The app starts at `pages/index/index` whatever the order, so on the branch the lab is `pages/index/` and the game moved to `pages/game/game.*`.
 - Tap a row to run it. Tap anywhere to go back to the list. Each row shows its last result under its name.
-- Before a test starts its id is saved as `labRunning` (on the `storage.set` success callback, so it is on flash first) and cleared when it finishes. If the watch reboots or freezes, the next launch shows that test as `CRASH / reboot`. Results are saved as `labResults` (`id=text|id=text`, no JSON), so they survive a reboot. The Previewer forgets storage when it reloads, so the marker can only be checked on the watch.
-- `js N ms`: time spent in the drawing calls. `all N ms`: until a 0 ms `setTimeout` runs after them. `N ms/frame`: average over 60 frames (30 for `h5`) asked for every 16 ms (`FRAME_MS`), so 16 is full speed and more means drawing falls behind. A first version chained frames with 0 ms timeouts: the Previewer ran all 60 before drawing any and reported 0 ms/frame.
+- Before a test starts its id is saved as `labRunning` (on the `storage.set` success callback) and cleared when it finishes; the next launch shows a test that did not finish as `CRASH / reboot`. Results are saved as `labResults` (`id=text|id=text`, no JSON). But when the watch turns off, the last `storage` writes are often lost (rows show `-` again and the marker can be gone), so write down crashes by hand. The Previewer forgets storage when it reloads.
+- `js N ms`: time spent in the drawing calls. `all N ms`: until a 0 ms `setTimeout` runs after them. `N ms/frame`: average over 60 frames asked for every 16 ms (`FRAME_MS`), so 16 is full speed and more means drawing falls behind. A first version chained frames with 0 ms timeouts: the Previewer ran all 60 before drawing any and reported 0 ms/frame.
 - Rows pass their index to `run`, since the Previewer ignores string arguments from `onclick`.
 - `for` and `if` cannot be on the same element (build error at that line); the `div` grid is a `for` inside an `if` `stack`.
-- Canvas tests draw one grid cell at a time (`gridCell`) instead of building the whole array first, so the rect count is the only thing that grows. c5 built a 3,500-object array when it crashed the watch.
-- **Cookie as rects:** `tools/make_concha_rects.js` (run with DevEco's `tools/node/node.exe`, no packages) reads a 466 px theme PNG, finds its art grid (94x94 for the concha) by trying which nearest-neighbour upscale matches best, reduces the colours with median cut and writes `pages/index/concha4.js` / `concha8.js`: `{ size, colours, count, rects }`, where `rects` is a string of five characters per rect (x, y, width, height, colour index, each `String.fromCharCode(48 + value)`), decoded by `drawArtRect` without building objects. Usage: `node tools/make_concha_rects.js <png> <out.js> <colours> <pixels|runs|rects|layered>`. The concha has 6,739 opaque pixels, and the JPEG noise leaves short runs, so merging barely helps: with 16 colours, 3,938 runs or 3,478 merged rectangles (the earlier reboot used about this many); 8 colours, 2,724 rectangles; 4 colours, 1,962 with `layered` (each row first drawn as one run of the main colour, the other colours over it). In the Previewer both concha versions look right; 8 colours keeps the orange crust, 4 colours makes it dark brown.
 - Values the page keeps outside `data` (`results`, `timer`) are module variables, as in the game. As non-function properties of the page object they did not reach `this`, and the list stayed empty in the Previewer.
+- The build warns that `pivot-x`, `pivot-y` (`clock-hand`) and `total-width` (`progress`) are not standard; it still builds.
+- Previewer quirks: the first tap after scrolling the list is often ignored, and a long fast drag does not scroll it (shorter drags do).
 
-| Id | What | Compare with |
+Results (October 2026; the watch is about 30-100 times slower than the Previewer):
+
+| Id | What | Previewer | GT 6 Pro |
+|---|---|---|---|
+| c1, c2 | Canvas 100 px / 466 px with one `fillRect` | js 0 / all 0 ms | js 1 / all 1 ms |
+| c3 | Full-screen canvas, 100 `fillRect` | js 1 / all 1 ms | js 35 / all 54 ms |
+| c4 | Full-screen canvas, 1,000 `fillRect` | js 3 / all 3 ms | js 339 / all 487 ms |
+| c6 | 200 px canvas, a square moving 60 frames | 30 ms/frame | 33 ms/frame |
+| c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | js 2 / all 2 ms |
+| h1 | 100 `div`s with bound position, size and colour | all 8 ms | all 544 ms |
+| h4 | One `div` moving 60 frames through a bound `left` | 30 ms/frame | 34 ms/frame |
+| i1 | Swapping an `image` src 60 times | 30 ms/frame | 51 ms/frame |
+| i2 | `image-animator` with the 10 theme images | works | works |
+| i3 | `analog-clock` + `clock-hand` | draws nothing | draws nothing |
+| k1 | `@keyframes` `rotate` on an `image` in a positioned `stack` | turns in place | turns in place |
+| p1 | `progress type="arc"` animated, and a line `chart` | 29 ms/frame | 35 ms/frame |
+| q1 | `qrcode` | draws | draws |
+
+## Removed tests
+
+They rebooted the watch, so they are no longer in the lab (they are in the branch's history).
+
+| Test | Previewer | GT 6 Pro |
 |---|---|---|
-| c1, c2 | Canvas 100 px / 466 px with one `fillRect` | narrows down the reboot: canvas or its size |
-| c3, c4, c5 | Full-screen canvas with 100 / 1,000 / 3,500 `fillRect` | h1, h3 |
-| c6 | 200 px canvas, a square moving 60 frames | h4 |
-| c7 | Canvas `arc`, lines, `stroke`, `fillText` | |
-| c8, c9, c10 | Full-screen canvas with 1,500 / 2,000 / 2,500 `fillRect` | where between c4 and c5 it breaks |
-| c11 | The 3,500 rects of c5, drawn `DRAW_PART` (250) at a time with a 0 ms timeout in between | c5: a long blocking draw or too many rects? |
-| d1 | The concha in 4 colours, 1,962 rects, in one go | |
-| d2, d3 | The concha in 4 colours (1,962 rects) / 8 colours (2,724 rects), in parts like c11 | d1 |
-| h1, h2, h3 | 100 / 400 / 1,000 `div`s with bound position, size and colour | c3, c4 |
-| h4 | One `div` moving 60 frames through a bound `left` | c6 |
-| h5 | Rebuilding the 100 `div`s with new colours, 30 frames | |
-| i1 | Swapping an `image` src 60 times | |
-| i2 | `image-animator` with the 10 theme images | look whether frames change |
-| i3 | `analog-clock` + `clock-hand` (rotates an image by the time) | look whether the hand turns |
-| k1 | `@keyframes` `rotate` on an `image` in a positioned `stack` | look whether it turns in place |
-| p1 | `progress type="arc"` animated, and a line `chart` | |
-| q1 | `qrcode` | |
+| Canvas 1,500 / 2,000 / 2,500 / 3,500 `fillRect` in one go | 3,500: 12 ms | reboot |
+| 3,500 `fillRect` in parts of 250 | 13 ms, draws all | reboot before a quarter |
+| Concha, 4 colours, 1,962 rects, in one go / in parts | 30 ms | reboot / at about half |
+| Concha, 8 colours, 2,724 rects, in parts | 57 ms | reboot before half |
+| 400 / 1,000 `div`s | 400: JS heap out of memory (`ERR_OUT_OF_MEMORY`, `heap total size: 524280` in `previewer.log`; about 220 KB of properties and 150 KB of objects) | mostly turned the watch off, sometimes only closed the app |
+| Rebuilding 100 `div`s with new colours, 30 times | 69 ms/frame | reboot |
 
-Lite Wearable components (from `lib/templater/lite_component_map.js`): `div`, `stack`, `list`/`list-item`, `swiper`, `tabs`, `text`, `marquee`, `image`, `image-animator`, `analog-clock`/`clock-hand`, `progress`, `chart`, `qrcode`, `input`, `slider`, `switch`, `picker-view` and `canvas`. No `svg`.
-
-The build warns that `pivot-x`, `pivot-y` (`clock-hand`) and `total-width` (`progress`) are not standard; it still builds.
-
-## Results
-
-**The JS heap is 512 KB** (`heap total size: 524280` in `previewer.log` when it ran out). Everything in `data` counts: when 400 `div`s were bound, about 220 KB went to properties and 150 KB to objects, so each bound item costs roughly 1 KB. Plain JS arrays outside `data` are much cheaper (c5 builds 3,500 cell objects and is fine).
-
-Previewer (October 2026):
-
-| Id | Result |
-|---|---|
-| c1, c2 | Draws; js 0 / all 0 ms |
-| c3 | js 1 / all 1 ms |
-| c4 | js 3 / all 3 ms |
-| c5 | js 12 / all 12 ms |
-| c6 | 30 ms/frame |
-| c7 | Circle, triangle and text all draw |
-| c11 | js 13 / all 13 ms; the canvas keeps what each part drew |
-| d1 | js 30 / all 30 ms |
-| d3 | js 56 / all 57 ms |
-| h1 | 100 `div`s draw; all 8 ms |
-| h2 | **JS heap out of memory** (`ERR_OUT_OF_MEMORY`, `JS HEAP OOM`); the Previewer engine crashed. h3 was not run, since it needs even more |
-| h4 | 30 ms/frame |
-| h5 | 69 ms/frame |
-| i1 | 30 ms/frame |
-| i2 | Works: the frames change by themselves |
-| i3 | Draws nothing (no face, no hand) |
-| k1 | Turns in place. With `left`/`top` on the animated `image` itself it turned, but in the top-left corner (the animation drops its own position); inside a positioned `stack` (`spinner-box`) at 0,0 it turns where it should |
-| p1 | Arc and line chart draw; 29 ms/frame |
-| q1 | Draws a QR code |
-
-So images can be rotated with `@keyframes` (full turns or fixed angles, not to an angle chosen at runtime, since `transform` is only allowed inside `@keyframes`).
-
-GT 6 Pro (October 2026), about 30-100 times slower than the Previewer:
-
-| Id | Result |
-|---|---|
-| c1, c2 | js 1 / all 1 ms. A canvas, even full-screen, is fine |
-| c3 | js 35 / all 54 ms |
-| c4 | js 339 / all 487 ms |
-| c5 | **Crash / reboot** |
-| c6 | 33 ms/frame |
-| c7 | js 2 / all 2 ms |
-| h1 | all 544 ms |
-| h2, h3 | Mostly turned the watch off (sometimes only closed the app) |
-| h4 | 34 ms/frame |
-| h5 | **Crash / reboot** |
-| i1 | 51 ms/frame |
-| p1 | 35 ms/frame |
-| i2 | Works: the frames change by themselves |
-| i3 | Draws nothing, as in the Previewer |
-| c8-c11, d1-d3 | Not run yet |
-| k1 | Turns in place, in the positioned `stack` |
-| q1 | Draws a QR code |
-
-What this shows:
-
-- **Canvas is about 10 times faster than `div`s** for the same 100 squares (54 ms against 544 ms), and uses no `data` memory per square.
-- **Each `fillRect` costs about 0.34 ms** on the watch (100 → 35 ms, 1,000 → 339 ms), so a drawing of a few hundred rects is fine, 1,000 takes half a second, and 3,500 crashes the watch. The earlier concha reboot (3,480 rects) was the number of rects, not the canvas or its size. Where between 1,000 and 3,500 it breaks, and whether by count or by time, is not known.
-- **`div`s are limited by the 512 KB JS heap**: 100 work (slowly), 400 and 1,000 crash. Rebuilding 100 `div`s 30 times (h5) also crashed, so replacing bound arrays repeatedly runs out of memory too.
-- **Small animations run at about 33 ms/frame (30 fps)** with canvas, a `div` or the arc; swapping an image src is slower (51 ms).
-- When the watch turns off, the `storage` writes of the last tests are lost (their rows show `-` again, and the crash marker may be lost too), so a test that reboots the watch is not always marked `CRASH / reboot`. Write down crashes by hand.
-
-Previewer quirks while testing: the first tap after scrolling the list is often ignored, and a long fast drag does not scroll it (shorter drags do).
+**Cookie as rects:** `tools/make_concha_rects.js` (run with DevEco's `tools/node/node.exe`, no packages) reads a 466 px theme PNG, finds its art grid (94x94 for the concha) by trying which nearest-neighbour upscale matches best, reduces the colours with median cut and writes a module `{ size, colours, count, rects }`, where `rects` is a string of five characters per rect (x, y, width, height, colour index, each `String.fromCharCode(48 + value)`), so the page decodes it without building objects. Usage: `node tools/make_concha_rects.js <png> <out.js> <colours> <pixels|runs|rects|layered>`. The concha has 6,739 opaque pixels and the JPEG noise leaves short runs, so merging barely helps: 16 colours, 3,938 runs or 3,478 merged rectangles; 8 colours, 2,724 rectangles; 4 colours, 1,962 with `layered` (each row first drawn as one run of the main colour, the other colours over it). In the Previewer both concha versions looked right (8 colours keeps the orange crust, 4 makes it dark brown). All are over the ~1,000-rect limit.
