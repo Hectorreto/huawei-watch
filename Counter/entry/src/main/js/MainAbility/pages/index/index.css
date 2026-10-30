@@ -80,16 +80,22 @@
   left: 148px;
   top: 148px;
 }
+/* Grey, so the clock's own area shows even if no hand is drawn. */
 .clock {
   width: 300px;
   height: 300px;
   left: 83px;
   top: 83px;
+  background-color: #333333;
 }
+/* common/lab/hand.png is a 20x140 white bar with a red tip; its bottom centre sits on the
+   clock centre. */
 .hand {
-  width: 40px;
+  width: 20px;
   height: 140px;
-  pivot-x: 20px;
+  left: 140px;
+  top: 10px;
+  pivot-x: 10px;
   pivot-y: 140px;
 }
 /* Lite allows transform only inside @keyframes, so this checks whether that can rotate an image. */

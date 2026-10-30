@@ -15,7 +15,7 @@ Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: 
 - **A new canvas starts the count again.** e2 removes the canvas (`if` off) and makes a new one every 100 squares; with the screen kept on it drew 5,000 squares in 50 canvases and finished. So the limit is about 1,100 `fillRect` per canvas element, and anything that draws for long has to replace its canvas well before that (for example every few hundred rects). The new canvas starts empty, so whatever should stay on screen has to be drawn again on it, and the swap in e2 takes two `CANVAS_WAIT_MS` (50 ms) waits, a visible blank. Not tried: hiding the swap with two canvases (draw on the next one, then switch).
 - **`div`s are limited by the 512 KB JS heap**: each item bound in `data` costs about 1 KB. 100 work (slowly); 400 and 1,000 turned the watch off; rebuilding 100 `div`s 30 times also rebooted it.
 - **Small animations run at about 33 ms/frame (30 fps)** with a canvas, a `div` or the `progress` arc; swapping an `image` src is slower (51 ms/frame).
-- **`image-animator`** plays a list of images by itself. **`@keyframes` `rotate`** turns an image in place, if the image sits at 0,0 inside a positioned `stack` (on the image itself, the animation drops its `left`/`top` and it turns in the top-left corner); only fixed angles or full turns, since `transform` is only allowed inside `@keyframes`. **`progress type="arc"`**, **`chart`** and **`qrcode`** work. **`analog-clock`** draws nothing, in the Previewer or on the watch.
+- **`image-animator`** plays a list of images by itself. **`@keyframes` `rotate`** turns an image in place, if the image sits at 0,0 inside a positioned `stack` (on the image itself, the animation drops its `left`/`top` and it turns in the top-left corner); only fixed angles or full turns, since `transform` is only allowed inside `@keyframes`. **`progress type="arc"`**, **`chart`** and **`qrcode`** work. **`analog-clock`** draws nothing, in the Previewer or on the watch: the build accepts it (it is in `lite_component_map.js`), but the lite engine does not have it. When the view opens, `previewer.log` says twice `[ACELite][ERROR]:Fail to create element because the tag is not supported.` (once for `analog-clock`, once for `clock-hand`), and not even the clock's own `background-color` shows. It is not the black background or the hand image: a grey clock with a thin white hand (`common/lab/hand.png`) also showed nothing.
 
 Lite Wearable components (from `lib/templater/lite_component_map.js`): `div`, `stack`, `list`/`list-item`, `swiper`, `tabs`, `text`, `marquee`, `image`, `image-animator`, `analog-clock`/`clock-hand`, `progress`, `chart`, `qrcode`, `input`, `slider`, `switch`, `picker-view` and `canvas`. No `svg`.
 
@@ -55,7 +55,7 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 | h4 | One `div` moving 60 frames through a bound `left` | 30 ms/frame | 34 ms/frame |
 | i1 | Swapping an `image` src 60 times | 30 ms/frame | 51 ms/frame |
 | i2 | `image-animator` with the 10 theme images | works | works |
-| i3 | `analog-clock` + `clock-hand` | draws nothing | draws nothing |
+| i3 | `analog-clock` (grey background) + `clock-hand` (white bar) | draws nothing: "tag is not supported" | draws nothing |
 | k1 | `@keyframes` `rotate` on an `image` in a positioned `stack` | turns in place | turns in place |
 | p1 | `progress type="arc"` animated, and a line `chart` | 29 ms/frame | 35 ms/frame |
 | q1 | `qrcode` | draws | draws |
