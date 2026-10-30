@@ -30,6 +30,7 @@
         <progress class="arc" if="{{ view === 'charts' }}" type="arc" percent="{{ percent }}"></progress>
         <chart class="chart" if="{{ view === 'charts' }}" type="line" datasets="{{ datasets }}" options="{{ chartOptions }}"></chart>
         <qrcode class="qr" if="{{ view === 'qrcode' }}" value="Drawing lab"></qrcode>
+        <text class="detail" if="{{ view === 'audio' }}">{{ detail }}</text>
         <text class="status">{{ status }}</text>
         <div class="tap" onclick="back"></div>
     </stack>

@@ -144,6 +144,16 @@
   left: 133px;
   top: 133px;
 }
+/* Several lines of results for the audio tests, above the status line. */
+.detail {
+  width: 340px;
+  height: 260px;
+  left: 63px;
+  top: 110px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
 .status {
   width: 360px;
   height: 36px;

@@ -1,6 +1,10 @@
 import storage from '@system.storage';
 import router from '@system.router';
 import brightness from '@system.brightness';
+import file from '@system.file';
+// Empty in the Previewer, which has no audio module; on the watch it exists but drops every
+// src tried so far (see "Tap sound" in docs/create-and-preview-the-app.md).
+import audio from '@system.audio';
 
 // Drawing lab: each test draws one thing with one technique and times it, so canvas,
 // plain components and the other lite components can be compared on the watch.
@@ -21,6 +25,29 @@ const CANVAS_WAIT_MS = 50;
 const COUNT_CELL = 10;
 const COUNT_COLOUR_EVERY = 100;
 const COUNT_MAX = 5000;
+// Audio scan, phase 1: every file extension of 1-3 lowercase letters or digits and of 4
+// letters is given to audio.src (no file needed) to see whether any is kept. The work is
+// done in slices of AUDIO_SLICE_MS every AUDIO_TICK_MS, so JS never blocks for long.
+const EXT_SHORT = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const EXT_LONG = 'abcdefghijklmnopqrstuvwxyz';
+const EXT_TOTAL = 36 + 36 * 36 + 36 * 36 * 36 + 26 * 26 * 26 * 26;
+const AUDIO_SLICE_MS = 30;
+const AUDIO_TICK_MS = 50;
+const AUDIO_KEPT_MAX = 100;
+// Phase 2: one short WAV in AUDIO_DIR is renamed to each of AUDIO_EXTS, and for each the
+// lab checks whether src is kept and what play() does. A move or play that does not answer
+// in time counts as no answer.
+const AUDIO_DIR = 'internal://app/';
+const AUDIO_EXTS = [
+    'wav', 'wave', 'mp3', 'mp2', 'mpa', 'aac', 'adts', 'm4a', 'm4b', 'm4r', 'mp4', '3gp', '3ga',
+    '3g2', 'amr', 'awb', 'ogg', 'oga', 'ogx', 'opus', 'spx', 'flac', 'fla', 'ape', 'wma', 'wv',
+    'mka', 'webm', 'weba', 'mid', 'midi', 'rmi', 'kar', 'xmf', 'mxmf', 'imy', 'ota', 'rtttl',
+    'rtx', 'smf', 'pcm', 'raw', 'au', 'snd', 'aif', 'aiff', 'aifc', 'caf', 'ac3', 'ec3', 'dts',
+    'gsm', 'vox', 'sbc', 'lc3', 'ra', 'rm', 'mpc', 'tta', 'dsf', 'alac', 'm3u', 'pls', 'bin',
+    'dat', 'tmp', 'txt', 'sound', 'ring', 'tone'
+];
+const MOVE_WAIT_MS = 3000;
+const PLAY_WAIT_MS = 1500;
 // The recreate test removes the canvas and makes a new one every RECREATE_EVERY squares,
 // well under the 362 that one square per step reached on the watch.
 const RECREATE_EVERY = 100;
@@ -57,7 +84,9 @@ const TESTS = [
     { id: 'i3', name: 'analog-clock', view: 'clock' },
     { id: 'k1', name: 'Keyframes rotate', view: 'keyframes' },
     { id: 'p1', name: 'progress + chart', view: 'charts' },
-    { id: 'q1', name: 'qrcode', view: 'qrcode' }
+    { id: 'q1', name: 'qrcode', view: 'qrcode' },
+    { id: 'a1', name: 'Audio: all extensions', view: 'audio' },
+    { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' }
 ];
 
 // Square i of n in a grid filling the 466 px screen. Canvas tests ask for one at a time,
@@ -79,6 +108,61 @@ function grid(n, shift) {
         cells.push(gridCell(i, n, shift));
     }
     return cells;
+}
+
+// The Previewer's import is empty (no play()), and a plain object would keep any src.
+function hasAudio() {
+    return !!audio && typeof audio.play === 'function';
+}
+
+// Phase 1 extension number i: first all of length 1, 2 and 3 from EXT_SHORT, then length 4
+// from EXT_LONG.
+function extAt(i) {
+    const lengths = [1, 2, 3, 4];
+    for (let l = 0; l < lengths.length; l++) {
+        const chars = lengths[l] === 4 ? EXT_LONG : EXT_SHORT;
+        const count = Math.pow(chars.length, lengths[l]);
+        if (i < count) {
+            let ext = '';
+            for (let k = 0; k < lengths[l]; k++) {
+                ext = chars[i % chars.length] + ext;
+                i = Math.floor(i / chars.length);
+            }
+            return ext;
+        }
+        i -= count;
+    }
+    return '';
+}
+
+// A 0.3 s 440 Hz tone as an 8-bit mono 8 kHz WAV.
+function toneWav() {
+    const samples = 2400;
+    const bytes = new Uint8Array(44 + samples);
+    const text = (at, s) => {
+        for (let k = 0; k < s.length; k++) {
+            bytes[at + k] = s.charCodeAt(k);
+        }
+    };
+    const u32 = (at, v) => {
+        for (let k = 0; k < 4; k++) {
+            bytes[at + k] = (v >> (8 * k)) & 255;
+        }
+    };
+    text(0, 'RIFF');
+    u32(4, 36 + samples);
+    text(8, 'WAVEfmt ');
+    u32(16, 16);
+    u32(20, 1 | (1 << 16));
+    u32(24, 8000);
+    u32(28, 8000);
+    u32(32, 1 | (8 << 16));
+    text(36, 'data');
+    u32(40, samples);
+    for (let k = 0; k < samples; k++) {
+        bytes[44 + k] = 128 + Math.round(100 * Math.sin(2 * Math.PI * 440 * k / 8000));
+    }
+    return bytes;
 }
 
 // Top-left corners of the COUNT_CELL grid cells whose centre is on the round screen, row by
@@ -139,6 +223,7 @@ export default {
         view: '',
         size: 0,
         status: '',
+        detail: '',
         cells: [],
         moverX: 0,
         imageSrc: '',
@@ -503,5 +588,146 @@ export default {
     },
     q1() {
         this.finish('look: code shows?');
+    },
+    // Phase 1: gives every extension to audio.src and lists those it keeps.
+    a1() {
+        if (!hasAudio()) {
+            this.finish('no audio module');
+            return;
+        }
+        let i = 0;
+        const kept = [];
+        const t0 = Date.now();
+        this.detail = 'kept: none yet';
+        timer = setInterval(() => {
+            if (this.running === '') {
+                clearInterval(timer);
+                return;
+            }
+            const tick = Date.now();
+            try {
+                while (i < EXT_TOTAL && Date.now() - tick < AUDIO_SLICE_MS) {
+                    for (let k = 0; k < 50 && i < EXT_TOTAL; k++, i++) {
+                        const ext = extAt(i);
+                        audio.src = '/common/x.' + ext;
+                        if (audio.src) {
+                            if (kept.length < AUDIO_KEPT_MAX) {
+                                kept.push(ext);
+                            }
+                            audio.src = '';
+                        }
+                    }
+                }
+            } catch (e) {
+                clearInterval(timer);
+                this.finish('error at .' + extAt(i) + ': ' + e);
+                return;
+            }
+            this.status = i + ' / ' + EXT_TOTAL + ', ' + Math.floor((Date.now() - t0) / 1000) + ' s';
+            if (kept.length > 0) {
+                this.detail = 'kept: ' + kept.join(' ');
+            }
+            if (i >= EXT_TOTAL) {
+                clearInterval(timer);
+                this.finish(kept.length + ' kept');
+            }
+        }, AUDIO_TICK_MS);
+    },
+    // Phase 2: writes one WAV, then for each of AUDIO_EXTS renames it, sets src and plays it.
+    // Each outcome is "kept" or "dropped" (src read back) plus what play() did: "error"
+    // (onerror), "play" (onplay), "throw" or "silent" (nothing within PLAY_WAIT_MS).
+    a2() {
+        if (!hasAudio()) {
+            this.finish('no audio module');
+            return;
+        }
+        let i = 0;
+        let current = AUDIO_DIR + 'tone.wav';
+        const counts = {};
+        const odd = [];
+        const next = () => {
+            if (this.running === '') {
+                return;
+            }
+            if (i >= AUDIO_EXTS.length) {
+                this.finish(Object.keys(counts).map((k) => counts[k] + ' ' + k).join(', '));
+                return;
+            }
+            const ext = AUDIO_EXTS[i];
+            const target = AUDIO_DIR + 'tone.' + ext;
+            this.status = (i + 1) + ' / ' + AUDIO_EXTS.length + ' .' + ext;
+            if (target === current) {
+                tryPlay(ext);
+                return;
+            }
+            let answered = false;
+            timer = setTimeout(() => {
+                if (!answered) {
+                    answered = true;
+                    this.finish('move did not answer at .' + ext);
+                }
+            }, MOVE_WAIT_MS);
+            file.move({
+                srcUri: current,
+                dstUri: target,
+                success: () => {
+                    if (answered) {
+                        return;
+                    }
+                    answered = true;
+                    clearTimeout(timer);
+                    current = target;
+                    tryPlay(ext);
+                },
+                fail: (data, code) => {
+                    if (answered) {
+                        return;
+                    }
+                    answered = true;
+                    clearTimeout(timer);
+                    this.finish('move failed at .' + ext + ': ' + code);
+                }
+            });
+        };
+        const tryPlay = (ext) => {
+            audio.src = current;
+            const src = audio.src ? 'kept' : 'dropped';
+            let done = false;
+            const result = (what) => {
+                if (done) {
+                    return;
+                }
+                done = true;
+                clearTimeout(timer);
+                try {
+                    audio.stop();
+                } catch (e) {
+                    // Nothing was playing.
+                }
+                const outcome = src + ' ' + what;
+                counts[outcome] = (counts[outcome] || 0) + 1;
+                if (outcome !== 'dropped error') {
+                    odd.push(ext + ': ' + outcome);
+                }
+                this.detail = odd.length > 0 ? odd.join('\n') : 'all dropped + error so far';
+                i++;
+                timer = setTimeout(next, 0);
+            };
+            audio.onplay = () => result('play');
+            audio.onerror = () => result('error');
+            timer = setTimeout(() => result('silent'), PLAY_WAIT_MS);
+            try {
+                audio.play();
+            } catch (e) {
+                result('throw');
+            }
+        };
+        this.detail = 'writing the WAV...';
+        file.writeArrayBuffer({
+            uri: current,
+            buffer: toneWav(),
+            success: () => next(),
+            fail: (data, code) => this.finish('write failed: ' + code)
+        });
     }
 };
