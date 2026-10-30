@@ -15,6 +15,8 @@
         <canvas class="canvas-100" ref="cv" if="{{ view === 'canvas' && size === 100 }}"></canvas>
         <canvas class="canvas-200" ref="cv" if="{{ view === 'canvas' && size === 200 }}"></canvas>
         <canvas class="canvas-466" ref="cv" if="{{ view === 'canvas' && size === 466 }}"></canvas>
+        <canvas class="canvas-466" ref="cvA" if="{{ view === 'swap' && liveA }}" show="{{ showA }}"></canvas>
+        <canvas class="canvas-466" ref="cvB" if="{{ view === 'swap' && liveB }}" show="{{ showB }}"></canvas>
         <stack class="cells" if="{{ view === 'cells' }}">
             <div class="cell" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
         </stack>

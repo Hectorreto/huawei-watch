@@ -48,6 +48,13 @@ const AUDIO_EXTS = [
 ];
 const MOVE_WAIT_MS = 3000;
 const PLAY_WAIT_MS = 1500;
+// Canvas swap tests: a frame is a black background and WALL_COLS columns of changing height,
+// like a first-person maze (WALL_COLS + 1 rects). Every SWAP_FRAMES frames (800 rects, under
+// the ~1,100 a canvas takes) the drawing moves to a fresh canvas. They stop at SWAP_TOTAL.
+const WALL_COLS = 39;
+const WALL_W = 12;
+const SWAP_FRAMES = 20;
+const SWAP_TOTAL = 600;
 // The recreate test removes the canvas and makes a new one every RECREATE_EVERY squares,
 // well under the 362 that one square per step reached on the watch.
 const RECREATE_EVERY = 100;
@@ -86,7 +93,9 @@ const TESTS = [
     { id: 'p1', name: 'progress + chart', view: 'charts' },
     { id: 'q1', name: 'qrcode', view: 'qrcode' },
     { id: 'a1', name: 'Audio: all extensions', view: 'audio' },
-    { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' }
+    { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' },
+    { id: 's1', name: 'Two canvases', view: 'swap' },
+    { id: 's2', name: 'One canvas, recreate', view: 'swap' }
 ];
 
 // Square i of n in a grid filling the 466 px screen. Canvas tests ask for one at a time,
@@ -108,6 +117,10 @@ function grid(n, shift) {
         cells.push(gridCell(i, n, shift));
     }
     return cells;
+}
+
+function hex2(v) {
+    return (v < 16 ? '0' : '') + v.toString(16);
 }
 
 // The Previewer's import is empty (no play()), and a plain object would keep any src.
@@ -224,6 +237,10 @@ export default {
         size: 0,
         status: '',
         detail: '',
+        liveA: false,
+        liveB: false,
+        showA: true,
+        showB: false,
         cells: [],
         moverX: 0,
         imageSrc: '',
@@ -588,6 +605,112 @@ export default {
     },
     q1() {
         this.finish('look: code shows?');
+    },
+    // Two canvases on top of each other, one shown. Frames go to the shown one; after
+    // SWAP_FRAMES the next frame is drawn on the hidden one, the two swap, and the old one is
+    // remade (if off and on) while hidden, so the limit never shows. With two = false there is
+    // only canvas A, remade in place every SWAP_FRAMES, for comparison.
+    swapCanvases(two) {
+        const ctx = { A: null, B: null };
+        let active = 'A';
+        let frames = 0;
+        let onActive = 0;
+        let swaps = 0;
+        let remaking = false;
+        const t0 = Date.now();
+        const live = (name, on) => {
+            this['live' + name] = on;
+        };
+        const remake = (name, then) => {
+            ctx[name] = null;
+            live(name, false);
+            setTimeout(() => {
+                live(name, true);
+                setTimeout(() => {
+                    ctx[name] = this.$refs['cv' + name].getContext('2d');
+                    if (then) {
+                        then();
+                    }
+                }, CANVAS_WAIT_MS);
+            }, CANVAS_WAIT_MS);
+        };
+        const draw = (c) => {
+            c.fillStyle = '#000000';
+            c.fillRect(0, 0, 466, 466);
+            for (let k = 0; k < WALL_COLS; k++) {
+                const h = Math.round(140 + 110 * Math.sin(frames * 0.15 + k * 0.25));
+                const shade = 120 + Math.round(100 * Math.sin(frames * 0.05 + k * 0.1));
+                c.fillStyle = '#' + hex2(shade) + hex2(Math.round(shade * 0.7)) + '3c';
+                c.fillRect(k * WALL_W, 233 - h / 2, WALL_W - 1, h);
+            }
+        };
+        const step = () => {
+            if (this.running === '') {
+                clearInterval(timer);
+                return;
+            }
+            if (frames >= SWAP_TOTAL) {
+                clearInterval(timer);
+                this.finish(SWAP_TOTAL + ' frames OK, ' + Math.round((Date.now() - t0) / SWAP_TOTAL) + ' ms/frame');
+                return;
+            }
+            try {
+                if (onActive >= SWAP_FRAMES) {
+                    if (two) {
+                        const next = active === 'A' ? 'B' : 'A';
+                        if (!ctx[next]) {
+                            return;
+                        }
+                        draw(ctx[next]);
+                        this['show' + next] = true;
+                        this['show' + active] = false;
+                        remake(active);
+                        active = next;
+                    } else {
+                        if (!remaking) {
+                            remaking = true;
+                            remake('A');
+                        }
+                        if (!ctx.A) {
+                            return;
+                        }
+                        remaking = false;
+                        draw(ctx.A);
+                    }
+                    onActive = 1;
+                    swaps++;
+                } else {
+                    if (!ctx[active]) {
+                        return;
+                    }
+                    draw(ctx[active]);
+                    onActive++;
+                }
+            } catch (e) {
+                clearInterval(timer);
+                this.finish('error at frame ' + frames + ': ' + e);
+                return;
+            }
+            frames++;
+            this.status = frames + ' frames, ' + swaps + (two ? ' swaps' : ' remakes') + ', ' + Math.floor((Date.now() - t0) / 1000) + ' s';
+        };
+        this.showA = true;
+        this.showB = false;
+        live('A', true);
+        live('B', two);
+        timer = setTimeout(() => {
+            ctx.A = this.$refs.cvA.getContext('2d');
+            if (two) {
+                ctx.B = this.$refs.cvB.getContext('2d');
+            }
+            timer = setInterval(step, FRAME_MS);
+        }, CANVAS_WAIT_MS);
+    },
+    s1() {
+        this.swapCanvases(true);
+    },
+    s2() {
+        this.swapCanvases(false);
     },
     // Phase 1: gives every extension to audio.src and lists those it keeps.
     a1() {
