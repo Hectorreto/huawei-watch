@@ -55,6 +55,11 @@ const WALL_COLS = 39;
 const WALL_W = 12;
 const SWAP_FRAMES = 20;
 const SWAP_TOTAL = 600;
+// Delta tests: only the bands of each column that grew or shrank are drawn (2 rects per
+// changed column), and the canvas is remade once it has DELTA_LIMIT rects, well under ~1,100.
+// The steps test jumps to a new view every STEP_FRAMES frames, like a step in a maze.
+const DELTA_LIMIT = 900;
+const STEP_FRAMES = 15;
 // The recreate test removes the canvas and makes a new one every RECREATE_EVERY squares,
 // well under the 362 that one square per step reached on the watch.
 const RECREATE_EVERY = 100;
@@ -96,8 +101,15 @@ const TESTS = [
     { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' },
     { id: 's1', name: 'Two canvases', view: 'swap' },
     { id: 's2', name: 'One canvas, recreate', view: 'swap' },
-    { id: 's3', name: 'Recreate, no wait', view: 'swap' }
+    { id: 's3', name: 'Recreate, no wait', view: 'swap' },
+    { id: 'd2', name: 'Delta, steps', view: 'swap' }
 ];
+
+// Column colours for the delta tests: fixed per column, so only heights change.
+function wallColour(k) {
+    const shade = 120 + Math.round(100 * Math.sin(k * 0.3));
+    return '#' + hex2(shade) + hex2(Math.round(shade * 0.7)) + '3c';
+}
 
 // Square i of n in a grid filling the 466 px screen. Canvas tests ask for one at a time,
 // so they keep no array; the div tests bind the whole list.
@@ -724,6 +736,104 @@ export default {
     },
     s3() {
         this.swapCanvases(false, 0);
+    },
+    // Animates WALL_COLS columns centred on the screen, with heightAt(frame, column) giving
+    // each column's height, but draws only what changed: when a column grows, its new top and
+    // bottom bands in its colour; when it shrinks, the bands it lost in black. Once the canvas
+    // has DELTA_LIMIT rects it is remade (like s2) and every column drawn in full again.
+    deltaWalls(heightAt) {
+        let ctx = null;
+        let frames = 0;
+        let rects = 0;
+        let onCanvas = 0;
+        let remakes = 0;
+        let lastFrame = 0;
+        let maxGap = 0;
+        const shown = [];
+        const t0 = Date.now();
+        const band = (k, from, to, colour) => {
+            if (to > from) {
+                ctx.fillStyle = colour;
+                ctx.fillRect(k * WALL_W, from, WALL_W - 1, to - from);
+                onCanvas++;
+                rects++;
+            }
+        };
+        const remake = () => {
+            ctx = null;
+            this.liveA = false;
+            setTimeout(() => {
+                this.liveA = true;
+                setTimeout(() => {
+                    ctx = this.$refs.cvA.getContext('2d');
+                    onCanvas = 0;
+                    for (let k = 0; k < WALL_COLS; k++) {
+                        shown[k] = 0;
+                    }
+                }, CANVAS_WAIT_MS);
+            }, CANVAS_WAIT_MS);
+        };
+        const step = () => {
+            if (this.running === '') {
+                clearInterval(timer);
+                return;
+            }
+            if (frames >= SWAP_TOTAL) {
+                clearInterval(timer);
+                this.finish('OK ' + (rects / SWAP_TOTAL).toFixed(1) + ' r/f, ' + remakes + ' new, gap ' + maxGap);
+                return;
+            }
+            if (!ctx) {
+                return;
+            }
+            try {
+                if (onCanvas + 2 * WALL_COLS > DELTA_LIMIT) {
+                    remakes++;
+                    remake();
+                    return;
+                }
+                for (let k = 0; k < WALL_COLS; k++) {
+                    const h = heightAt(frames, k);
+                    const old = shown[k];
+                    if (h > old) {
+                        band(k, 233 - h / 2, 233 - old / 2, wallColour(k));
+                        band(k, 233 + old / 2, 233 + h / 2, wallColour(k));
+                    } else if (h < old) {
+                        band(k, 233 - old / 2, 233 - h / 2, '#000000');
+                        band(k, 233 + h / 2, 233 + old / 2, '#000000');
+                    }
+                    shown[k] = h;
+                }
+            } catch (e) {
+                clearInterval(timer);
+                this.finish('error at frame ' + frames + ': ' + e);
+                return;
+            }
+            frames++;
+            const now = Date.now();
+            if (lastFrame > 0) {
+                maxGap = Math.max(maxGap, now - lastFrame);
+            }
+            lastFrame = now;
+            this.status = frames + ' f, ' + (rects / frames).toFixed(1) + ' r/f, ' + remakes + ' new';
+        };
+        for (let k = 0; k < WALL_COLS; k++) {
+            shown[k] = 0;
+        }
+        this.showA = true;
+        this.liveB = false;
+        this.liveA = true;
+        timer = setTimeout(() => {
+            ctx = this.$refs.cvA.getContext('2d');
+            timer = setInterval(step, FRAME_MS);
+        }, CANVAS_WAIT_MS);
+    },
+    // Walls that jump to a new view every STEP_FRAMES frames and stay still in between.
+    d2() {
+        this.deltaWalls((f, k) => {
+            const s = Math.floor(f / STEP_FRAMES);
+            return 4 * Math.round((100 + 150 * Math.abs(Math.sin(s * 1.3 + k * 0.12))) / 4);
+        });
     },
     // Phase 1: gives every extension to audio.src and lists those it keeps.
     a1() {
