@@ -95,7 +95,8 @@ const TESTS = [
     { id: 'a1', name: 'Audio: all extensions', view: 'audio' },
     { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' },
     { id: 's1', name: 'Two canvases', view: 'swap' },
-    { id: 's2', name: 'One canvas, recreate', view: 'swap' }
+    { id: 's2', name: 'One canvas, recreate', view: 'swap' },
+    { id: 's3', name: 'Recreate, no wait', view: 'swap' }
 ];
 
 // Square i of n in a grid filling the 466 px screen. Canvas tests ask for one at a time,
@@ -609,14 +610,18 @@ export default {
     // Two canvases on top of each other, one shown. Frames go to the shown one; after
     // SWAP_FRAMES the next frame is drawn on the hidden one, the two swap, and the old one is
     // remade (if off and on) while hidden, so the limit never shows. With two = false there is
-    // only canvas A, remade in place every SWAP_FRAMES, for comparison.
-    swapCanvases(two) {
+    // only canvas A, remade in place every SWAP_FRAMES, for comparison. Remaking waits waitMs
+    // after removing the canvas and again after adding it back. The longest time between two
+    // drawn frames is shown as the hiccup.
+    swapCanvases(two, waitMs) {
         const ctx = { A: null, B: null };
         let active = 'A';
         let frames = 0;
         let onActive = 0;
         let swaps = 0;
         let remaking = false;
+        let lastFrame = 0;
+        let maxGap = 0;
         const t0 = Date.now();
         const live = (name, on) => {
             this['live' + name] = on;
@@ -631,8 +636,8 @@ export default {
                     if (then) {
                         then();
                     }
-                }, CANVAS_WAIT_MS);
-            }, CANVAS_WAIT_MS);
+                }, waitMs);
+            }, waitMs);
         };
         const draw = (c) => {
             c.fillStyle = '#000000';
@@ -651,7 +656,7 @@ export default {
             }
             if (frames >= SWAP_TOTAL) {
                 clearInterval(timer);
-                this.finish(SWAP_TOTAL + ' frames OK, ' + Math.round((Date.now() - t0) / SWAP_TOTAL) + ' ms/frame');
+                this.finish('OK ' + Math.round((Date.now() - t0) / SWAP_TOTAL) + ' ms/f, gap ' + maxGap);
                 return;
             }
             try {
@@ -692,7 +697,12 @@ export default {
                 return;
             }
             frames++;
-            this.status = frames + ' frames, ' + swaps + (two ? ' swaps' : ' remakes') + ', ' + Math.floor((Date.now() - t0) / 1000) + ' s';
+            const now = Date.now();
+            if (lastFrame > 0) {
+                maxGap = Math.max(maxGap, now - lastFrame);
+            }
+            lastFrame = now;
+            this.status = frames + ' f, ' + swaps + (two ? ' swaps' : ' remakes') + ', gap ' + maxGap;
         };
         this.showA = true;
         this.showB = false;
@@ -707,10 +717,13 @@ export default {
         }, CANVAS_WAIT_MS);
     },
     s1() {
-        this.swapCanvases(true);
+        this.swapCanvases(true, CANVAS_WAIT_MS);
     },
     s2() {
-        this.swapCanvases(false);
+        this.swapCanvases(false, CANVAS_WAIT_MS);
+    },
+    s3() {
+        this.swapCanvases(false, 0);
     },
     // Phase 1: gives every extension to audio.src and lists those it keeps.
     a1() {
