@@ -10,13 +10,13 @@
 
 File > New > Create Project > Application > **[Lite]Empty Ability** (the template with a watch icon). It is JS, FA model, `deviceType: liteWearable`. The template accepts compatible SDKs 4.0.0(10) to 6.1.1(24).
 
-`Counter/` was created with:
+The first project, now `apps/bakery-clicker/`, was created with:
 
 | Field | Value |
 |---|---|
 | Project name | Counter |
 | Bundle name | `com.hectorreto.counter` (the AppGallery Connect app must use the same package name) |
-| Save location | `huawei-watch\Counter` |
+| Save location | `huawei-watch\Counter` (moved to `apps/bakery-clicker/` later; the project name stays `Counter` inside DevEco) |
 | Compatible SDK | **5.0.0(12)**, the lowest common value that GT 6 projects use; the confirmed GT 6 project used 5.0.5(17), which this DevEco does not list |
 | Target SDK | 6.1.1(24), set by the wizard in `build-profile.json5` |
 
@@ -24,9 +24,11 @@ The first sync shows "Project sync failed" while ohpm installs packages; it retr
 
 Driving the wizard with computer use: DevEco Studio is granted at **full** tier (typing works), because it is not recognised as an IDE.
 
-## The app
+## The app (bakery-clicker)
 
-`entry/src/main/js/MainAbility/pages/index/` is one page with three views, switched with `if` on `view`: the cookie, the shop and the achievements. Changing `view` is enough, so no `@system.router` page is needed and the production timer keeps running in the other views.
+The other apps (`apps/maze/`, `apps/drawing-lab/`) were not made with the wizard but copied from this project (see `add-a-new-app.md`).
+
+In `apps/bakery-clicker/`, `entry/src/main/js/MainAbility/pages/index/` is one page with three views, switched with `if` on `view`: the cookie, the shop and the achievements. Changing `view` is enough, so no `@system.router` page is needed and the production timer keeps running in the other views.
 
 **Cookie view:** a `stack` laid out with `left`/`top`. At the bottom is the cookie, a full-screen 466 px `div` with `onclick="increment"` and the edge swipe (`onswipe="edgeSwipe"`, see **Gestures**). Over it are the curved count (below) and the "+N" texts (below). The overlays are kept small because taps on them do not reach the cookie. There are no buttons on the big cookie; the edge swipe opens the menu (below). In the Previewer a swipe does not also count as a tap. Each tap:
 
@@ -98,7 +100,7 @@ Checked in the Previewer: the default theme on the big cookie and in the menu, t
 - Calls: `src` then `play()`, `play({ uri })`, `play({ src })` (these never run `success`, `fail` or `complete`), with `volume = 1`, `muted = false`, `streamType = 'music'`.
 - Permissions: adding `ohos.permission.READ_MEDIA` and `ohos.permission.MODIFY_AUDIO_SETTINGS` to `reqPermissions` (same form as VIBRATE) still installs, and changes nothing.
 
-- Extensions (drawing lab, `lab-dibujo` branch, October 2026): "Audio: rename a WAV" wrote one valid 0.3 s 8-bit WAV to `internal://app/` and renamed it with `file.move` (which works) to 70 likely extensions (`wav`, `mp3`, `aac`, `m4a`, `amr`, `ogg`, `opus`, `flac`, `mid`, `midi`, `imy`, `ota`, `pcm`, `au`, `aiff`, `wma`, `bin`, `txt`...): for every one `src` was dropped and `play()` gave `onerror` ("70 dropped error"). "Audio: all extensions" gave `src` the path `/common/x.<ext>` for every extension of 1-3 lowercase letters or digits and of 4 letters (504,964, no file needed, in 30 ms slices); the app was killed about halfway (roughly 250,000 assignments, likely something native piling up per assignment, as with canvas `fillRect`), and no extension had been kept up to then. So the extension is not what the player rejects. One file was renamed instead of writing one per extension to keep flash writes low.
+- Extensions (drawing lab, `apps/drawing-lab/`, October 2026): "Audio: rename a WAV" wrote one valid 0.3 s 8-bit WAV to `internal://app/` and renamed it with `file.move` (which works) to 70 likely extensions (`wav`, `mp3`, `aac`, `m4a`, `amr`, `ogg`, `opus`, `flac`, `mid`, `midi`, `imy`, `ota`, `pcm`, `au`, `aiff`, `wma`, `bin`, `txt`...): for every one `src` was dropped and `play()` gave `onerror` ("70 dropped error"). "Audio: all extensions" gave `src` the path `/common/x.<ext>` for every extension of 1-3 lowercase letters or digits and of 4 letters (504,964, no file needed, in 30 ms slices); the app was killed about halfway (roughly 250,000 assignments, likely something native piling up per assignment, as with canvas `fillRect`), and no extension had been kept up to then. So the extension is not what the player rejects. One file was renamed instead of writing one per extension to keep flash writes low.
 
 So a third-party app cannot set what the player plays; the module seems to be there for system apps. Do not try again without a new SDK or documentation that shows a different API. The official Chinese documentation (October 2026) agrees: on developer.huawei.com the JS reference has pages for modules such as `@system.vibrator` (`/consumer/cn/doc/harmonyos-references/js-apis-system-vibrate`), but `js-apis-system-audio` is a 404, and searching the Chinese docs for `system.audio` finds nothing. The only Lite Wearable sound path the docs and Chinese forums mention is a phone app sending a notification to the watch through Wear Engine (the watch then rings or vibrates by its own settings), which needs a phone app and is too slow for a tap sound. Two traps met on the way: `requireModule()` of a module that is not there, or of `@system.app` or the already-loaded `@system.audio`, throws in a way that `try`/`catch` does not reliably stop (on the watch a probe just stopped silently), so do not probe modules by name; and `file.list` on `internal://app/` never called back. These tests ran from a temporary full-screen view (Settings > Experimental) that showed the results line by line.
 
@@ -112,7 +114,7 @@ The name on the watch is `MainAbility_label` in `entry/src/main/resources/base/e
 
 ## Previewer
 
-Open `index.hml` and click **Previewer** on the right edge. It builds (`buildPreviewerResource`, a few seconds) and shows a round LiteWearable watch. Clicks on the screen act as taps. To fake the edge swipe with computer use, press at the edge, wait about 0.3 s and make the first moves small: a quick drag makes lite's `touchstart` report a position already far from the edge, so `edgeSwipe` ignores it.
+Open the app folder (for example `apps/bakery-clicker/`) as the project in DevEco, open `index.hml` and click **Previewer** on the right edge. It builds (`buildPreviewerResource`, a few seconds) and shows a round LiteWearable watch. Clicks on the screen act as taps. To fake the edge swipe with computer use, press at the edge, wait about 0.3 s and make the first moves small: a quick drag makes lite's `touchstart` report a position already far from the edge, so `edgeSwipe` ignores it.
 
 - Clicks less than about a second apart counted once (three quick clicks → 1). Clicks two seconds apart each counted. Not yet checked whether a real watch behaves the same.
 - The default text size (38px) looks small on the round screen. Lite Wearable only accepts some font sizes; try larger ones in the Previewer before changing it.

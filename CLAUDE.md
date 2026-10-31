@@ -1,8 +1,12 @@
 # huawei-watch
 
-A minimal app for a Huawei Watch GT 6 Pro: a black screen showing a number that starts at 0 and goes up by 1 on every tap. The main goal is finding out whether a self-built app can be installed on this watch at all; the GT 6 series is a Lite Wearable (HarmonyOS on LiteOS, JS FA apps). Available to test with: a Windows PC (this one), a Mac, an Android phone and an iPhone.
+Self-built apps for a Huawei Watch GT 6 Pro, one repository for all of them. It started as a tap counter to find out whether a self-built app installs on this watch at all (it does); the GT 6 series is a Lite Wearable (HarmonyOS on LiteOS, JS FA apps). Available to test with: a Windows PC (this one), a Mac, an Android phone and an iPhone.
 
-- **App:** `Counter/` is the DevEco Studio project (Lite Wearable, JS FA). Its page is `Counter/entry/src/main/js/MainAbility/pages/index/`.
+- **Apps:** each app under `apps/` is its own DevEco Studio project (Lite Wearable, JS FA) with its own `bundleName`, and its page is `apps/<app>/entry/src/main/js/MainAbility/pages/index/`:
+  - `apps/bakery-clicker/`: the cookie clicker game (`com.hectorreto.counter`).
+  - `apps/maze/`: the first-person maze prototype (`com.hectorreto.maze`).
+  - `apps/drawing-lab/`: tests of drawing methods and watch limits (`com.hectorreto.drawinglab`).
+- **Shared:** `docs/` (lessons for all apps) and `tools/` (scripts).
 - **Tools:** DevEco Studio 6.1.1 at `E:\Programs\Huawei\DevEco Studio`, with its bundled SDK 6.1.1(24). See `docs/create-and-preview-the-app.md`.
 
 ## Conventions
@@ -31,5 +35,7 @@ How to write them:
 - Creating the debug certificate, app ID or debug profile, the signing config, or building the signed package → `docs/sign-the-app.md`
 - Installing the signed app on the watch with DevEco Assistant → `docs/install-on-the-watch.md`
 - Choosing the toolchain, signing an app or installing it on the Watch GT 6 Pro (Android, iPhone, Gadgetbridge) → `docs/choose-a-development-path.md`
+- Adding a new app to `apps/`, its bundle name, app ID, debug profile and signing config → `docs/add-a-new-app.md`
 - Choosing how to draw something (canvas, components, images, animations), or running the drawing lab → `docs/compare-drawing-methods.md`
+- Working on the first-person maze prototype (`apps/maze/`) → `docs/maze-prototype.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`

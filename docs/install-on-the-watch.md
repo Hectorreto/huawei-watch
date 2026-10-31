@@ -4,7 +4,7 @@ Confirmed October 2026: the signed counter installed on our Watch GT 6 Pro throu
 
 ## Steps
 
-1. Build: `Counter/entry/build/default/outputs/default/entry-default-signed.hap`.
+1. Build: `apps/<app>/entry/build/default/outputs/default/entry-default-signed.hap`.
 2. Copy the HAP to the Android phone into a folder named **`haps`** at the root of internal storage: `/storage/emulated/0/haps/` (same as `/sdcard/haps/`). A HAP left directly in `/storage/emulated/0` is not the documented location; DevEco Assistant looks in `haps`.
 3. With the watch paired in HUAWEI Health, open **DevEco Assistant** (v1.2.1.600) and tap **Install watch app**, then pick the HAP.
 

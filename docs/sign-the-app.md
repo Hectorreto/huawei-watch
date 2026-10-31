@@ -45,7 +45,7 @@ The notice after creating the profile about associating the certificate fingerpr
 
 ## Signing config in the project
 
-`Counter/build-profile.json5` has a `signingConfigs` entry `default` (`type: HarmonyOS`, `signAlg: SHA256withECDSA`, alias `counter`) with absolute paths to the files above.
+`apps/bakery-clicker/build-profile.json5` has a `signingConfigs` entry `default` (`type: HarmonyOS`, `signAlg: SHA256withECDSA`, alias `counter`) with absolute paths to the files above. The other apps use the same keystore, certificate and `material/` with their own profile (`maze.p7b`, `drawinglab.p7b` in the same folder); see `add-a-new-app.md`.
 
 `storePassword` and `keyPassword` are not plain text: hvigor decrypts them (AES-128-GCM, hex) with a key derived from a `material/` folder next to the keystore (`material/fd/{0,1,2}`, `material/ac`, `material/ce`, one file each). DevEco's **File > Project Structure > Signing Configs** creates that folder and the encrypted values. We generated them with a small Node script that mirrors hvigor's `src/utils/decipher-util.js` (in `tools/hvigor/hvigor-ohos-plugin`); the build decrypted them fine. The encrypted values are useless without `material/`, which stays outside the repo. If the material or the password changes, set the passwords again through the DevEco dialog.
 
@@ -54,7 +54,7 @@ The notice after creating the profile about associating the certificate fingerpr
 ```
 export DEVECO_SDK_HOME="E:/Programs/Huawei/DevEco Studio/sdk"
 export PATH="/e/Programs/Huawei/DevEco Studio/jbr/bin:/e/Programs/Huawei/DevEco Studio/tools/node:$PATH"
-cd Counter
+cd apps/bakery-clicker   # or any other app under apps/
 node "E:/Programs/Huawei/DevEco Studio/tools/hvigor/bin/hvigorw.js" --mode module -p product=default -p buildMode=debug assembleHap --no-daemon
 ```
 
