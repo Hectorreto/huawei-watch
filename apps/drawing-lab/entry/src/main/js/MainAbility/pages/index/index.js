@@ -127,7 +127,9 @@ const FOLDERS = [
     { emoji: '✂️', name: 'Components', ids: ['h1', 'h4', 'i1', 'i2', 'i3', 'k1', 'p1', 'q1'] },
     { emoji: '☎️', name: 'Audio', ids: ['a1', 'a2'] }
 ];
-const GRID_COLS = 3;
+const MENU_CELLS = 12;
+// Height of a row in a folder's list, as in .line.
+const LINE_HEIGHT = 118;
 const BACK = -1;
 // Maze-like colours for the shape tests.
 const CEILING = '#1c2233';
@@ -306,28 +308,17 @@ function slopedWall(ctx, x1, x2, top1, top2, colour) {
     ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), 466 - 2 * top);
     const width = Math.abs(top1 - top2) + 10;
     const up = x2 > x1 ? 1 : -1;
-    sideLine(ctx, x1, top1, x2, top2, up, width, 20, CEILING);
-    sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, FLOOR);
+    sideLine(ctx, x1, top1, x2, top2, up, width, 20, '#ff0000');
+    sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, '#ff00ff');
 }
 
-// Grid cells in rows of GRID_COLS, flattened (i0, e0, n0, r0, u0 for the first cell, and so
-// on), since a row's cells are not a nested for. Unused cells have u false.
-function gridRows(cells) {
-    const rows = [];
-    for (let r = 0; r < cells.length; r += GRID_COLS) {
-        const row = {};
-        for (let k = 0; k < GRID_COLS; k++) {
-            const cell = cells[r + k];
-            row['i' + k] = cell ? cell.index : BACK;
-            row['e' + k] = cell ? cell.emoji : '';
-            row['n' + k] = cell ? cell.name : '';
-            row['r' + k] = cell ? cell.result : '';
-            row['u' + k] = !!cell;
-        }
-        rows.push(row);
-    }
-    return rows;
-}
+// The folders are a grid of 3 rows of 3 and a folder is a list of up to 10 rows, all fixed
+// cells instead of a for: rebuilding a for
+// under the list left views unfreed (lite logged "not found the view can be free"), which
+// froze the Previewer after a few folder changes and, swapped in place, closed the app on the
+// watch. Cell k shows through the data keys ek, nk, rk and uk (shown); taps give k, and
+// cellIndex[k] is what it opens.
+let cellIndex = [];
 
 // Index in TESTS by test id.
 const TEST_INDEX = {};
@@ -360,8 +351,66 @@ export default {
     data: {
         title: 'Drawing lab',
         folder: BACK,
-        menuOn: true,
-        rows: [],
+        e0: '',
+        n0: '',
+        r0: '',
+        u0: false,
+        h0: 0,
+        e1: '',
+        n1: '',
+        r1: '',
+        u1: false,
+        h1: 0,
+        e2: '',
+        n2: '',
+        r2: '',
+        u2: false,
+        h2: 0,
+        e3: '',
+        n3: '',
+        r3: '',
+        u3: false,
+        h3: 0,
+        e4: '',
+        n4: '',
+        r4: '',
+        u4: false,
+        h4: 0,
+        e5: '',
+        n5: '',
+        r5: '',
+        u5: false,
+        h5: 0,
+        e6: '',
+        n6: '',
+        r6: '',
+        u6: false,
+        h6: 0,
+        e7: '',
+        n7: '',
+        r7: '',
+        u7: false,
+        h7: 0,
+        e8: '',
+        n8: '',
+        r8: '',
+        u8: false,
+        h8: 0,
+        e9: '',
+        n9: '',
+        r9: '',
+        u9: false,
+        h9: 0,
+        e10: '',
+        n10: '',
+        r10: '',
+        u10: false,
+        h10: 0,
+        e11: '',
+        n11: '',
+        r11: '',
+        u11: false,
+        h11: 0,
         running: '',
         view: '',
         size: 0,
@@ -427,7 +476,7 @@ export default {
     showList() {
         if (this.folder === BACK) {
             this.title = 'Drawing lab';
-            this.rows = gridRows(FOLDERS.map((f, i) => {
+            this.setCells(FOLDERS.map((f, i) => {
                 const done = f.ids.filter((id) => results[id]).length;
                 const crashed = f.ids.some((id) => results[id] === CRASHED);
                 return { index: i, emoji: f.emoji, name: f.name, result: crashed ? 'CRASH' : done + ' / ' + f.ids.length };
@@ -436,25 +485,31 @@ export default {
         }
         const f = FOLDERS[this.folder];
         this.title = f.name;
-        this.rows = gridRows([{ index: BACK, emoji: '⬅️', name: 'Back', result: '' }].concat(f.ids.map((id) => {
+        this.setCells([{ index: BACK, emoji: '⬅️', name: 'Back', result: '' }].concat(f.ids.map((id) => {
             const t = TESTS[TEST_INDEX[id]];
             return { index: TEST_INDEX[id], emoji: t.emoji, name: t.name, result: id + ': ' + (results[id] || '-') };
         })));
     },
-    // Shows another folder (or BACK for the folder grid) in a new list. Swapping rows under the
-    // same list made lite log "not found the view can be free" and closed the app after a few
-    // folder changes, so the list is removed first and made again on the next tick, as when a
-    // test ends.
+    // Fills the fixed rows with cells and hides the rest.
+    setCells(cells) {
+        cellIndex = cells.map((c) => c.index);
+        for (let k = 0; k < MENU_CELLS; k++) {
+            const c = cells[k];
+            this['e' + k] = c ? c.emoji : '';
+            this['n' + k] = c ? c.name : '';
+            this['r' + k] = c ? c.result : '';
+            this['u' + k] = !!c;
+            // A hidden list-item still takes its height, so unused rows get none.
+            this['h' + k] = c ? LINE_HEIGHT : 0;
+        }
+    },
     openFolder(folder) {
-        this.menuOn = false;
         this.folder = folder;
-        timer = setTimeout(() => {
-            this.showList();
-            this.menuOn = true;
-        }, 0);
+        this.showList();
     },
     // A tap on a grid cell: opens a folder, goes back, or runs a test.
-    pick(index) {
+    pick(row) {
+        const index = cellIndex[row];
         if (this.folder === BACK) {
             this.openFolder(index);
         } else if (index === BACK) {

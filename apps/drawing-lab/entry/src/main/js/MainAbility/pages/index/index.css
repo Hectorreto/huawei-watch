@@ -57,6 +57,34 @@
   color: #aaaaaa;
   text-align: center;
 }
+/* A folder's tests: one wide cell per row. */
+.line {
+  width: 466px;
+  height: 118px;
+  justify-content: center;
+}
+.line-cell {
+  width: 340px;
+  height: 110px;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 18px;
+  background-color: #1e1e1e;
+}
+.line-name {
+  width: 320px;
+  height: 28px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
+.line-result {
+  width: 320px;
+  height: 28px;
+  font-size: 20px;
+  color: #aaaaaa;
+  text-align: center;
+}
 /* Room after the last row, so it can scroll up out of the round edge. */
 .end-item {
   width: 466px;
