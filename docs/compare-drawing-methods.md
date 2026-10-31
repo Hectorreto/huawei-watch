@@ -22,9 +22,9 @@ Lite Wearable components (from `lib/templater/lite_component_map.js`): `div`, `s
 
 ## The lab
 
-The branch `lab-dibujo` turns the app into a list of tests ("Drawing lab"); its last row, "Back to the game", opens the game with `router.replace`. The lab is temporary and stays off `main`.
+The lab is its own app, `apps/drawing-lab/` (bundle `com.hectorreto.drawinglab`, name "Drawing Lab" on the watch): a list of tests on `pages/index/`. It uses a few images copied from bakery-clicker (`common/themes/*_small.png` for `image-animator`, `common/lab/hand.png`). Before the apps were split it lived on the branch `lab-dibujo`, with the game moved to `pages/game`.
 
-- **The lab has to be `pages/index/index`.** A first try added it as `pages/lab/lab`, first in `config.json` `pages`; the HAP contained it, but the watch still opened the game. The app starts at `pages/index/index` whatever the order, so on the branch the lab is `pages/index/` and the game moved to `pages/game/game.*`.
+- **An app starts at `pages/index/index`.** A first try added the lab as `pages/lab/lab`, first in `config.json` `pages`; the HAP contained it, but the watch still opened the game. The app starts at `pages/index/index` whatever the order, which is why each app now has its own project instead of sharing one.
 - Tap a row to run it. Tap anywhere to go back to the list. Each row shows its last result under its name.
 - Before a test starts its id is saved as `labRunning` (on the `storage.set` success callback) and cleared when it finishes; the next launch shows a test that did not finish as `CRASH / reboot`. Results are saved as `labResults` (`id=text|id=text`, no JSON). But when the watch turns off, the last `storage` writes are often lost (rows show `-` again and the marker can be gone), so write down crashes by hand. The Previewer forgets storage when it reloads.
 - `js N ms`: time spent in the drawing calls. `all N ms`: until a 0 ms `setTimeout` runs after them. `N ms/frame`: average over 60 frames asked for every 16 ms (`FRAME_MS`), so 16 is full speed and more means drawing falls behind. A first version chained frames with 0 ms timeouts: the Previewer ran all 60 before drawing any and reported 0 ms/frame.
@@ -63,7 +63,7 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 
 ## Removed tests
 
-They rebooted the watch, so they are no longer in the lab (they are in the branch's history).
+They rebooted the watch, so they are no longer in the lab (they are in the history of the `lab-dibujo` branch).
 
 | Test | Previewer | GT 6 Pro |
 |---|---|---|

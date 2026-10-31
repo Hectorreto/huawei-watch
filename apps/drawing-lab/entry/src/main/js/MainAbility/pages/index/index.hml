@@ -1,0 +1,36 @@
+<div class="container">
+    <list class="menu" if="{{ running === '' }}">
+        <list-item class="title-item">
+            <text class="title">{{ title }}</text>
+        </list-item>
+        <list-item class="item" for="{{ tests }}" onclick="run($item.index)">
+            <text class="name">{{ $item.name }}</text>
+            <text class="result">{{ $item.result }}</text>
+        </list-item>
+    </list>
+    <stack class="stage" if="{{ running !== '' }}">
+        <canvas class="canvas-100" ref="cv" if="{{ view === 'canvas' && size === 100 }}"></canvas>
+        <canvas class="canvas-200" ref="cv" if="{{ view === 'canvas' && size === 200 }}"></canvas>
+        <canvas class="canvas-466" ref="cv" if="{{ view === 'canvas' && size === 466 }}"></canvas>
+        <canvas class="canvas-466" ref="cvA" if="{{ view === 'swap' && liveA }}" show="{{ showA }}"></canvas>
+        <canvas class="canvas-466" ref="cvB" if="{{ view === 'swap' && liveB }}" show="{{ showB }}"></canvas>
+        <stack class="cells" if="{{ view === 'cells' }}">
+            <div class="cell" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
+        </stack>
+        <div class="mover" if="{{ view === 'mover' }}" style="left: {{ moverX }}px;"></div>
+        <image class="picture" if="{{ view === 'image' }}" src="{{ imageSrc }}"></image>
+        <image-animator class="picture" if="{{ view === 'animator' }}" images="{{ frames }}" duration="1s" iteration="infinite"></image-animator>
+        <analog-clock class="clock" if="{{ view === 'clock' }}" hour="3" min="0" sec="{{ sec }}">
+            <clock-hand class="hand" type="sec" src="/common/lab/hand.png"></clock-hand>
+        </analog-clock>
+        <stack class="spinner-box" if="{{ view === 'keyframes' }}">
+            <image class="spinner" src="/common/themes/concha_small.png"></image>
+        </stack>
+        <progress class="arc" if="{{ view === 'charts' }}" type="arc" percent="{{ percent }}"></progress>
+        <chart class="chart" if="{{ view === 'charts' }}" type="line" datasets="{{ datasets }}" options="{{ chartOptions }}"></chart>
+        <qrcode class="qr" if="{{ view === 'qrcode' }}" value="Drawing lab"></qrcode>
+        <text class="detail" if="{{ view === 'audio' }}">{{ detail }}</text>
+        <text class="status">{{ status }}</text>
+        <div class="tap" onclick="back"></div>
+    </stack>
+</div>
