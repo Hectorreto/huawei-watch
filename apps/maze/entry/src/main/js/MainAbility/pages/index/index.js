@@ -29,6 +29,12 @@ const COMPASS = ['N', 'E', 'S', 'O'];
 // Touch zones on the 466 px screen.
 const TURN_ZONE = 155;
 const BACK_ZONE = 340;
+// Taps above this, between the turn zones, open the map.
+const MAP_ZONE = 100;
+// Side of the map on screen, in px, so it fits inside the round screen.
+const MAP_SIDE = 320;
+const MAP_PATH = '#5a6478';
+const MAP_PLAYER = '#ffe119';
 
 let grid = [];
 // Grid side: 2 * cells + 1, walls included.
@@ -44,6 +50,9 @@ let steps = 0;
 let ctx = null;
 let onCanvas = 0;
 let busy = true;
+let mapOpen = false;
+// 1 for each grid cell the player has stood on, by y * size + x.
+let visited = [];
 // Height and colour of each column as it is on the canvas now.
 const shownH = [];
 const shownColour = [];
@@ -91,6 +100,11 @@ function makeMaze() {
     py = 1;
     facing = grid[1][2] === 0 ? 1 : 2;
     steps = 0;
+    visited = [];
+    for (let i = 0; i < size * size; i++) {
+        visited.push(0);
+    }
+    visited[py * size + px] = 1;
 }
 
 function hex2(v) {
@@ -163,6 +177,36 @@ function fill(x, top, bottom, colour) {
     }
 }
 
+// Draws the cells walked so far, one rect per horizontal run, and the player as a yellow
+// cell with a smaller mark on the side it faces. At most about size * size / 2 rects
+// (some 480 at 15 x 15 cells), under the canvas limit.
+function drawMap() {
+    const cell = Math.floor(MAP_SIDE / size);
+    const left = Math.round((SCREEN - cell * size) / 2);
+    const top = Math.round((SCREEN - cell * size) / 2);
+    ctx.fillStyle = MAP_PATH;
+    for (let y = 0; y < size; y++) {
+        let x = 0;
+        while (x < size) {
+            if (visited[y * size + x] !== 1) {
+                x++;
+                continue;
+            }
+            const start = x;
+            while (x < size && visited[y * size + x] === 1) {
+                x++;
+            }
+            ctx.fillRect(left + start * cell, top + y * cell, (x - start) * cell, cell);
+        }
+    }
+    ctx.fillStyle = MAP_PLAYER;
+    ctx.fillRect(left + px * cell, top + py * cell, cell, cell);
+    const mark = Math.max(2, Math.floor(cell / 3));
+    const mx = left + px * cell + (cell - mark) / 2 + DIRS[facing][0] * (cell + mark) / 2;
+    const my = top + py * cell + (cell - mark) / 2 + DIRS[facing][1] * (cell + mark) / 2;
+    ctx.fillRect(Math.round(mx), Math.round(my), mark, mark);
+}
+
 export default {
     data: {
         live: false,
@@ -190,7 +234,8 @@ export default {
             this.newCanvas();
         });
     },
-    // Removes the canvas (if it exists) and makes a fresh one, then draws the whole view.
+    // Removes the canvas (if it exists) and makes a fresh one, then draws the whole view, or
+    // the map while it is open.
     newCanvas() {
         busy = true;
         ctx = null;
@@ -199,6 +244,11 @@ export default {
             this.live = true;
             setTimeout(() => {
                 ctx = this.$refs.cv.getContext('2d');
+                busy = false;
+                if (mapOpen) {
+                    drawMap();
+                    return;
+                }
                 ctx.fillStyle = CEILING;
                 ctx.fillRect(0, 0, SCREEN, SCREEN / 2);
                 ctx.fillStyle = FLOOR;
@@ -208,7 +258,6 @@ export default {
                     shownH[c] = 0;
                     shownColour[c] = '';
                 }
-                busy = false;
                 this.draw();
             }, CANVAS_WAIT_MS);
         }, CANVAS_WAIT_MS);
@@ -250,9 +299,10 @@ export default {
         this.hud = COMPASS[facing] + '  ' + steps;
         this.record = best > 0 ? 'Nivel ' + (level + 1) + '  récord ' + best : 'Nivel ' + (level + 1);
     },
-    // Left third turns left, right third turns right, the bottom turns around, the middle
-    // steps forward. The click event carries the position (globalX, globalY); ontouchstart
-    // on this div did not fire in the Previewer.
+    // Left third turns left, right third turns right, the bottom turns around, the compass
+    // at the top opens the map, the rest of the middle steps forward; while the map is open
+    // any tap closes it. The click event carries the position (globalX, globalY);
+    // ontouchstart on this div did not fire in the Previewer.
     tap(e) {
         if (busy) {
             return;
@@ -260,6 +310,16 @@ export default {
         const touchX = e && typeof e.globalX === 'number' ? e.globalX : SCREEN / 2;
         const touchY = e && typeof e.globalY === 'number' ? e.globalY : SCREEN / 2;
         this.note = '';
+        if (mapOpen) {
+            mapOpen = false;
+            this.newCanvas();
+            return;
+        }
+        if (touchY < MAP_ZONE && touchX >= TURN_ZONE && touchX <= SCREEN - TURN_ZONE) {
+            mapOpen = true;
+            this.newCanvas();
+            return;
+        }
         if (touchY > BACK_ZONE) {
             facing = (facing + 2) % 4;
         } else if (touchX < TURN_ZONE) {
@@ -279,6 +339,7 @@ export default {
             }
             px = nx;
             py = ny;
+            visited[py * size + px] = 1;
             steps++;
         }
         this.draw();
