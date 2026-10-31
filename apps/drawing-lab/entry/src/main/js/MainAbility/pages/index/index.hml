@@ -1,5 +1,5 @@
 <div class="container">
-    <list class="menu" if="{{ running === '' }}">
+    <list class="menu" if="{{ running === '' && menuOn }}">
         <list-item class="title-item">
             <text class="title">{{ title }}</text>
         </list-item>

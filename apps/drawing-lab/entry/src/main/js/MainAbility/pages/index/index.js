@@ -360,6 +360,7 @@ export default {
     data: {
         title: 'Drawing lab',
         folder: BACK,
+        menuOn: true,
         rows: [],
         running: '',
         view: '',
@@ -440,14 +441,24 @@ export default {
             return { index: TEST_INDEX[id], emoji: t.emoji, name: t.name, result: id + ': ' + (results[id] || '-') };
         })));
     },
+    // Shows another folder (or BACK for the folder grid) in a new list. Swapping rows under the
+    // same list made lite log "not found the view can be free" and closed the app after a few
+    // folder changes, so the list is removed first and made again on the next tick, as when a
+    // test ends.
+    openFolder(folder) {
+        this.menuOn = false;
+        this.folder = folder;
+        timer = setTimeout(() => {
+            this.showList();
+            this.menuOn = true;
+        }, 0);
+    },
     // A tap on a grid cell: opens a folder, goes back, or runs a test.
     pick(index) {
         if (this.folder === BACK) {
-            this.folder = index;
-            this.showList();
+            this.openFolder(index);
         } else if (index === BACK) {
-            this.folder = BACK;
-            this.showList();
+            this.openFolder(BACK);
         } else {
             this.run(index);
         }
