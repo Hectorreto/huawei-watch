@@ -71,38 +71,65 @@ const THEMES = ['classic', 'cookie', 'donut', 'concha', 'gingerbread', 'cinnamon
 // view: which block of index.hml shows the test. Comparable pairs: c3/h1 (100 squares) and
 // c6/h4 (moving square). Tests that rebooted the watch (more canvas rects, more divs, the
 // concha as rects) were removed so they are not run again by mistake; see
-// docs/compare-drawing-methods.md.
+// docs/compare-drawing-methods.md. Tests marked with "!" in the name run until the watch
+// fails: run them once.
 const TESTS = [
-    { id: 'c1', name: 'Canvas 100px 1 rect', view: 'canvas', size: 100 },
-    { id: 'c2', name: 'Canvas 466px 1 rect', view: 'canvas', size: 466 },
-    { id: 'c3', name: 'Canvas 100 rects', view: 'canvas', size: 466 },
-    { id: 'c4', name: 'Canvas 1000 rects', view: 'canvas', size: 466 },
-    { id: 'c6', name: 'Canvas anim 60', view: 'canvas', size: 200 },
-    { id: 'c7', name: 'Canvas arcs+text', view: 'canvas', size: 466 },
-    { id: 'e1', name: 'Count rects', view: 'canvas', size: 466 },
-    { id: 'e2', name: 'Count, new canvas', view: 'canvas', size: 466 },
-    { id: 'e3', name: 'Count, 10 per step', view: 'canvas', size: 466 },
-    { id: 'e4', name: 'Count, text only', view: 'text' },
-    { id: 'e5', name: 'Count, text every 50', view: 'canvas', size: 466 },
-    { id: 'e6', name: 'Interval, text only', view: 'text' },
-    { id: 'e7', name: 'Interval, rects', view: 'canvas', size: 466 },
-    { id: 'e8', name: 'Paced 100 ms', view: 'canvas', size: 466 },
-    { id: 'e9', name: 'Paced 250 ms', view: 'canvas', size: 466 },
-    { id: 'h1', name: '100 divs', view: 'cells' },
-    { id: 'h4', name: 'Div anim 60', view: 'mover' },
-    { id: 'i1', name: 'Image swap 60', view: 'image' },
-    { id: 'i2', name: 'image-animator', view: 'animator' },
-    { id: 'i3', name: 'analog-clock', view: 'clock' },
-    { id: 'k1', name: 'Keyframes rotate', view: 'keyframes' },
-    { id: 'p1', name: 'progress + chart', view: 'charts' },
-    { id: 'q1', name: 'qrcode', view: 'qrcode' },
-    { id: 'a1', name: 'Audio: all extensions', view: 'audio' },
-    { id: 'a2', name: 'Audio: rename a WAV', view: 'audio' },
-    { id: 's1', name: 'Two canvases', view: 'swap' },
-    { id: 's2', name: 'One canvas, recreate', view: 'swap' },
-    { id: 's3', name: 'Recreate, no wait', view: 'swap' },
-    { id: 'd2', name: 'Delta, steps', view: 'swap' }
+    { id: 'c1', emoji: '🟥', name: '100px 1 rect', view: 'canvas', size: 100 },
+    { id: 'c2', emoji: '🟧', name: '466px 1 rect', view: 'canvas', size: 466 },
+    { id: 'c3', emoji: '🧱', name: '100 rects', view: 'canvas', size: 466 },
+    { id: 'c4', emoji: '🏢', name: '1000 rects', view: 'canvas', size: 466 },
+    { id: 'c6', emoji: '🏃', name: 'Anim 60', view: 'canvas', size: 200 },
+    { id: 'c7', emoji: '🎯', name: 'Arcs + text', view: 'canvas', size: 466 },
+    { id: 'e1', emoji: '🔢', name: 'Count rects !', view: 'canvas', size: 466 },
+    { id: 'e2', emoji: '🆕', name: 'Count, new canvas', view: 'canvas', size: 466 },
+    { id: 'e3', emoji: '🔟', name: '10 per step !', view: 'canvas', size: 466 },
+    { id: 'e4', emoji: '🔤', name: 'Text only', view: 'text' },
+    { id: 'e5', emoji: '⏳', name: 'Text every 50 !', view: 'canvas', size: 466 },
+    { id: 'e6', emoji: '📝', name: 'Interval, text', view: 'text' },
+    { id: 'e7', emoji: '⌛', name: 'Interval, rects !', view: 'canvas', size: 466 },
+    { id: 'e8', emoji: '🐢', name: 'Paced 100 ms !', view: 'canvas', size: 466 },
+    { id: 'e9', emoji: '🐌', name: 'Paced 250 ms !', view: 'canvas', size: 466 },
+    { id: 'h1', emoji: '🔲', name: '100 divs', view: 'cells' },
+    { id: 'h4', emoji: '🚚', name: 'Div anim 60', view: 'mover' },
+    { id: 'i1', emoji: '📷', name: 'Image swap 60', view: 'image' },
+    { id: 'i2', emoji: '🎬', name: 'image-animator', view: 'animator' },
+    { id: 'i3', emoji: '🕒', name: 'analog-clock', view: 'clock' },
+    { id: 'k1', emoji: '🌀', name: 'Keyframes rotate', view: 'keyframes' },
+    { id: 'p1', emoji: '📈', name: 'progress + chart', view: 'charts' },
+    { id: 'q1', emoji: '🔳', name: 'qrcode', view: 'qrcode' },
+    { id: 'a1', emoji: '🔊', name: 'All extensions', view: 'audio' },
+    { id: 'a2', emoji: '🎵', name: 'Rename a WAV', view: 'audio' },
+    { id: 's1', emoji: '👯', name: 'Two canvases', view: 'swap' },
+    { id: 's2', emoji: '🔁', name: 'Recreate', view: 'swap' },
+    { id: 's3', emoji: '⚡', name: 'Recreate, no wait', view: 'swap' },
+    { id: 'd2', emoji: '👣', name: 'Delta, steps', view: 'swap' },
+    { id: 'f1', emoji: '🔺', name: 'Filled shapes', view: 'canvas', size: 466 },
+    { id: 'f2', emoji: '🔶', name: 'Count shapes !', view: 'canvas', size: 466 },
+    { id: 'f3', emoji: '🧽', name: 'cleanRect', view: 'canvas', size: 466 },
+    { id: 'f4', emoji: '🧹', name: 'Count + clean !', view: 'canvas', size: 466 },
+    { id: 'f5', emoji: '👻', name: 'globalAlpha', view: 'canvas', size: 466 },
+    { id: 'g1', emoji: '🌈', name: 'Chart walls', view: 'wallcharts' },
+    { id: 'g2', emoji: '📊', name: '12 charts', view: 'manycharts' }
 ];
+
+// The list is a grid of folders; a folder is a grid of its tests, after a back cell.
+const FOLDERS = [
+    { emoji: '🎨', name: 'Canvas', ids: ['c1', 'c2', 'c3', 'c4', 'c6', 'c7'] },
+    { emoji: '🔢', name: 'Limits', ids: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'e9'] },
+    { emoji: '🔁', name: 'Swap', ids: ['s1', 's2', 's3', 'd2'] },
+    { emoji: '🔺', name: 'Shapes', ids: ['f1', 'f2', 'f3', 'f4', 'f5', 'g1', 'g2'] },
+    { emoji: '🧩', name: 'Components', ids: ['h1', 'h4', 'i1', 'i2', 'i3', 'k1', 'p1', 'q1'] },
+    { emoji: '🔊', name: 'Audio', ids: ['a1', 'a2'] }
+];
+const GRID_COLS = 3;
+const BACK = -1;
+// Maze-like colours for the shape tests.
+const CEILING = '#1c2233';
+const FLOOR = '#3a2c20';
+const WALL_NEAR = '#c8a064';
+const WALL_FAR = '#8c6a3c';
+// 12 charts at once: three rows of four, each with its own sloped line.
+const MANY_CHARTS = 12;
 
 // Column colours for the delta tests: fixed per column, so only heights change.
 function wallColour(k) {
@@ -219,6 +246,57 @@ function drawCell(ctx, i, n) {
     ctx.fillRect(cell.x, cell.y, cell.s, cell.s);
 }
 
+// A filled polygon through points [x0, y0, x1, y1, ...].
+function poly(ctx, points, colour) {
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.moveTo(points[0], points[1]);
+    for (let k = 2; k < points.length; k += 2) {
+        ctx.lineTo(points[k], points[k + 1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+}
+
+// A corridor as the maze would draw it with one shape per wall: ceiling and floor, a side
+// wall on each side as a trapezoid, and a front wall as a rect.
+function corridor(ctx) {
+    ctx.fillStyle = CEILING;
+    ctx.fillRect(0, 0, 466, 233);
+    ctx.fillStyle = FLOOR;
+    ctx.fillRect(0, 233, 466, 233);
+    poly(ctx, [0, 20, 150, 140, 150, 326, 0, 446], WALL_NEAR);
+    poly(ctx, [466, 20, 316, 140, 316, 326, 466, 446], WALL_NEAR);
+    poly(ctx, [150, 140, 200, 180, 200, 286, 150, 326], WALL_FAR);
+    ctx.fillStyle = '#5a4428';
+    ctx.fillRect(200, 180, 66, 106);
+}
+
+// Grid cells in rows of GRID_COLS, flattened (i0, e0, n0, r0, u0 for the first cell, and so
+// on), since a row's cells are not a nested for. Unused cells have u false.
+function gridRows(cells) {
+    const rows = [];
+    for (let r = 0; r < cells.length; r += GRID_COLS) {
+        const row = {};
+        for (let k = 0; k < GRID_COLS; k++) {
+            const cell = cells[r + k];
+            row['i' + k] = cell ? cell.index : BACK;
+            row['e' + k] = cell ? cell.emoji : '';
+            row['n' + k] = cell ? cell.name : '';
+            row['r' + k] = cell ? cell.result : '';
+            row['u' + k] = !!cell;
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
+// Index in TESTS by test id.
+const TEST_INDEX = {};
+TESTS.forEach((t, i) => {
+    TEST_INDEX[t.id] = i;
+});
+
 // Last result per test id, and the timer of the running test.
 let results = {};
 let timer = null;
@@ -243,7 +321,8 @@ function encode(byId) {
 export default {
     data: {
         title: 'Drawing lab',
-        tests: [],
+        folder: BACK,
+        rows: [],
         running: '',
         view: '',
         size: 0,
@@ -260,7 +339,12 @@ export default {
         sec: 0,
         percent: 0,
         datasets: [],
-        chartOptions: {}
+        chartOptions: {},
+        topWall: [],
+        bottomWall: [],
+        topOptions: {},
+        bottomOptions: {},
+        manyCharts: []
     },
     onInit() {
         // Long tests ran into the screen timeout, which looked like a crash; keep it on while the
@@ -300,8 +384,35 @@ export default {
             fail: () => this.showList()
         });
     },
+    // Shows the folders, or the open folder's tests with their last results.
     showList() {
-        this.tests = TESTS.map((t, i) => ({ index: i, name: t.name, result: results[t.id] || '-' }));
+        if (this.folder === BACK) {
+            this.title = 'Drawing lab';
+            this.rows = gridRows(FOLDERS.map((f, i) => {
+                const done = f.ids.filter((id) => results[id]).length;
+                const crashed = f.ids.some((id) => results[id] === CRASHED);
+                return { index: i, emoji: f.emoji, name: f.name, result: crashed ? 'CRASH' : done + ' / ' + f.ids.length };
+            }));
+            return;
+        }
+        const f = FOLDERS[this.folder];
+        this.title = f.name;
+        this.rows = gridRows([{ index: BACK, emoji: '⬅️', name: 'Back', result: '' }].concat(f.ids.map((id) => {
+            const t = TESTS[TEST_INDEX[id]];
+            return { index: TEST_INDEX[id], emoji: t.emoji, name: t.name, result: id + ': ' + (results[id] || '-') };
+        })));
+    },
+    // A tap on a grid cell: opens a folder, goes back, or runs a test.
+    pick(index) {
+        if (this.folder === BACK) {
+            this.folder = index;
+            this.showList();
+        } else if (index === BACK) {
+            this.folder = BACK;
+            this.showList();
+        } else {
+            this.run(index);
+        }
     },
     save(id, result) {
         results[id] = result;
@@ -340,6 +451,7 @@ export default {
         this.running = '';
         this.view = '';
         this.cells = [];
+        this.manyCharts = [];
         this.showList();
     },
     // Runs draw once the canvas exists; times the calls and, through a 0 ms timeout, the
@@ -416,8 +528,11 @@ export default {
     // COUNT_MAX or until the watch fails. With recreateEvery > 0 (a multiple of perStep) the
     // canvas is removed and a new one made every that many squares, to see whether that
     // resets the limit. One square per step failed at 362, while 1,000 in one step worked.
-    // The count is shown every statusEvery steps.
-    countRects(recreateEvery, perStep, statusEvery) {
+    // The count is shown every statusEvery steps. With shapes each square is a filled
+    // four-point path instead of a fillRect, to see whether a path costs one call or more. With
+    // cleanEvery > 0 the whole canvas is wiped with cleanRect every that many squares, to see
+    // whether that frees what the canvas keeps.
+    countRects(recreateEvery, perStep, statusEvery, shapes, cleanEvery) {
         let drawn = 0;
         let steps = 0;
         let canvases = 1;
@@ -427,14 +542,23 @@ export default {
                 return;
             }
             if (drawn >= COUNT_MAX) {
-                this.finish(drawn + ' rects OK');
+                this.finish(drawn + (shapes ? ' shapes' : ' rects') + ' OK');
                 return;
             }
             try {
                 for (let k = 0; k < perStep; k++) {
+                    if (cleanEvery > 0 && drawn > 0 && drawn % cleanEvery === 0) {
+                        ctx.cleanRect(0, 0, 466, 466);
+                    }
                     const cell = roundCell(drawn);
-                    ctx.fillStyle = PALETTE[Math.floor(drawn / COUNT_COLOUR_EVERY) % PALETTE.length];
-                    ctx.fillRect(cell.x, cell.y, COUNT_CELL - 1, COUNT_CELL - 1);
+                    const colour = PALETTE[Math.floor(drawn / COUNT_COLOUR_EVERY) % PALETTE.length];
+                    if (shapes) {
+                        const s = COUNT_CELL - 1;
+                        poly(ctx, [cell.x + 2, cell.y, cell.x + s - 2, cell.y, cell.x + s, cell.y + s, cell.x, cell.y + s], colour);
+                    } else {
+                        ctx.fillStyle = colour;
+                        ctx.fillRect(cell.x, cell.y, COUNT_CELL - 1, COUNT_CELL - 1);
+                    }
                     drawn++;
                 }
             } catch (e) {
@@ -443,7 +567,7 @@ export default {
             }
             steps++;
             if (steps % statusEvery === 0) {
-                this.status = drawn + ' rects' + (perStep > 1 ? ', ' + steps + ' steps' : '') +
+                this.status = drawn + (shapes ? ' shapes' : ' rects') + (perStep > 1 ? ', ' + steps + ' steps' : '') +
                     (recreateEvery > 0 ? ', canvas ' + canvases : '');
             }
             if (recreateEvery > 0 && drawn % recreateEvery === 0) {
@@ -547,6 +671,94 @@ export default {
     },
     e5() {
         this.countRects(0, 1, 50);
+    },
+    // Does a filled path work at all: the corridor plus a triangle, and, in case only some
+    // paths fill, a circle (arc) and a rect path, timed. In the Previewer the polygons do not
+    // show.
+    f1() {
+        this.withCanvas((ctx) => {
+            if (typeof ctx.fill !== 'function') {
+                throw new Error('no fill');
+            }
+            corridor(ctx);
+            poly(ctx, [233, 60, 283, 140, 183, 140], '#e6194b');
+            ctx.fillStyle = '#3cb44b';
+            ctx.beginPath();
+            ctx.arc(233, 360, 30, 0, 6.283);
+            ctx.fill();
+            ctx.fillStyle = '#4363d8';
+            ctx.beginPath();
+            ctx.rect(300, 340, 50, 40);
+            ctx.fill();
+        });
+    },
+    f2() {
+        this.countRects(0, 1, 1, true, 0);
+    },
+    // cleanRect, which the engine lists instead of clearRect: a hole should appear in the
+    // red square.
+    f3() {
+        this.withCanvas((ctx) => {
+            if (typeof ctx.cleanRect !== 'function') {
+                throw new Error('no cleanRect');
+            }
+            ctx.fillStyle = '#e6194b';
+            ctx.fillRect(83, 83, 300, 300);
+            ctx.cleanRect(158, 158, 150, 150);
+        });
+    },
+    f4() {
+        timer = setTimeout(() => {
+            if (typeof this.$refs.cv.getContext('2d').cleanRect !== 'function') {
+                this.finish('no cleanRect');
+                return;
+            }
+            this.countRects(0, 1, 1, false, RECREATE_EVERY);
+        }, CANVAS_WAIT_MS);
+    },
+    // globalAlpha as shading: the corridor, then the far wall and the left wall darkened by
+    // a half-transparent black shape, and a quarter-transparent white rect on the right.
+    f5() {
+        this.withCanvas((ctx) => {
+            corridor(ctx);
+            ctx.globalAlpha = 0.5;
+            poly(ctx, [0, 20, 150, 140, 150, 326, 0, 446], '#000000');
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(316, 140, 100, 186);
+            ctx.globalAlpha = 1;
+        });
+    },
+    // A side wall as two gradient charts over a canvas with the ceiling and floor: the top
+    // half fills down to the horizon; the bottom half has its y axis upside down, to see
+    // whether it then fills up to the horizon.
+    g1() {
+        const wall = [{ strokeColor: WALL_NEAR, fillColor: WALL_NEAR, data: [100, 30], gradient: true }];
+        this.topWall = wall;
+        this.bottomWall = wall;
+        this.topOptions = { xAxis: { min: 0, max: 1, display: false }, yAxis: { min: 0, max: 100, display: false }, series: { lineStyle: { width: 1 } } };
+        this.bottomOptions = { xAxis: { min: 0, max: 1, display: false }, yAxis: { min: 100, max: 0, display: false }, series: { lineStyle: { width: 1 } } };
+        this.withCanvas((ctx) => {
+            ctx.fillStyle = CEILING;
+            ctx.fillRect(0, 0, 466, 233);
+            ctx.fillStyle = FLOOR;
+            ctx.fillRect(0, 233, 466, 233);
+        });
+    },
+    // Heap cost of many charts: MANY_CHARTS gradient charts at once, timed.
+    g2() {
+        const charts = [];
+        for (let k = 0; k < MANY_CHARTS; k++) {
+            charts.push({
+                x: 53 + (k % 4) * 90,
+                y: 103 + Math.floor(k / 4) * 90,
+                ds: [{ strokeColor: PALETTE[k], fillColor: PALETTE[k], data: [90 - k * 5, 20 + k * 5], gradient: true }]
+            });
+        }
+        this.topOptions = { xAxis: { min: 0, max: 1, display: false }, yAxis: { min: 0, max: 100, display: false }, series: { lineStyle: { width: 1 } } };
+        const t0 = Date.now();
+        this.manyCharts = charts;
+        timer = setTimeout(() => this.finish('all ' + (Date.now() - t0) + ' ms'), 0);
     },
     c6() {
         timer = setTimeout(() => {

@@ -20,25 +20,47 @@
   color: #ffe119;
   text-align: center;
 }
-.item {
+/* A row of the grid: three cells side by side. */
+.row {
   width: 466px;
-  height: 84px;
+  height: 148px;
+  flex-direction: row;
+  justify-content: center;
+}
+.cell {
+  width: 136px;
+  height: 140px;
+  margin-left: 4px;
+  margin-right: 4px;
   flex-direction: column;
   align-items: center;
+  border-radius: 18px;
+  background-color: #1e1e1e;
+}
+.emoji {
+  width: 136px;
+  height: 46px;
+  font-size: 38px;
+  text-align: center;
 }
 .name {
-  width: 340px;
-  height: 40px;
-  font-size: 30px;
+  width: 128px;
+  height: 48px;
+  font-size: 20px;
   color: #ffffff;
   text-align: center;
 }
 .result {
-  width: 340px;
-  height: 32px;
-  font-size: 24px;
+  width: 128px;
+  height: 44px;
+  font-size: 20px;
   color: #aaaaaa;
   text-align: center;
+}
+/* Room after the last row, so it can scroll up out of the round edge. */
+.end-item {
+  width: 466px;
+  height: 100px;
 }
 .stage {
   width: 466px;
@@ -137,6 +159,23 @@
   height: 140px;
   left: 103px;
   top: 163px;
+}
+/* One side wall as two charts, meeting at the horizon (233 px). */
+.wall-top {
+  width: 150px;
+  height: 180px;
+  left: 33px;
+  top: 53px;
+}
+.wall-bottom {
+  width: 150px;
+  height: 180px;
+  left: 33px;
+  top: 233px;
+}
+.small-chart {
+  width: 80px;
+  height: 80px;
 }
 .qr {
   width: 200px;

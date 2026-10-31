@@ -3,10 +3,24 @@
         <list-item class="title-item">
             <text class="title">{{ title }}</text>
         </list-item>
-        <list-item class="item" for="{{ tests }}" onclick="run($item.index)">
-            <text class="name">{{ $item.name }}</text>
-            <text class="result">{{ $item.result }}</text>
+        <list-item class="row" for="{{ rows }}">
+            <div class="cell" show="{{ $item.u0 }}" onclick="pick($item.i0)">
+                <text class="emoji">{{ $item.e0 }}</text>
+                <text class="name">{{ $item.n0 }}</text>
+                <text class="result">{{ $item.r0 }}</text>
+            </div>
+            <div class="cell" show="{{ $item.u1 }}" onclick="pick($item.i1)">
+                <text class="emoji">{{ $item.e1 }}</text>
+                <text class="name">{{ $item.n1 }}</text>
+                <text class="result">{{ $item.r1 }}</text>
+            </div>
+            <div class="cell" show="{{ $item.u2 }}" onclick="pick($item.i2)">
+                <text class="emoji">{{ $item.e2 }}</text>
+                <text class="name">{{ $item.n2 }}</text>
+                <text class="result">{{ $item.r2 }}</text>
+            </div>
         </list-item>
+        <list-item class="end-item"></list-item>
     </list>
     <stack class="stage" if="{{ running !== '' }}">
         <canvas class="canvas-100" ref="cv" if="{{ view === 'canvas' && size === 100 }}"></canvas>
@@ -14,8 +28,14 @@
         <canvas class="canvas-466" ref="cv" if="{{ view === 'canvas' && size === 466 }}"></canvas>
         <canvas class="canvas-466" ref="cvA" if="{{ view === 'swap' && liveA }}" show="{{ showA }}"></canvas>
         <canvas class="canvas-466" ref="cvB" if="{{ view === 'swap' && liveB }}" show="{{ showB }}"></canvas>
+        <canvas class="canvas-466" ref="cv" if="{{ view === 'wallcharts' }}"></canvas>
+        <chart class="wall-top" if="{{ view === 'wallcharts' }}" type="line" datasets="{{ topWall }}" options="{{ topOptions }}"></chart>
+        <chart class="wall-bottom" if="{{ view === 'wallcharts' }}" type="line" datasets="{{ bottomWall }}" options="{{ bottomOptions }}"></chart>
+        <stack class="cells" if="{{ view === 'manycharts' }}">
+            <chart class="small-chart" for="{{ manyCharts }}" type="line" style="left: {{ $item.x }}px; top: {{ $item.y }}px;" datasets="{{ $item.ds }}" options="{{ topOptions }}"></chart>
+        </stack>
         <stack class="cells" if="{{ view === 'cells' }}">
-            <div class="cell" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
+            <div class="cell-square" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
         </stack>
         <div class="mover" if="{{ view === 'mover' }}" style="left: {{ moverX }}px;"></div>
         <image class="picture" if="{{ view === 'image' }}" src="{{ imageSrc }}"></image>
