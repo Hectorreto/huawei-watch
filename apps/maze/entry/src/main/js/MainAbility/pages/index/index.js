@@ -15,6 +15,9 @@ const COL_W = 12;
 const PLANE = 0.66;
 // Wall height on screen is WALL_SCALE / distance, in px.
 const WALL_SCALE = 380;
+// Fixed bands above and below the horizon; a wall that shrinks is painted over with them.
+const CEILING = '#1c2233';
+const FLOOR = '#3a2c20';
 // Draw calls allowed on one canvas before it is remade, under the ~1,100 that crash it.
 const CANVAS_LIMIT = 900;
 const CANVAS_WAIT_MS = 50;
@@ -168,7 +171,11 @@ export default {
             this.live = true;
             setTimeout(() => {
                 ctx = this.$refs.cv.getContext('2d');
-                onCanvas = 0;
+                ctx.fillStyle = CEILING;
+                ctx.fillRect(0, 0, SCREEN, SCREEN / 2);
+                ctx.fillStyle = FLOOR;
+                ctx.fillRect(0, SCREEN / 2, SCREEN, SCREEN / 2);
+                onCanvas = 2;
                 for (let c = 0; c < COLS; c++) {
                     shownH[c] = 0;
                     shownColour[c] = '';
@@ -206,8 +213,8 @@ export default {
                 fill(x, mid + old / 2, mid + h / 2, view[c].colour);
             }
             if (h < old) {
-                fill(x, mid - old / 2, mid - h / 2, '#000000');
-                fill(x, mid + h / 2, mid + old / 2, '#000000');
+                fill(x, mid - old / 2, mid - h / 2, CEILING);
+                fill(x, mid + h / 2, mid + old / 2, FLOOR);
             }
             shownH[c] = h;
             shownColour[c] = view[c].colour;
