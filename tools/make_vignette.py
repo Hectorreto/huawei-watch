@@ -16,7 +16,7 @@ INNER = 150
 OUTER = 233
 EDGE_ALPHA = 215  # about 85 %
 
-OUT = os.path.join(os.path.dirname(__file__), '..', 'Counter', 'entry', 'src', 'main',
+OUT = os.path.join(os.path.dirname(__file__), '..', 'apps', 'bakery-clicker', 'entry', 'src', 'main',
                    'js', 'MainAbility', 'common', 'vignette.png')
 
 
