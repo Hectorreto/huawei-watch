@@ -1,0 +1,6 @@
+<stack class="container">
+    <canvas class="view" ref="cv" if="{{ live }}"></canvas>
+    <text class="hud">{{ hud }}</text>
+    <text class="note">{{ note }}</text>
+    <div class="touch" onclick="tap"></div>
+</stack>

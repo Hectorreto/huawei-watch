@@ -1,0 +1,40 @@
+.container {
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+}
+.view {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
+/* Compass and steps, at the top of the round screen. */
+.hud {
+  width: 120px;
+  height: 40px;
+  left: 173px;
+  top: 20px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+  background-color: #000000;
+  border-radius: 20px;
+}
+/* "Pared" when walking into a wall, and the win message. */
+.note {
+  width: 320px;
+  height: 36px;
+  left: 73px;
+  top: 400px;
+  font-size: 24px;
+  color: #ffe119;
+  text-align: center;
+}
+/* Covers the screen and takes every tap. */
+.touch {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}

@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:/Users/hdean/.huawei-signing/counter/counter.cer",
+          "keyAlias": "counter",
+          "keyPassword": "00000022564ce8576d7d113ef82597bb302f4acb445bf03046c32452dc68e151679e1d98344925bfe5ce556df31ce8b566fe",
+          "profile": "C:/Users/hdean/.huawei-signing/counter/maze.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:/Users/hdean/.huawei-signing/counter/counter.p12",
+          "storePassword": "0000002297f4d547c4767de6e9282dc1b7463c26894a1002d0b8f1af8a442523e0c4303b829e6f8180dd268a358f1d2129f3"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": false
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
