@@ -20,7 +20,7 @@ Goal: find out which way of drawing works on the GT 6 Pro and which is fastest: 
 
 Lite Wearable components (from `lib/templater/lite_component_map.js`): `div`, `stack`, `list`/`list-item`, `swiper`, `tabs`, `text`, `marquee`, `image`, `image-animator`, `analog-clock`/`clock-hand`, `progress`, `chart`, `qrcode`, `input`, `slider`, `switch`, `picker-view` and `canvas`. No `svg`.
 
-- **On the lite canvas only `fillRect` fills; there are no filled shapes, alpha or clearing.** On the GT 6 Pro (October 2026) `fill()` after `moveTo`/`lineTo`, `arc` or `rect` draws nothing (f1), and 5,000 such shapes neither drew nor crashed (f2); `globalAlpha` is ignored (f5); `cleanRect` neither clears nor resets the ~1,100 limit (f3, f4). Strokes (`stroke` on lines and arcs) and `fillText` draw in the Previewer (c7); on the watch c7 ran in 2 ms, but what it drew was not recorded. The only built-in gradient is the line `chart`'s `gradient: true`: it fills under the line from `fillColor` down to transparent at the chart's bottom, so whatever is behind shows through; the fill is always below the line (a reversed `yAxis` is ignored), and 12 charts at once took 222 ms to show (g1, g2).
+- **On the lite canvas only `fillRect` fills; there are no filled shapes, alpha or clearing.** On the GT 6 Pro (October 2026) `fill()` after `moveTo`/`lineTo`, `arc` or `rect` draws nothing (f1), and 5,000 such shapes neither drew nor crashed (f2); `globalAlpha` is ignored (f5); `cleanRect` neither clears nor resets the ~1,100 limit (f3, f4). Strokes and text do draw, on the watch too (c7): a 6 px `arc` circle, a closed `lineTo` triangle (with rounded corners) and `fillText`; the circle has a small tick where the arc starts and ends (angle 0). The only built-in gradient is the line `chart`'s `gradient: true`: it fills under the line from `fillColor` down to transparent at the chart's bottom, so whatever is behind shows through; the fill is always below the line (a reversed `yAxis` is ignored), and 12 charts at once took 222 ms to show (g1, g2).
 
 ## The lab
 
@@ -46,7 +46,7 @@ Results (October 2026; the watch is about 30-100 times slower than the Previewer
 | c3 | Full-screen canvas, 100 `fillRect` | js 1 / all 1 ms | js 35 / all 54 ms |
 | c4 | Full-screen canvas, 1,000 `fillRect` | js 3 / all 3 ms | js 339 / all 487 ms |
 | c6 | 200 px canvas, a square moving 60 frames | 30 ms/frame | 33 ms/frame |
-| c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | js 2 / all 2 ms |
+| c7 | Canvas `arc`, lines, `stroke`, `fillText` | all draw | all draw (js 2 / all 17 ms; earlier js 2 / all 2 ms); a small tick where the circle starts |
 | e1 | Count rects: one 10 px square every 16 ms inside the round screen (colour changes every 100), the count shown at the bottom, until 5,000 or a crash | runs | **black screen at 1,104** with the screen kept on (352-364 before that: the screen timeout) |
 | e2 | Like e1, but every 100 squares the canvas is removed (`if`) and a new one made: does that reset the limit? | a new, empty canvas every 100; the count goes on | **5,000 rects, finished**, with the screen kept on (392 and 405 before: the screen timeout) |
 | e3 | Like e1, but 10 squares per step: is the limit the number of steps (frames) or of rects? | runs | **about 1,100 rects**, slowing down near the end |
