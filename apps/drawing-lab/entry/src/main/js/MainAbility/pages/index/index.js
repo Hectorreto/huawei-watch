@@ -114,7 +114,8 @@ const TESTS = [
     { id: 'l2', emoji: '〰️', name: 'Line widths', view: 'canvas', size: 466 },
     { id: 'l3', emoji: '↩️', name: 'rotate, scale', view: 'canvas', size: 466 },
     { id: 'l4', emoji: '⚪', name: 'drawCircle', view: 'canvas', size: 466 },
-    { id: 'l5', emoji: '✒️', name: 'Count lines !', view: 'canvas', size: 466 }
+    { id: 'l5', emoji: '✒️', name: 'Count lines !', view: 'canvas', size: 466 },
+    { id: 'l6', emoji: '⏩', name: 'Maze scenes', view: 'swap' }
 ];
 
 // The list is a grid of folders; a folder is a grid of its tests, after a back cell.
@@ -123,7 +124,7 @@ const FOLDERS = [
     { emoji: '⚠️', name: 'Limits', ids: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'e9'] },
     { emoji: '♻️', name: 'Swap', ids: ['s1', 's2', 's3', 'd2'] },
     { emoji: '⭐', name: 'Shapes', ids: ['f1', 'f2', 'f3', 'f4', 'f5', 'g1', 'g2'] },
-    { emoji: '➖', name: 'Lines', ids: ['l1', 'l2', 'l3', 'l4', 'l5'] },
+    { emoji: '➖', name: 'Lines', ids: ['l1', 'l2', 'l3', 'l4', 'l5', 'l6'] },
     { emoji: '✂️', name: 'Components', ids: ['h1', 'h4', 'i1', 'i2', 'i3', 'k1', 'p1', 'q1'] },
     { emoji: '☎️', name: 'Audio', ids: ['a1', 'a2'] }
 ];
@@ -310,6 +311,125 @@ function slopedWall(ctx, x1, x2, top1, top2, colour) {
     const up = x2 > x1 ? 1 : -1;
     sideLine(ctx, x1, top1, x2, top2, up, width, 20, CEILING);
     sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, FLOOR);
+}
+
+// Maze scenes for l6, drawn with apps/maze's projection: the player stands at a block's
+// centre in a corridor one block wide, so side walls are 0.5 to each side and a face at
+// forward distance f is SCENE_SCALE / f px high. Side block k (0 = the one just ahead) spans
+// f = k + 0.5 to k + 1.5; left and right give each block as W (wall) or . (opening), and the
+// corridor ends in a facing wall after the last one, at f = length + 0.5.
+const SCENES = [
+    { name: 'corridor', left: 'WWWWWWW', right: 'WWWWWWW' },
+    { name: 'openings', left: 'WW.WW.W', right: 'W.WWW.W' },
+    { name: 'open at 0', left: '.WWWW', right: '.WW.W' },
+    { name: 'T ahead', left: 'W.', right: 'W.' },
+    { name: 'dead end', left: 'W', right: 'W' }
+];
+const SCENE_MS = 3000;
+// WALL_SCALE and PLANE in apps/maze.
+const SCENE_SCALE = 380;
+const SCENE_PLANE = 0.66;
+// Where the screen edge cuts a side wall: x = 0 there.
+const NEAR_F = 0.5 / SCENE_PLANE;
+// A stroke counts as STROKE_COST fillRects of the canvas limit (l5).
+const STROKE_COST = 1.8;
+// Cut lines are capped at the widest lineWidth tried (l2).
+const MAX_LINE = 200;
+
+// Screen x of a side wall's edge at distance f, on side -1 (left) or 1 (right).
+function sceneX(f, side) {
+    return Math.round(233 + side * 233 * 0.5 / (Math.max(f, NEAR_F) * SCENE_PLANE));
+}
+
+// Screen y of a wall's top edge at distance f.
+function sceneTop(f) {
+    return Math.round(233 - SCENE_SCALE / Math.max(f, NEAR_F) / 2);
+}
+
+// The maze's colour for a wall at distance f: facing walls full, side walls 0.75, darker in
+// bands of 2 blocks.
+function sceneColour(f, facing) {
+    const band = Math.min(3, Math.floor(f / 2));
+    const light = (facing ? 1 : 0.75) * (1 - band * 0.2);
+    return '#' + hex2(Math.round(230 * light)) + hex2(Math.round(160 * light)) + hex2(Math.round(70 * light));
+}
+
+// Draws a scene and returns its rect and stroke counts, and the strokes two cut lines per
+// wall would take instead. Ceiling and floor first, then each side's runs of walls from far
+// to near: one rect per wall in its own shade, and per run two cut lines along its top and
+// bottom edges, which for every wall on one side lie on one line through the vanishing
+// point. An opening breaks a run. Every facing rect goes last: the square ends of the cut
+// lines poke past a run's ends and would paint over the top of a facing wall drawn before.
+function drawScene(ctx, scene) {
+    let rects = 2;
+    let strokes = 0;
+    let walls = 0;
+    ctx.fillStyle = CEILING;
+    ctx.fillRect(0, 0, 466, 233);
+    ctx.fillStyle = FLOOR;
+    ctx.fillRect(0, 233, 466, 233);
+    const length = scene.left.length;
+    const sides = [[scene.left, -1], [scene.right, 1]];
+    sides.forEach((pair) => {
+        const blocks = pair[0];
+        const side = pair[1];
+        let k = length - 1;
+        while (k >= 0) {
+            if (blocks[k] !== 'W') {
+                k--;
+                continue;
+            }
+            const far = k;
+            while (k >= 0 && blocks[k] === 'W') {
+                const x1 = sceneX(k + 0.5, side);
+                const x2 = sceneX(k + 1.5, side);
+                const top = Math.max(0, sceneTop(k + 0.5));
+                ctx.fillStyle = sceneColour(k + 1, false);
+                ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), 466 - 2 * top);
+                rects++;
+                walls++;
+                k--;
+            }
+            // The run is blocks k + 1 to far. Its cut lines must reach the rect corner
+            // farthest beyond the edge: the nearest wall's far corner, as its rect is the
+            // tallest and the edge drops the most along it.
+            const nx = sceneX(k + 1.5, side);
+            const ny = sceneTop(k + 1.5);
+            const fx = sceneX(far + 1.5, side);
+            const fy = sceneTop(far + 1.5);
+            const cx = sceneX(k + 2.5, side);
+            const cy = Math.max(0, ny);
+            const len = Math.sqrt((fx - nx) * (fx - nx) + (fy - ny) * (fy - ny));
+            const reach = Math.abs((cx - nx) * (fy - ny) - (cy - ny) * (fx - nx)) / len;
+            const width = Math.min(MAX_LINE, Math.ceil(reach) + 10);
+            sideLine(ctx, nx, ny, fx, fy, -side, width, 20, CEILING);
+            sideLine(ctx, nx, 466 - ny, fx, 466 - fy, side, width, 20, FLOOR);
+            strokes += 2;
+        }
+    });
+    // Through an opening the side corridor's far wall shows, at the opening's far edge.
+    sides.forEach((pair) => {
+        const blocks = pair[0];
+        const side = pair[1];
+        for (let k = 0; k < length; k++) {
+            if (blocks[k] === 'W') {
+                continue;
+            }
+            const x1 = sceneX(k + 0.5, side);
+            const x2 = sceneX(k + 1.5, side);
+            const top = sceneTop(k + 1.5);
+            ctx.fillStyle = sceneColour(k + 1.5, true);
+            ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), 466 - 2 * top);
+            rects++;
+        }
+    });
+    const end = length + 0.5;
+    const top = sceneTop(end);
+    const left = sceneX(end, -1);
+    ctx.fillStyle = sceneColour(end, true);
+    ctx.fillRect(left, top, sceneX(end, 1) - left, 466 - 2 * top);
+    rects++;
+    return { rects: rects, strokes: strokes, naive: 2 * walls };
 }
 
 // The folders are a grid of 3 rows of 3 and a folder is a list of up to 10 rows, all fixed
@@ -925,6 +1045,43 @@ export default {
     },
     l5() {
         this.countRects(0, 1, 1, 'line', 0);
+    },
+    // Cycles through SCENES every SCENE_MS, each on a fresh canvas, showing its canvas cost
+    // (fillRect 1, stroke STROKE_COST) and, in brackets, the cost with two cuts per wall.
+    l6() {
+        let shown = 0;
+        let worst = 0;
+        const show = (i) => {
+            if (this.running === '') {
+                return;
+            }
+            try {
+                const c = drawScene(this.$refs.cvA.getContext('2d'), SCENES[i]);
+                const cost = c.rects + c.strokes * STROKE_COST;
+                const naive = c.rects + c.naive * STROKE_COST;
+                worst = Math.max(worst, cost);
+                this.status = SCENES[i].name + ': ' + c.rects + 'r ' + c.strokes + 'l = ' +
+                    cost.toFixed(1) + ' (' + naive.toFixed(1) + ')';
+                shown++;
+                if (shown === SCENES.length) {
+                    this.save(this.running, 'OK, worst ' + worst.toFixed(1));
+                }
+            } catch (e) {
+                this.finish('error in ' + SCENES[i].name + ': ' + e);
+                return;
+            }
+            timer = setTimeout(() => {
+                this.liveA = false;
+                timer = setTimeout(() => {
+                    this.liveA = true;
+                    timer = setTimeout(() => show((i + 1) % SCENES.length), CANVAS_WAIT_MS);
+                }, CANVAS_WAIT_MS);
+            }, SCENE_MS);
+        };
+        this.showA = true;
+        this.liveB = false;
+        this.liveA = true;
+        timer = setTimeout(() => show(0), CANVAS_WAIT_MS);
     },
     // Heap cost of many charts: MANY_CHARTS gradient charts at once, timed.
     g2() {
