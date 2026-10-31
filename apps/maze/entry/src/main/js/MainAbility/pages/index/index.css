@@ -21,6 +21,16 @@
   background-color: #000000;
   border-radius: 20px;
 }
+/* Level and best steps for this size, under the compass. */
+.record {
+  width: 240px;
+  height: 28px;
+  left: 113px;
+  top: 64px;
+  font-size: 20px;
+  color: #c8c8c8;
+  text-align: center;
+}
 /* "Pared" when walking into a wall, and the win message. */
 .note {
   width: 320px;

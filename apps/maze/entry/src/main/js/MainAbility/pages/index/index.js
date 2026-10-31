@@ -1,11 +1,12 @@
 import brightness from '@system.brightness';
+import storage from '@system.storage';
 
 // Maze prototype: a first-person view of a small maze, drawn on a canvas one step at a time.
 // What the watch allows shaped it (docs/compare-drawing-methods.md): a canvas takes about
 // 1,100 fillRect before the app is killed and there is no clearRect, so only the parts of
 // each column that change are drawn, and the canvas is remade when it nears the limit.
-const MAZE_CELLS = 9;
-const GRID = 2 * MAZE_CELLS + 1;
+// Maze size in cells per side, one entry per level; after the last the size stays.
+const LEVEL_CELLS = [7, 9, 11, 13, 15];
 const WALL = 1;
 const EXIT = 2;
 const SCREEN = 466;
@@ -30,6 +31,11 @@ const TURN_ZONE = 155;
 const BACK_ZONE = 340;
 
 let grid = [];
+// Grid side: 2 * cells + 1, walls included.
+let size = 15;
+let level = 0;
+// Fewest steps to the exit, by maze size (key 'best' + cells in storage), 0 if none.
+let best = 0;
 let seed = 1;
 let px = 1;
 let py = 1;
@@ -50,10 +56,11 @@ function random() {
 // Carves a maze with a depth-first search from the top-left cell; the exit is a door in the
 // outer wall next to the bottom-right cell.
 function makeMaze() {
+    size = 2 * LEVEL_CELLS[Math.min(level, LEVEL_CELLS.length - 1)] + 1;
     grid = [];
-    for (let y = 0; y < GRID; y++) {
+    for (let y = 0; y < size; y++) {
         const row = [];
-        for (let x = 0; x < GRID; x++) {
+        for (let x = 0; x < size; x++) {
             row.push(WALL);
         }
         grid.push(row);
@@ -66,7 +73,7 @@ function makeMaze() {
         for (let d = 0; d < 4; d++) {
             const nx = cur[0] + 2 * DIRS[d][0];
             const ny = cur[1] + 2 * DIRS[d][1];
-            if (nx > 0 && ny > 0 && nx < GRID - 1 && ny < GRID - 1 && grid[ny][nx] === WALL) {
+            if (nx > 0 && ny > 0 && nx < size - 1 && ny < size - 1 && grid[ny][nx] === WALL) {
                 options.push(d);
             }
         }
@@ -79,7 +86,7 @@ function makeMaze() {
         grid[cur[1] + 2 * DIRS[d][1]][cur[0] + 2 * DIRS[d][0]] = 0;
         stack.push([cur[0] + 2 * DIRS[d][0], cur[1] + 2 * DIRS[d][1]]);
     }
-    grid[GRID - 2][GRID - 1] = EXIT;
+    grid[size - 2][size - 1] = EXIT;
     px = 1;
     py = 1;
     facing = grid[1][2] === 0 ? 1 : 2;
@@ -138,6 +145,16 @@ function castView() {
     return view;
 }
 
+// Reads a whole number from storage, 0 when it is missing or the read fails.
+function loadNumber(key, callback) {
+    storage.get({
+        key: key,
+        default: '0',
+        success: (value) => callback(parseInt(value, 10) || 0),
+        fail: () => callback(0)
+    });
+}
+
 function fill(x, top, bottom, colour) {
     if (bottom > top) {
         ctx.fillStyle = colour;
@@ -150,6 +167,7 @@ export default {
     data: {
         live: false,
         hud: '',
+        record: '',
         note: ''
     },
     onInit() {
@@ -159,8 +177,18 @@ export default {
             // The screen just turns off as usual.
         }
         seed = Date.now() & 0x7fffffff;
+        loadNumber('level', (value) => {
+            level = value;
+            this.startMaze();
+        });
+    },
+    // Makes the maze for the current level and loads that size's record before showing it.
+    startMaze() {
         makeMaze();
-        this.newCanvas();
+        loadNumber('best' + (size - 1) / 2, (value) => {
+            best = value;
+            this.newCanvas();
+        });
     },
     // Removes the canvas (if it exists) and makes a fresh one, then draws the whole view.
     newCanvas() {
@@ -220,6 +248,7 @@ export default {
             shownColour[c] = view[c].colour;
         }
         this.hud = COMPASS[facing] + '  ' + steps;
+        this.record = best > 0 ? 'Nivel ' + (level + 1) + '  récord ' + best : 'Nivel ' + (level + 1);
     },
     // Left third turns left, right third turns right, the bottom turns around, the middle
     // steps forward. The click event carries the position (globalX, globalY); ontouchstart
@@ -254,13 +283,21 @@ export default {
         }
         this.draw();
     },
+    // Shows the steps, saves a new record for this size, and moves on to the next level.
     win() {
         busy = true;
-        this.note = 'Salida en ' + (steps + 1) + ' pasos';
+        const taken = steps + 1;
+        if (best === 0 || taken < best) {
+            this.note = 'Nuevo récord: ' + taken + ' pasos';
+            storage.set({ key: 'best' + (size - 1) / 2, value: String(taken) });
+        } else {
+            this.note = 'Salida en ' + taken + ' pasos';
+        }
+        level++;
+        storage.set({ key: 'level', value: String(level) });
         setTimeout(() => {
             this.note = '';
-            makeMaze();
-            this.newCanvas();
+            this.startMaze();
         }, WIN_MS);
     }
 };
