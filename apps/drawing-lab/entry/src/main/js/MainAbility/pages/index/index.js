@@ -109,7 +109,12 @@ const TESTS = [
     { id: 'f4', emoji: '⛔', name: 'Count + clean !', view: 'canvas', size: 466 },
     { id: 'f5', emoji: '☁️', name: 'globalAlpha', view: 'canvas', size: 466 },
     { id: 'g1', emoji: '☔', name: 'Chart walls', view: 'wallcharts' },
-    { id: 'g2', emoji: '❄️', name: '12 charts', view: 'manycharts' }
+    { id: 'g2', emoji: '❄️', name: '12 charts', view: 'manycharts' },
+    { id: 'l1', emoji: '⛺', name: 'Thick-line walls', view: 'canvas', size: 466 },
+    { id: 'l2', emoji: '〰️', name: 'Line widths', view: 'canvas', size: 466 },
+    { id: 'l3', emoji: '↩️', name: 'rotate, scale', view: 'canvas', size: 466 },
+    { id: 'l4', emoji: '⚪', name: 'drawCircle', view: 'canvas', size: 466 },
+    { id: 'l5', emoji: '✒️', name: 'Count lines !', view: 'canvas', size: 466 }
 ];
 
 // The list is a grid of folders; a folder is a grid of its tests, after a back cell.
@@ -118,6 +123,7 @@ const FOLDERS = [
     { emoji: '⚠️', name: 'Limits', ids: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'e9'] },
     { emoji: '♻️', name: 'Swap', ids: ['s1', 's2', 's3', 'd2'] },
     { emoji: '⭐', name: 'Shapes', ids: ['f1', 'f2', 'f3', 'f4', 'f5', 'g1', 'g2'] },
+    { emoji: '➖', name: 'Lines', ids: ['l1', 'l2', 'l3', 'l4', 'l5'] },
     { emoji: '✂️', name: 'Components', ids: ['h1', 'h4', 'i1', 'i2', 'i3', 'k1', 'p1', 'q1'] },
     { emoji: '☎️', name: 'Audio', ids: ['a1', 'a2'] }
 ];
@@ -270,6 +276,38 @@ function corridor(ctx) {
     poly(ctx, [150, 140, 200, 180, 200, 286, 150, 326], WALL_FAR);
     ctx.fillStyle = '#5a4428';
     ctx.fillRect(200, 180, 66, 106);
+}
+
+// A stroked line from (x1, y1) to (x2, y2), lineWidth width, shifted sideways by half its
+// width so that it lies wholly on one side of that segment (side 1 or -1: left or right when
+// looking from the first point to the second), and made longer by extend at both ends. Since
+// the canvas cannot fill a polygon, a wall drawn as a rect gets its sloped edge by painting
+// over the corner beyond the edge with such a line in the ceiling or floor colour.
+function sideLine(ctx, x1, y1, x2, y2, side, width, extend, colour) {
+    const len = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    const ux = (x2 - x1) / len;
+    const uy = (y2 - y1) / len;
+    const nx = uy * side * width / 2;
+    const ny = -ux * side * width / 2;
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1 - ux * extend + nx, y1 - uy * extend + ny);
+    ctx.lineTo(x2 + ux * extend + nx, y2 + uy * extend + ny);
+    ctx.stroke();
+}
+
+// A side wall from x1 to x2 whose top edge goes from top1 to top2 and whose bottom edge is
+// its mirror around the horizon (233): a rect, then the corners above and below cut away with
+// lines in the ceiling and floor colours.
+function slopedWall(ctx, x1, x2, top1, top2, colour) {
+    const top = Math.min(top1, top2);
+    ctx.fillStyle = colour;
+    ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), 466 - 2 * top);
+    const width = Math.abs(top1 - top2) + 10;
+    const up = x2 > x1 ? 1 : -1;
+    sideLine(ctx, x1, top1, x2, top2, up, width, 20, CEILING);
+    sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, FLOOR);
 }
 
 // Grid cells in rows of GRID_COLS, flattened (i0, e0, n0, r0, u0 for the first cell, and so
@@ -528,11 +566,13 @@ export default {
     // COUNT_MAX or until the watch fails. With recreateEvery > 0 (a multiple of perStep) the
     // canvas is removed and a new one made every that many squares, to see whether that
     // resets the limit. One square per step failed at 362, while 1,000 in one step worked.
-    // The count is shown every statusEvery steps. With shapes each square is a filled
-    // four-point path instead of a fillRect, to see whether a path costs one call or more. With
-    // cleanEvery > 0 the whole canvas is wiped with cleanRect every that many squares, to see
-    // whether that frees what the canvas keeps.
-    countRects(recreateEvery, perStep, statusEvery, shapes, cleanEvery) {
+    // The count is shown every statusEvery steps. shape 'poly' draws each square as a filled
+    // four-point path instead of a fillRect, and 'line' as a stroked diagonal line, to see
+    // whether those count towards the limit like a fillRect. With cleanEvery > 0 the whole
+    // canvas is wiped with cleanRect every that many squares, to see whether that frees what the
+    // canvas keeps.
+    countRects(recreateEvery, perStep, statusEvery, shape, cleanEvery) {
+        const unit = shape === 'poly' ? ' shapes' : shape === 'line' ? ' lines' : ' rects';
         let drawn = 0;
         let steps = 0;
         let canvases = 1;
@@ -542,7 +582,7 @@ export default {
                 return;
             }
             if (drawn >= COUNT_MAX) {
-                this.finish(drawn + (shapes ? ' shapes' : ' rects') + ' OK');
+                this.finish(drawn + unit + ' OK');
                 return;
             }
             try {
@@ -552,9 +592,16 @@ export default {
                     }
                     const cell = roundCell(drawn);
                     const colour = PALETTE[Math.floor(drawn / COUNT_COLOUR_EVERY) % PALETTE.length];
-                    if (shapes) {
+                    if (shape === 'poly') {
                         const s = COUNT_CELL - 1;
                         poly(ctx, [cell.x + 2, cell.y, cell.x + s - 2, cell.y, cell.x + s, cell.y + s, cell.x, cell.y + s], colour);
+                    } else if (shape === 'line') {
+                        ctx.strokeStyle = colour;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(cell.x + 1, cell.y + 1);
+                        ctx.lineTo(cell.x + COUNT_CELL - 2, cell.y + COUNT_CELL - 2);
+                        ctx.stroke();
                     } else {
                         ctx.fillStyle = colour;
                         ctx.fillRect(cell.x, cell.y, COUNT_CELL - 1, COUNT_CELL - 1);
@@ -567,7 +614,7 @@ export default {
             }
             steps++;
             if (steps % statusEvery === 0) {
-                this.status = drawn + (shapes ? ' shapes' : ' rects') + (perStep > 1 ? ', ' + steps + ' steps' : '') +
+                this.status = drawn + unit + (perStep > 1 ? ', ' + steps + ' steps' : '') +
                     (recreateEvery > 0 ? ', canvas ' + canvases : '');
             }
             if (recreateEvery > 0 && drawn % recreateEvery === 0) {
@@ -693,7 +740,7 @@ export default {
         });
     },
     f2() {
-        this.countRects(0, 1, 1, true, 0);
+        this.countRects(0, 1, 1, 'poly', 0);
     },
     // cleanRect, which the engine lists instead of clearRect: a hole should appear in the
     // red square.
@@ -713,7 +760,7 @@ export default {
                 this.finish('no cleanRect');
                 return;
             }
-            this.countRects(0, 1, 1, false, RECREATE_EVERY);
+            this.countRects(0, 1, 1, '', RECREATE_EVERY);
         }, CANVAS_WAIT_MS);
     },
     // globalAlpha as shading: the corridor, then the far wall and the left wall darkened by
@@ -744,6 +791,74 @@ export default {
             ctx.fillStyle = FLOOR;
             ctx.fillRect(0, 233, 466, 233);
         });
+    },
+    // The f1 corridor with sloped side walls made of rects and thick lines: the far walls,
+    // then the near ones, then the front wall.
+    l1() {
+        this.withCanvas((ctx) => {
+            ctx.fillStyle = CEILING;
+            ctx.fillRect(0, 0, 466, 233);
+            ctx.fillStyle = FLOOR;
+            ctx.fillRect(0, 233, 466, 233);
+            slopedWall(ctx, 150, 200, 140, 180, WALL_FAR);
+            slopedWall(ctx, 316, 266, 140, 180, WALL_FAR);
+            slopedWall(ctx, 0, 150, 20, 140, WALL_NEAR);
+            slopedWall(ctx, 466, 316, 20, 140, WALL_NEAR);
+            ctx.fillStyle = '#5a4428';
+            ctx.fillRect(200, 180, 66, 106);
+        });
+    },
+    // Which widths a line takes: 2, 10, 40, 100 and 200 px, from left to right.
+    l2() {
+        this.withCanvas((ctx) => {
+            const widths = [2, 10, 40, 100, 200];
+            widths.forEach((w, k) => {
+                ctx.strokeStyle = PALETTE[k];
+                ctx.lineWidth = w;
+                ctx.beginPath();
+                ctx.moveTo(60 + k * 80, 80);
+                ctx.lineTo(60 + k * 80 + 30, 380);
+                ctx.stroke();
+            });
+        });
+    },
+    // Transforms: a rect turned 30 degrees around the centre (red), one scaled 2x wide (green)
+    // and one moved with translate (blue).
+    l3() {
+        this.withCanvas((ctx) => {
+            ctx.save();
+            ctx.translate(233, 233);
+            ctx.rotate(0.52);
+            ctx.fillStyle = '#e6194b';
+            ctx.fillRect(-100, -30, 200, 60);
+            ctx.restore();
+            ctx.save();
+            ctx.scale(2, 1);
+            ctx.fillStyle = '#3cb44b';
+            ctx.fillRect(60, 80, 50, 30);
+            ctx.restore();
+            ctx.save();
+            ctx.translate(180, 340);
+            ctx.fillStyle = '#4363d8';
+            ctx.fillRect(0, 0, 100, 30);
+            ctx.restore();
+        });
+    },
+    // drawCircle is not a standard canvas call; tries (x, y, r) with the fill and stroke styles
+    // set, and shows what it throws.
+    l4() {
+        this.withCanvas((ctx) => {
+            if (typeof ctx.drawCircle !== 'function') {
+                throw new Error('no drawCircle');
+            }
+            ctx.fillStyle = '#3cb44b';
+            ctx.strokeStyle = '#ffe119';
+            ctx.lineWidth = 6;
+            ctx.drawCircle(233, 233, 100);
+        });
+    },
+    l5() {
+        this.countRects(0, 1, 1, 'line', 0);
     },
     // Heap cost of many charts: MANY_CHARTS gradient charts at once, timed.
     g2() {
