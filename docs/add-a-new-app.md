@@ -8,6 +8,8 @@ Each app is its own DevEco project under `apps/`, because an app always starts a
 | `apps/maze/` | `com.hectorreto.maze` | `maze.p7b` (`MazeDebugProfile`) |
 | `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (`DrawingLabDebugProfile`) |
 
+Confirmed October 2026: the three install side by side on the GT 6 Pro and each works.
+
 ## Steps
 
 1. **Copy a project.** Copy the tracked files of `apps/bakery-clicker/` to `apps/<name>/`, without `entry/src/main/js/MainAbility/common/` (the game's images) and `pages/`, then write `pages/index/index.{hml,css,js}`. Copy only the images the new page uses. Do not copy `entry/build`, `oh_modules` or `.hvigor`. (The DevEco wizard, `create-and-preview-the-app.md`, also works, but then the SDK settings and `.gitignore` have to be matched by hand.)
