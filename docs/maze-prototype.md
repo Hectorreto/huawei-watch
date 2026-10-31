@@ -12,4 +12,4 @@ A first-person maze, step by step, to see whether that kind of view fits the GT 
 
 ## Status
 
-Checked in the Previewer (October 2026, on the branch): the view draws, stepping, both turns, turning around and "Pared" work. On the GT 6 Pro (October 2026, on the branch) it installed over the previous app and everything works: it looks very good, the tap zones respond well, the hitch when the canvas is remade was not noticeable, and reaching the exit makes a new maze. As its own app it builds unsigned; it has not been installed yet, since it needs its own debug profile (see `add-a-new-app.md`).
+Checked in the Previewer (October 2026, on the branch): the view draws, stepping, both turns, turning around and "Pared" work. On the GT 6 Pro (October 2026, on the branch) it installed over the previous app and everything works: it looks very good, the tap zones respond well, the hitch when the canvas is remade was not noticeable, and reaching the exit makes a new maze. As its own app it builds signed with its own debug profile (see `add-a-new-app.md`); not yet installed on the watch.

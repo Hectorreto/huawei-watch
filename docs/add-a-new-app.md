@@ -4,9 +4,9 @@ Each app is its own DevEco project under `apps/`, because an app always starts a
 
 | App | Bundle name | Debug profile |
 |---|---|---|
-| `apps/bakery-clicker/` | `com.hectorreto.counter` (kept from the first project; changing it would make a new app on the watch and lose the save) | `counter.p7b` |
-| `apps/maze/` | `com.hectorreto.maze` | `maze.p7b` (not created yet) |
-| `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (not created yet) |
+| `apps/bakery-clicker/` | `com.hectorreto.counter` (kept from the first project; changing it would make a new app on the watch and lose the save) | `counter.p7b` (`CounterDebugProfile`) |
+| `apps/maze/` | `com.hectorreto.maze` | `maze.p7b` (`MazeDebugProfile`) |
+| `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (`DrawingLabDebugProfile`) |
 
 ## Steps
 
