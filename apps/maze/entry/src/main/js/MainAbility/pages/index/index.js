@@ -35,6 +35,11 @@ const MAP_ZONE = 100;
 const MAP_SIDE = 320;
 const MAP_PATH = '#5a6478';
 const MAP_PLAYER = '#ffe119';
+// Gems per maze, put in dead ends; picked up by stepping on them.
+const GEMS = 3;
+// Gem size and how far below the horizon it sits, as shares of the wall height there.
+const GEM_SIZE = 0.35;
+const GEM_FLOOR = 0.35;
 
 let grid = [];
 // Grid side: 2 * cells + 1, walls included.
@@ -53,6 +58,9 @@ let busy = true;
 let mapOpen = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
+// Gems still in the maze, as [x, y] grid cells, and how many were picked up.
+let gems = [];
+let gemsFound = 0;
 // Height and colour of each column as it is on the canvas now.
 const shownH = [];
 const shownColour = [];
@@ -105,6 +113,64 @@ function makeMaze() {
         visited.push(0);
     }
     visited[py * size + px] = 1;
+    placeGems();
+}
+
+// Puts the gems in random dead ends (cells with one way out), never on the start.
+function placeGems() {
+    const ends = [];
+    for (let y = 1; y < size - 1; y += 2) {
+        for (let x = 1; x < size - 1; x += 2) {
+            let open = 0;
+            for (let d = 0; d < 4; d++) {
+                if (grid[y + DIRS[d][1]][x + DIRS[d][0]] === 0) {
+                    open++;
+                }
+            }
+            if (open === 1 && (x !== px || y !== py)) {
+                ends.push([x, y]);
+            }
+        }
+    }
+    gems = [];
+    gemsFound = 0;
+    while (gems.length < GEMS && ends.length > 0) {
+        gems.push(ends.splice(Math.floor(random() * ends.length), 1)[0]);
+    }
+}
+
+// Places each gem the player can see as an image over the view: sized and lowered by its
+// distance, and hidden when the wall in its middle column is nearer than it. Far gems
+// come first so near ones are drawn over them.
+function gemSprites(view) {
+    const dx = DIRS[facing][0];
+    const dy = DIRS[facing][1];
+    const shown = [];
+    for (let i = 0; i < gems.length; i++) {
+        const ox = gems[i][0] - px;
+        const oy = gems[i][1] - py;
+        const ahead = ox * dx + oy * dy;
+        const side = ox * -dy + oy * dx;
+        if (ahead <= 0) {
+            continue;
+        }
+        const cam = side / (ahead * PLANE);
+        const c = Math.floor((cam + 1) / 2 * COLS);
+        if (c < 0 || c >= COLS || view[c].dist < ahead) {
+            continue;
+        }
+        const wallH = WALL_SCALE / ahead;
+        const s = Math.max(8, Math.round(wallH * GEM_SIZE));
+        const centreX = (cam + 1) / 2 * COLS * COL_W;
+        shown.push({
+            ahead: ahead,
+            x: Math.round(centreX - s / 2),
+            y: Math.round(SCREEN / 2 + wallH * GEM_FLOOR - s / 2),
+            s: s
+        });
+    }
+    shown.sort((a, b) => b.ahead - a.ahead);
+    return shown;
 }
 
 function hex2(v) {
@@ -154,7 +220,7 @@ function castView() {
         }
         const dist = Math.max(0.05, side === 0 ? sideX - deltaX : sideY - deltaY);
         const h = 2 * Math.round(Math.min(SCREEN, WALL_SCALE / dist) / 2);
-        view.push({ h: h, colour: wallColour(grid[my][mx], side, dist) });
+        view.push({ h: h, dist: dist, colour: wallColour(grid[my][mx], side, dist) });
     }
     return view;
 }
@@ -212,7 +278,8 @@ export default {
         live: false,
         hud: '',
         record: '',
-        note: ''
+        note: '',
+        sprites: []
     },
     onInit() {
         try {
@@ -231,6 +298,7 @@ export default {
         makeMaze();
         loadNumber('best' + (size - 1) / 2, (value) => {
             best = value;
+            this.note = best > 0 ? 'Récord: ' + best + ' pasos' : '';
             this.newCanvas();
         });
     },
@@ -240,6 +308,7 @@ export default {
         busy = true;
         ctx = null;
         this.live = false;
+        this.sprites = [];
         setTimeout(() => {
             this.live = true;
             setTimeout(() => {
@@ -296,8 +365,9 @@ export default {
             shownH[c] = h;
             shownColour[c] = view[c].colour;
         }
+        this.sprites = gemSprites(view);
         this.hud = COMPASS[facing] + '  ' + steps;
-        this.record = best > 0 ? 'Nivel ' + (level + 1) + '  récord ' + best : 'Nivel ' + (level + 1);
+        this.record = 'Nivel ' + (level + 1) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
     },
     // Left third turns left, right third turns right, the bottom turns around, the compass
     // at the top opens the map, the rest of the middle steps forward; while the map is open
@@ -341,6 +411,14 @@ export default {
             py = ny;
             visited[py * size + px] = 1;
             steps++;
+            for (let i = 0; i < gems.length; i++) {
+                if (gems[i][0] === px && gems[i][1] === py) {
+                    gems.splice(i, 1);
+                    gemsFound++;
+                    this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
+                    break;
+                }
+            }
         }
         this.draw();
     },
