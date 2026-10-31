@@ -308,8 +308,8 @@ function slopedWall(ctx, x1, x2, top1, top2, colour) {
     ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), 466 - 2 * top);
     const width = Math.abs(top1 - top2) + 10;
     const up = x2 > x1 ? 1 : -1;
-    sideLine(ctx, x1, top1, x2, top2, up, width, 20, '#ff0000');
-    sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, '#ff00ff');
+    sideLine(ctx, x1, top1, x2, top2, up, width, 20, CEILING);
+    sideLine(ctx, x1, 466 - top1, x2, 466 - top2, -up, width, 20, FLOOR);
 }
 
 // The folders are a grid of 3 rows of 3 and a folder is a list of up to 10 rows, all fixed
