@@ -1,12 +1,136 @@
 <div class="container">
-    <list class="menu" if="{{ running === '' }}">
+    <list class="menu" if="{{ running === '' }}" show="{{ folder === -1 }}">
         <list-item class="title-item">
             <text class="title">{{ title }}</text>
         </list-item>
-        <list-item class="item" for="{{ tests }}" onclick="run($item.index)">
-            <text class="name">{{ $item.name }}</text>
-            <text class="result">{{ $item.result }}</text>
+        <list-item class="row">
+            <div class="cell" show="{{ u0 }}" onclick="pick(0)">
+                <text class="emoji">{{ e0 }}</text>
+                <text class="name">{{ n0 }}</text>
+                <text class="result">{{ r0 }}</text>
+            </div>
+            <div class="cell" show="{{ u1 }}" onclick="pick(1)">
+                <text class="emoji">{{ e1 }}</text>
+                <text class="name">{{ n1 }}</text>
+                <text class="result">{{ r1 }}</text>
+            </div>
+            <div class="cell" show="{{ u2 }}" onclick="pick(2)">
+                <text class="emoji">{{ e2 }}</text>
+                <text class="name">{{ n2 }}</text>
+                <text class="result">{{ r2 }}</text>
+            </div>
         </list-item>
+        <list-item class="row">
+            <div class="cell" show="{{ u3 }}" onclick="pick(3)">
+                <text class="emoji">{{ e3 }}</text>
+                <text class="name">{{ n3 }}</text>
+                <text class="result">{{ r3 }}</text>
+            </div>
+            <div class="cell" show="{{ u4 }}" onclick="pick(4)">
+                <text class="emoji">{{ e4 }}</text>
+                <text class="name">{{ n4 }}</text>
+                <text class="result">{{ r4 }}</text>
+            </div>
+            <div class="cell" show="{{ u5 }}" onclick="pick(5)">
+                <text class="emoji">{{ e5 }}</text>
+                <text class="name">{{ n5 }}</text>
+                <text class="result">{{ r5 }}</text>
+            </div>
+        </list-item>
+        <list-item class="row">
+            <div class="cell" show="{{ u6 }}" onclick="pick(6)">
+                <text class="emoji">{{ e6 }}</text>
+                <text class="name">{{ n6 }}</text>
+                <text class="result">{{ r6 }}</text>
+            </div>
+            <div class="cell" show="{{ u7 }}" onclick="pick(7)">
+                <text class="emoji">{{ e7 }}</text>
+                <text class="name">{{ n7 }}</text>
+                <text class="result">{{ r7 }}</text>
+            </div>
+            <div class="cell" show="{{ u8 }}" onclick="pick(8)">
+                <text class="emoji">{{ e8 }}</text>
+                <text class="name">{{ n8 }}</text>
+                <text class="result">{{ r8 }}</text>
+            </div>
+        </list-item>
+        <list-item class="end-item"></list-item>
+    </list>
+    <list class="menu" if="{{ running === '' }}" show="{{ folder !== -1 }}">
+        <list-item class="title-item">
+            <text class="title">{{ title }}</text>
+        </list-item>
+        <list-item class="line" show="{{ u0 }}" style="height: {{ h0 }}px;">
+            <div class="line-cell" show="{{ u0 }}" onclick="pick(0)">
+                <text class="emoji">{{ e0 }}</text>
+                <text class="line-name">{{ n0 }}</text>
+                <text class="line-result">{{ r0 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u1 }}" style="height: {{ h1 }}px;">
+            <div class="line-cell" show="{{ u1 }}" onclick="pick(1)">
+                <text class="emoji">{{ e1 }}</text>
+                <text class="line-name">{{ n1 }}</text>
+                <text class="line-result">{{ r1 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u2 }}" style="height: {{ h2 }}px;">
+            <div class="line-cell" show="{{ u2 }}" onclick="pick(2)">
+                <text class="emoji">{{ e2 }}</text>
+                <text class="line-name">{{ n2 }}</text>
+                <text class="line-result">{{ r2 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u3 }}" style="height: {{ h3 }}px;">
+            <div class="line-cell" show="{{ u3 }}" onclick="pick(3)">
+                <text class="emoji">{{ e3 }}</text>
+                <text class="line-name">{{ n3 }}</text>
+                <text class="line-result">{{ r3 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u4 }}" style="height: {{ h4 }}px;">
+            <div class="line-cell" show="{{ u4 }}" onclick="pick(4)">
+                <text class="emoji">{{ e4 }}</text>
+                <text class="line-name">{{ n4 }}</text>
+                <text class="line-result">{{ r4 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u5 }}" style="height: {{ h5 }}px;">
+            <div class="line-cell" show="{{ u5 }}" onclick="pick(5)">
+                <text class="emoji">{{ e5 }}</text>
+                <text class="line-name">{{ n5 }}</text>
+                <text class="line-result">{{ r5 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u6 }}" style="height: {{ h6 }}px;">
+            <div class="line-cell" show="{{ u6 }}" onclick="pick(6)">
+                <text class="emoji">{{ e6 }}</text>
+                <text class="line-name">{{ n6 }}</text>
+                <text class="line-result">{{ r6 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u7 }}" style="height: {{ h7 }}px;">
+            <div class="line-cell" show="{{ u7 }}" onclick="pick(7)">
+                <text class="emoji">{{ e7 }}</text>
+                <text class="line-name">{{ n7 }}</text>
+                <text class="line-result">{{ r7 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u8 }}" style="height: {{ h8 }}px;">
+            <div class="line-cell" show="{{ u8 }}" onclick="pick(8)">
+                <text class="emoji">{{ e8 }}</text>
+                <text class="line-name">{{ n8 }}</text>
+                <text class="line-result">{{ r8 }}</text>
+            </div>
+        </list-item>
+        <list-item class="line" show="{{ u9 }}" style="height: {{ h9 }}px;">
+            <div class="line-cell" show="{{ u9 }}" onclick="pick(9)">
+                <text class="emoji">{{ e9 }}</text>
+                <text class="line-name">{{ n9 }}</text>
+                <text class="line-result">{{ r9 }}</text>
+            </div>
+        </list-item>
+        <list-item class="end-item"></list-item>
     </list>
     <stack class="stage" if="{{ running !== '' }}">
         <canvas class="canvas-100" ref="cv" if="{{ view === 'canvas' && size === 100 }}"></canvas>
@@ -14,8 +138,14 @@
         <canvas class="canvas-466" ref="cv" if="{{ view === 'canvas' && size === 466 }}"></canvas>
         <canvas class="canvas-466" ref="cvA" if="{{ view === 'swap' && liveA }}" show="{{ showA }}"></canvas>
         <canvas class="canvas-466" ref="cvB" if="{{ view === 'swap' && liveB }}" show="{{ showB }}"></canvas>
+        <canvas class="canvas-466" ref="cv" if="{{ view === 'wallcharts' }}"></canvas>
+        <chart class="wall-top" if="{{ view === 'wallcharts' }}" type="line" datasets="{{ topWall }}" options="{{ topOptions }}"></chart>
+        <chart class="wall-bottom" if="{{ view === 'wallcharts' }}" type="line" datasets="{{ bottomWall }}" options="{{ bottomOptions }}"></chart>
+        <stack class="cells" if="{{ view === 'manycharts' }}">
+            <chart class="small-chart" for="{{ manyCharts }}" type="line" style="left: {{ $item.x }}px; top: {{ $item.y }}px;" datasets="{{ $item.ds }}" options="{{ topOptions }}"></chart>
+        </stack>
         <stack class="cells" if="{{ view === 'cells' }}">
-            <div class="cell" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
+            <div class="cell-square" for="{{ cells }}" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px; background-color: {{ $item.c }};"></div>
         </stack>
         <div class="mover" if="{{ view === 'mover' }}" style="left: {{ moverX }}px;"></div>
         <image class="picture" if="{{ view === 'image' }}" src="{{ imageSrc }}"></image>
