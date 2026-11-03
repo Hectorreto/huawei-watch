@@ -191,7 +191,10 @@ function toStart() {
 // A catch: the player goes back along the way, facing where it was heading, and the
 // guardian sleeps at the start again.
 function setBack() {
-    const keep = Math.max(1, trail.length - GUARD_SETBACK * (size - 1) / 2);
+    // An odd length, so the player lands on a maze cell and never on the one between two:
+    // a tap walks two grid cells, and from there the second could be a wall.
+    let keep = Math.max(1, trail.length - GUARD_SETBACK * (size - 1) / 2);
+    keep -= (keep + 1) % 2;
     const next = trail[keep];
     trail.length = keep;
     px = trail[keep - 1] % size;
@@ -557,7 +560,8 @@ export default {
         const gap = trail.length - 1 - g;
         if (gap <= GUARD_WARN) {
             this.note = 'Guardián a ' + gap + (gap === 1 ? ' paso' : ' pasos');
-        } else if (guardSteps === GUARD_WAKE * (size - 1) / 2) {
+        } else if (guardSteps - GUARD_WAKE * (size - 1) / 2 < 2) {
+            // A tap walks two steps, so the step it woke on may fall inside one.
             this.note = 'El guardián despertó';
         }
     },
@@ -606,33 +610,44 @@ export default {
                 this.note = 'Pared';
                 return;
             }
-            px = nx;
-            py = ny;
-            visited[py * size + px] = 1;
-            steps++;
-            guardSteps++;
-            const cell = py * size + px;
-            if (trail.length > 1 && trail[trail.length - 2] === cell) {
-                trail.pop();
-            } else {
-                trail.push(cell);
-            }
-            for (let i = 0; i < gems.length; i++) {
-                if (gems[i][0] === px && gems[i][1] === py) {
-                    gems.splice(i, 1);
-                    gemsFound++;
-                    this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
-                    break;
-                }
-            }
-            const g = guardIndex();
-            if (g >= 0 && g >= trail.length - 1) {
-                // Steps, gems and the map stay; the walk back and the steps are the price.
-                setBack();
-                this.note = 'Te atrapó: retrocedes';
+            // A tap crosses a whole maze cell: the grid cell between two of them offers no
+            // choice, so it would only be one more tap. Steps still count grid cells, so old
+            // records compare, and only the end is drawn.
+            if (this.stepOnce()) {
+                this.stepOnce();
             }
         }
         this.draw();
+    },
+    // Moves one grid cell forward; false when the guardian caught the player there.
+    stepOnce() {
+        px += DIRS[facing][0];
+        py += DIRS[facing][1];
+        visited[py * size + px] = 1;
+        steps++;
+        guardSteps++;
+        const cell = py * size + px;
+        if (trail.length > 1 && trail[trail.length - 2] === cell) {
+            trail.pop();
+        } else {
+            trail.push(cell);
+        }
+        for (let i = 0; i < gems.length; i++) {
+            if (gems[i][0] === px && gems[i][1] === py) {
+                gems.splice(i, 1);
+                gemsFound++;
+                this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
+                break;
+            }
+        }
+        const g = guardIndex();
+        if (g >= 0 && g >= trail.length - 1) {
+            // Steps, gems and the map stay; the walk back and the steps are the price.
+            setBack();
+            this.note = 'Te atrapó: retrocedes';
+            return false;
+        }
+        return true;
     },
     // Scores the maze: one star for leaving, one for all its gems, one for staying within par.
     // Saves the record, the stars and the next level, and shows the result until a tap.
