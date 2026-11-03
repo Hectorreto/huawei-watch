@@ -218,7 +218,9 @@ function format(n) {
     const units = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
     for (let i = 0; i < units.length; i++) {
         if (n >= units[i][0]) {
-            return (Math.floor(n / units[i][0] * 10) / 10) + units[i][1];
+            // No decimal from 100 up, so a price like 229K still fits its 50 px in the pill.
+            const v = n / units[i][0];
+            return (v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10) + units[i][1];
         }
     }
     return String(n);
