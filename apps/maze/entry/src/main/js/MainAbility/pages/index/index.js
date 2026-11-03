@@ -79,6 +79,10 @@ const DAILY_BONUS_MAX = 5;
 const DAY_MS = 86400000;
 // On the menu, taps above this continue the levels and the rest open the daily challenge.
 const MENU_SPLIT = 225;
+// The maze in progress is saved this long after the last tap, as in the clicker, and when the
+// app closes. Numbers in key 'run': seed, daily, level, px, py, facing, steps, guardSteps, gems.
+const SAVE_DELAY_MS = 1000;
+const RUN_FIELDS = 9;
 const STAR_ON = '/common/star.png';
 const STAR_OFF = '/common/star_off.png';
 // Total stars needed for each rank.
@@ -116,6 +120,14 @@ let totalStars = 0;
 // Steps allowed for this maze's third star.
 let par = 0;
 let seed = 1;
+// The seed this maze was made from, which remakes it when it is resumed.
+let runSeed = 1;
+// A maze in progress is on screen, and what was last written for it.
+let runActive = false;
+let runSaved = '';
+// The maze found in storage, until one is started.
+let savedRun = null;
+let saveTimer = null;
 let px = 1;
 let py = 1;
 let facing = 1;
@@ -128,9 +140,11 @@ let resultOpen = false;
 let menuOpen = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
-// Gems still in the maze, as [x, y] grid cells, and how many were picked up.
+// Gems still in the maze, as [x, y, number] with x and y grid cells, how many were picked up,
+// and which, one bit per number.
 let gems = [];
 let gemsFound = 0;
+let gemsTaken = 0;
 // The way from the start to the player, as grid cells by y * size + x. The maze is a tree,
 // so stepping back to the cell before pops it. The guardian only ever walks this way, so it
 // is never ahead of the player and the exit can always be reached.
@@ -202,6 +216,44 @@ function makeMaze() {
     visited[py * size + px] = 1;
     placeGems();
     par = Math.round(shortestWalk(parent) * PAR_SLACK);
+    return parent;
+}
+
+// Writes the maze in progress, unless nothing has changed since the last write.
+function saveRun() {
+    if (!runActive) {
+        return;
+    }
+    const value = [runSeed, daily ? 1 : 0, mazeLevel, px, py, facing, steps, guardSteps, gemsTaken].join(',');
+    if (value !== runSaved) {
+        runSaved = value;
+        storage.set({ key: 'run', value: value });
+    }
+}
+
+// Puts a saved run back on the maze remade from its seed. The way back comes from the
+// carving; side trips are not saved (128 bytes is the most a value is sure to hold), so the
+// map shows only the way from the start. False if the position is not a maze cell.
+function restoreRun(run, parent) {
+    if (run[3] % 2 !== 1 || run[4] % 2 !== 1 || !grid[run[4]] || grid[run[4]][run[3]] !== 0) {
+        return false;
+    }
+    px = run[3];
+    py = run[4];
+    facing = run[5] % 4;
+    steps = run[6];
+    guardSteps = run[7];
+    gemsTaken = run[8];
+    gems = gems.filter((g) => (gemsTaken & (1 << g[2])) === 0);
+    for (let i = 0; i < GEMS; i++) {
+        gemsFound += (gemsTaken >> i) & 1;
+    }
+    trail = [];
+    for (let c = py * size + px; c !== -1; c = parent[c]) {
+        trail.unshift(c);
+        visited[c] = 1;
+    }
+    return true;
 }
 
 // Puts the player at the start, with the guardian asleep.
@@ -323,8 +375,11 @@ function placeGems() {
     }
     gems = [];
     gemsFound = 0;
+    gemsTaken = 0;
     while (gems.length < GEMS && ends.length > 0) {
-        gems.push(ends.splice(Math.floor(random() * ends.length), 1)[0]);
+        const gem = ends.splice(Math.floor(random() * ends.length), 1)[0];
+        gem.push(gems.length);
+        gems.push(gem);
     }
 }
 
@@ -444,6 +499,20 @@ function loadNumber(key, callback) {
     });
 }
 
+// Reads comma-separated whole numbers from storage, each 0 if it is not one.
+function loadNumbers(key, callback) {
+    storage.get({
+        key: key,
+        default: '',
+        success: (value) => callback(String(value).split(',').map((v) => parseInt(v, 10) || 0)),
+        fail: () => callback([])
+    });
+}
+
+function dailySeed() {
+    return (today() * 2654435) & 0x7fffffff;
+}
+
 function fill(x, top, bottom, colour) {
     if (bottom > top) {
         ctx.fillStyle = colour;
@@ -526,19 +595,23 @@ export default {
         });
     },
     loadDaily() {
-        storage.get({
-            key: 'daily',
-            default: '',
-            success: (value) => {
-                const parts = String(value).split(',');
-                dailyDate = parseInt(parts[0], 10) || 0;
-                dailyStreak = parseInt(parts[1], 10) || 0;
-                dailyStars = parseInt(parts[2], 10) || 0;
-                dailyBest = parseInt(parts[3], 10) || 0;
+        loadNumbers('daily', (parts) => {
+            dailyDate = parts[0] || 0;
+            dailyStreak = parts[1] || 0;
+            dailyStars = parts[2] || 0;
+            dailyBest = parts[3] || 0;
+            loadNumbers('run', (run) => {
+                // A run is good only for today's challenge, or for the level it was saved on.
+                const usable = run.length === RUN_FIELDS
+                    && (run[1] === 1 ? run[0] === dailySeed() : run[2] === level);
+                savedRun = usable ? run : null;
                 this.showMenu();
-            },
-            fail: () => this.showMenu()
+            });
         });
+    },
+    onDestroy() {
+        clearTimeout(saveTimer);
+        saveRun();
     },
     // The first screen, and where the daily challenge returns to. No canvas lives under it.
     showMenu() {
@@ -547,9 +620,11 @@ export default {
         this.setSprites([]);
         this.guardX = SCREEN;
         this.note = '';
-        this.menuLevel = 'Nivel ' + (level + 1);
-        this.menuDaily = 'Racha ' + streakNow() + '  '
-            + (dailyDate === today() ? 'hoy ' + dailyStars + '/3' : 'hoy sin jugar');
+        const levelRun = savedRun !== null && savedRun[1] === 0;
+        const dailyRun = savedRun !== null && savedRun[1] === 1;
+        this.menuLevel = 'Nivel ' + (level + 1) + (levelRun ? ' en curso' : '');
+        this.menuDaily = 'Racha ' + streakNow() + '  ' + (dailyRun ? 'en curso'
+            : (dailyDate === today() ? 'hoy ' + dailyStars + '/3' : 'hoy sin jugar'));
         this.menuRank = rankLines(totalStars).rank;
         this.menu = true;
         menuOpen = true;
@@ -557,25 +632,36 @@ export default {
     },
     // Makes the maze for the current level and loads that size's record before showing it;
     // the challenge's maze comes from the date, the same all day, with its record for today.
+    // A saved run of the same kind carries on where it stopped.
     startMaze() {
+        const run = savedRun !== null && (savedRun[1] === 1) === daily ? savedRun : null;
+        savedRun = null;
         mazeLevel = daily ? DAILY_LEVEL : level;
-        seed = daily ? (today() * 2654435) & 0x7fffffff : Date.now() & 0x7fffffff;
+        if (daily) {
+            seed = dailySeed();
+        } else {
+            seed = run !== null ? run[0] : Date.now() & 0x7fffffff;
+        }
+        runSeed = seed;
         if (daily) {
             // The first numbers from nearby seeds are alike, so these are dropped.
             for (let i = 0; i < 8; i++) {
                 random();
             }
         }
-        makeMaze();
+        const parent = makeMaze();
+        const resumed = run !== null && restoreRun(run, parent);
+        runActive = true;
+        runSaved = '';
         if (daily) {
             best = dailyDate === today() ? dailyBest : 0;
-            this.note = best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '';
+            this.note = resumed ? 'Sigues donde ibas' : (best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '');
             this.newCanvas();
             return;
         }
         loadNumber('best' + (size - 1) / 2, (value) => {
             best = value;
-            this.note = best > 0 ? 'Récord: ' + best + ' pasos' : '';
+            this.note = resumed ? 'Sigues donde ibas' : (best > 0 ? 'Récord: ' + best + ' pasos' : '');
             this.newCanvas();
         });
     },
@@ -685,6 +771,8 @@ export default {
     // event carries the position (globalX, globalY); ontouchstart on this div did not fire in
     // the Previewer.
     tap(e) {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveRun, SAVE_DELAY_MS);
         if (busy) {
             return;
         }
@@ -764,6 +852,7 @@ export default {
         }
         for (let i = 0; i < gems.length; i++) {
             if (gems[i][0] === px && gems[i][1] === py) {
+                gemsTaken |= 1 << gems[i][2];
                 gems.splice(i, 1);
                 gemsFound++;
                 this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
@@ -786,6 +875,8 @@ export default {
     win() {
         busy = true;
         buzz('long');
+        runActive = false;
+        storage.set({ key: 'run', value: '0' });
         const taken = steps + 1;
         const totalGems = gems.length + gemsFound;
         const allGems = gems.length === 0;
