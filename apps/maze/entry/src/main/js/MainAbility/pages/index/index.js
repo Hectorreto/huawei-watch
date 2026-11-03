@@ -69,6 +69,13 @@ const GUARD_WARN = 6;
 // Grid cells a catch sends the player back along the way, per cell of the maze's side. Not
 // all the way to the start: that is some 180 taps to walk again in the largest mazes.
 const GUARD_SETBACK = 2;
+// The daily challenge plays as this level (its size and guardian), on a maze made from the
+// date. The first finish of a day pays a bonus of one star per day of streak, up to the max.
+const DAILY_LEVEL = 1;
+const DAILY_BONUS_MAX = 5;
+const DAY_MS = 86400000;
+// On the menu, taps above this continue the levels and the rest open the daily challenge.
+const MENU_SPLIT = 225;
 const STAR_ON = '/common/star.png';
 const STAR_OFF = '/common/star_off.png';
 // Total stars needed for each rank.
@@ -85,6 +92,15 @@ let grid = [];
 // Grid side: 2 * cells + 1, walls included.
 let size = 15;
 let level = 0;
+// The level the current maze plays as: the saved level, or DAILY_LEVEL on the challenge.
+let mazeLevel = 0;
+let daily = false;
+// Last day the challenge was finished (as a number like 20261102), the streak up to it, and
+// that day's most stars and fewest steps (key 'daily' in storage: date,streak,stars,best).
+let dailyDate = 0;
+let dailyStreak = 0;
+let dailyStars = 0;
+let dailyBest = 0;
 let theme = THEMES[0];
 // Fewest steps to the exit, by maze size (key 'best' + cells in storage), 0 if none.
 let best = 0;
@@ -102,6 +118,7 @@ let onCanvas = 0;
 let busy = true;
 let mapOpen = false;
 let resultOpen = false;
+let menuOpen = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
 // Gems still in the maze, as [x, y] grid cells, and how many were picked up.
@@ -125,8 +142,8 @@ function random() {
 // Carves a maze with a depth-first search from the top-left cell; the exit is a door in the
 // outer wall next to the bottom-right cell.
 function makeMaze() {
-    size = 2 * LEVEL_CELLS[Math.min(level, LEVEL_CELLS.length - 1)] + 1;
-    theme = THEMES[level % THEMES.length];
+    size = 2 * LEVEL_CELLS[Math.min(mazeLevel, LEVEL_CELLS.length - 1)] + 1;
+    theme = THEMES[(daily ? today() : level) % THEMES.length];
     grid = [];
     // The cell each cell was carved from, by y * size + x, to measure walks in placeGems.
     const parent = [];
@@ -210,14 +227,14 @@ function setBack() {
 // Where the guardian is on the trail, or -1 while it sleeps or on the first level. It moves
 // a whole number of cells from its steps alone, so it needs no state of its own.
 function guardIndex() {
-    if (level < GUARD_FROM_LEVEL) {
+    if (mazeLevel < GUARD_FROM_LEVEL) {
         return -1;
     }
     const awake = guardSteps - GUARD_WAKE * (size - 1) / 2;
     if (awake < 0) {
         return -1;
     }
-    return Math.floor(awake / (level < GUARD_FAST_LEVEL ? GUARD_EVERY : GUARD_EVERY_FAST));
+    return Math.floor(awake / (mazeLevel < GUARD_FAST_LEVEL ? GUARD_EVERY : GUARD_EVERY_FAST));
 }
 
 // Steps of the shortest walk from the start through every gem and out of the door. The maze
@@ -243,6 +260,24 @@ function shortestWalk(parent) {
         }
     }
     return 2 * cells - toExit + 1;
+}
+
+function dayNumber(date) {
+    return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+function today() {
+    return dayNumber(new Date());
+}
+
+// The streak as it stands today: it is lost once a whole day goes by without a finish.
+function streakNow() {
+    const alive = dailyDate === today() || dailyDate === dayNumber(new Date(Date.now() - DAY_MS));
+    return alive ? dailyStreak : 0;
+}
+
+function saveDaily() {
+    storage.set({ key: 'daily', value: [dailyDate, dailyStreak, dailyStars, dailyBest].join(',') });
 }
 
 // Names the player's rank and the next one for this many stars.
@@ -438,6 +473,10 @@ export default {
         guardX: SCREEN,
         guardY: 0,
         guardS: 64,
+        menu: false,
+        menuLevel: '',
+        menuDaily: '',
+        menuRank: '',
         result: false,
         resultTitle: '',
         starGems: STAR_OFF,
@@ -454,18 +493,62 @@ export default {
         } catch (e) {
             // The screen just turns off as usual.
         }
-        seed = Date.now() & 0x7fffffff;
         loadNumber('level', (value) => {
             level = value;
             loadNumber('stars', (stars) => {
                 totalStars = stars;
-                this.startMaze();
+                this.loadDaily();
             });
         });
     },
-    // Makes the maze for the current level and loads that size's record before showing it.
+    loadDaily() {
+        storage.get({
+            key: 'daily',
+            default: '',
+            success: (value) => {
+                const parts = String(value).split(',');
+                dailyDate = parseInt(parts[0], 10) || 0;
+                dailyStreak = parseInt(parts[1], 10) || 0;
+                dailyStars = parseInt(parts[2], 10) || 0;
+                dailyBest = parseInt(parts[3], 10) || 0;
+                this.showMenu();
+            },
+            fail: () => this.showMenu()
+        });
+    },
+    // The first screen, and where the daily challenge returns to. No canvas lives under it.
+    showMenu() {
+        ctx = null;
+        this.live = false;
+        this.sprites = [];
+        this.guardX = SCREEN;
+        this.note = '';
+        this.menuLevel = 'Nivel ' + (level + 1);
+        this.menuDaily = 'Racha ' + streakNow() + '  '
+            + (dailyDate === today() ? 'hoy ' + dailyStars + '/3' : 'hoy sin jugar');
+        this.menuRank = rankLines(totalStars).rank;
+        this.menu = true;
+        menuOpen = true;
+        busy = false;
+    },
+    // Makes the maze for the current level and loads that size's record before showing it;
+    // the challenge's maze comes from the date, the same all day, with its record for today.
     startMaze() {
+        mazeLevel = daily ? DAILY_LEVEL : level;
+        seed = daily ? (today() * 2654435) & 0x7fffffff : Date.now() & 0x7fffffff;
+        if (daily) {
+            // The first numbers from nearby seeds are alike, so these are dropped.
+            for (let i = 0; i < 8; i++) {
+                random();
+            }
+        }
         makeMaze();
+        if (daily) {
+            best = dailyDate === today() ? dailyBest : 0;
+            this.note = best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '';
+            this.newCanvas();
+            return;
+        }
         loadNumber('best' + (size - 1) / 2, (value) => {
             best = value;
             this.note = best > 0 ? 'Récord: ' + best + ' pasos' : '';
@@ -539,7 +622,7 @@ export default {
         this.sprites = gemSprites(view);
         this.showGuard(view);
         this.hud = COMPASS[facing] + ' ' + steps + '/' + par;
-        this.record = 'Nivel ' + (level + 1) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
+        this.record = (daily ? 'Reto del día' : 'Nivel ' + (level + 1)) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
     },
     // Stands the guardian on the floor when the player can see it (one fixed image, moved off
     // the screen when not), and warns when it woke or comes near, unless a note is showing.
@@ -573,15 +656,27 @@ export default {
         if (busy) {
             return;
         }
+        const touchX = e && typeof e.globalX === 'number' ? e.globalX : SCREEN / 2;
+        const touchY = e && typeof e.globalY === 'number' ? e.globalY : SCREEN / 2;
+        if (menuOpen) {
+            menuOpen = false;
+            busy = true;
+            this.menu = false;
+            daily = touchY >= MENU_SPLIT;
+            this.startMaze();
+            return;
+        }
         if (resultOpen) {
             resultOpen = false;
             busy = true;
             this.result = false;
-            this.startMaze();
+            if (daily) {
+                this.showMenu();
+            } else {
+                this.startMaze();
+            }
             return;
         }
-        const touchX = e && typeof e.globalX === 'number' ? e.globalX : SCREEN / 2;
-        const touchY = e && typeof e.globalY === 'number' ? e.globalY : SCREEN / 2;
         this.note = '';
         if (mapOpen) {
             mapOpen = false;
@@ -650,22 +745,21 @@ export default {
         return true;
     },
     // Scores the maze: one star for leaving, one for all its gems, one for staying within par.
-    // Saves the record, the stars and the next level, and shows the result until a tap.
+    // Saves the result and shows it until a tap.
     win() {
         busy = true;
         const taken = steps + 1;
         const totalGems = gems.length + gemsFound;
         const allGems = gems.length === 0;
         const withinPar = taken <= par;
-        totalStars += 1 + (allGems ? 1 : 0) + (withinPar ? 1 : 0);
-        if (best === 0 || taken < best) {
-            this.resultRecord = 'Nuevo récord';
-            storage.set({ key: 'best' + (size - 1) / 2, value: String(taken) });
+        const earned = 1 + (allGems ? 1 : 0) + (withinPar ? 1 : 0);
+        if (daily) {
+            this.scoreDaily(taken, earned);
         } else {
-            this.resultRecord = 'Récord: ' + best + ' pasos';
+            this.scoreLevel(taken, earned);
         }
+        storage.set({ key: 'stars', value: String(totalStars) });
         const lines = rankLines(totalStars);
-        this.resultTitle = 'Nivel ' + (level + 1) + ' superado';
         this.starGems = allGems ? STAR_ON : STAR_OFF;
         this.starPar = withinPar ? STAR_ON : STAR_OFF;
         this.resultGems = 'Gemas ' + gemsFound + '/' + totalGems;
@@ -673,12 +767,47 @@ export default {
         this.resultRank = lines.rank;
         this.resultNext = lines.next;
         this.result = true;
-        level++;
-        storage.set({ key: 'level', value: String(level) });
-        storage.set({ key: 'stars', value: String(totalStars) });
         resultOpen = true;
         setTimeout(() => {
             busy = false;
         }, RESULT_LOCK_MS);
+    },
+    // Adds the stars, saves a new record for this size and moves on to the next level.
+    scoreLevel(taken, earned) {
+        totalStars += earned;
+        if (best === 0 || taken < best) {
+            this.resultRecord = 'Nuevo récord';
+            storage.set({ key: 'best' + (size - 1) / 2, value: String(taken) });
+        } else {
+            this.resultRecord = 'Récord: ' + best + ' pasos';
+        }
+        this.resultTitle = 'Nivel ' + (level + 1) + ' superado';
+        level++;
+        storage.set({ key: 'level', value: String(level) });
+    },
+    // The first finish of a day extends the streak and pays its bonus. Playing again the same
+    // day can only add the stars it beats that day's best by, so it cannot be farmed.
+    scoreDaily(taken, earned) {
+        const now = today();
+        this.resultTitle = 'Reto del día';
+        if (dailyDate !== now) {
+            dailyStreak = streakNow() + 1;
+            dailyDate = now;
+            dailyStars = 0;
+            dailyBest = taken;
+            const bonus = Math.min(dailyStreak, DAILY_BONUS_MAX);
+            totalStars += bonus;
+            this.resultRecord = 'Racha ' + dailyStreak + ': +' + bonus + (bonus === 1 ? ' estrella' : ' estrellas');
+        } else if (taken < dailyBest) {
+            dailyBest = taken;
+            this.resultRecord = 'Mejor de hoy';
+        } else {
+            this.resultRecord = 'Mejor hoy: ' + dailyBest + ' pasos';
+        }
+        if (earned > dailyStars) {
+            totalStars += earned - dailyStars;
+            dailyStars = earned;
+        }
+        saveDaily();
     }
 };

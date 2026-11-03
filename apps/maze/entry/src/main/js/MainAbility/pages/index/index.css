@@ -21,11 +21,11 @@
   background-color: #000000;
   border-radius: 20px;
 }
-/* Level and gems picked up, under the compass. */
+/* Level (or the daily challenge) and gems picked up, under the compass. */
 .record {
-  width: 240px;
+  width: 270px;
   height: 28px;
-  left: 113px;
+  left: 98px;
   top: 64px;
   font-size: 20px;
   color: #c8c8c8;
@@ -41,13 +41,83 @@
   color: #ffe119;
   text-align: center;
 }
-/* The result of a maze, over the view until a tap. */
+/* The menu and the result of a maze; the result stays over the view until a tap. */
 .panel {
   width: 466px;
   height: 466px;
   left: 0px;
   top: 0px;
   background-color: #000000;
+}
+.menu-title {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 58px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-levels {
+  width: 380px;
+  height: 110px;
+  left: 43px;
+  top: 108px;
+  background-color: #2a3350;
+  border-radius: 20px;
+}
+.menu-levels-name {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 122px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-levels-line {
+  width: 340px;
+  height: 34px;
+  left: 63px;
+  top: 168px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.menu-daily {
+  width: 380px;
+  height: 110px;
+  left: 43px;
+  top: 232px;
+  background-color: #4a3a18;
+  border-radius: 20px;
+}
+.menu-daily-name {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 246px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-daily-line {
+  width: 340px;
+  height: 34px;
+  left: 63px;
+  top: 292px;
+  font-size: 24px;
+  color: #ffe119;
+  text-align: center;
+}
+.menu-rank {
+  width: 340px;
+  height: 28px;
+  left: 63px;
+  top: 358px;
+  font-size: 20px;
+  color: #c8c8c8;
+  text-align: center;
 }
 .result-title {
   width: 340px;

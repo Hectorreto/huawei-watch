@@ -5,6 +5,16 @@
     <text class="hud">{{ hud }}</text>
     <text class="record">{{ record }}</text>
     <text class="note">{{ note }}</text>
+    <stack class="panel" if="{{ menu }}">
+        <text class="menu-title">Laberinto</text>
+        <div class="menu-levels"></div>
+        <text class="menu-levels-name">Seguir</text>
+        <text class="menu-levels-line">{{ menuLevel }}</text>
+        <div class="menu-daily"></div>
+        <text class="menu-daily-name">Reto del día</text>
+        <text class="menu-daily-line">{{ menuDaily }}</text>
+        <text class="menu-rank">{{ menuRank }}</text>
+    </stack>
     <stack class="panel" if="{{ result }}">
         <text class="result-title">{{ resultTitle }}</text>
         <image class="star-exit" src="/common/star.png"></image>
