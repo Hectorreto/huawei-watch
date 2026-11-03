@@ -85,6 +85,8 @@ export default {
         pest1: false,
         pest2: false,
         seedShown: false,
+        fxShown: false,
+        fxSrc: '/common/fx_heart.png',
         sparkShown: false,
         sparkX: 0,
         sparkY: 0,
@@ -201,20 +203,24 @@ export default {
             this.refresh();
         }, MESSAGE_MS);
     },
-    cheer() {
+    // The happy face, and over the pet's head the sign of what it just got.
+    cheer(fx) {
         happy = true;
+        this.fxSrc = '/common/fx_' + fx + '.png';
+        this.fxShown = true;
         clearTimeout(happyTimer);
         happyTimer = setTimeout(() => {
             happy = false;
+            this.fxShown = false;
             this.drawPet();
         }, HAPPY_MS);
     },
     // The result of an action: a refusal to show, or '' if it was done.
-    finishAction(refusal) {
+    finishAction(refusal, fx) {
         if (refusal) {
             this.say(refusal);
         } else {
-            this.cheer();
+            this.cheer(fx);
             this.save();
             this.tellWishNews();
         }
@@ -235,7 +241,7 @@ export default {
         if (!stroke(pet)) {
             this.say('Quiere jugar');
         }
-        this.cheer();
+        this.cheer('heart');
         if (pet.wishGranted) {
             this.save();
         }
@@ -266,11 +272,11 @@ export default {
         }
         plantArmed = false;
         if (action === 'water') {
-            this.finishAction(water(pet));
+            this.finishAction(water(pet), 'drop');
         } else if (action === 'sun') {
-            this.finishAction(giveSun(pet, this.night()));
+            this.finishAction(giveSun(pet, this.night()), 'sun');
         } else if (action === 'clean') {
-            this.finishAction(clean(pet));
+            this.finishAction(clean(pet), 'star');
         } else if (action === 'play') {
             if (this.night()) {
                 this.finishAction('Está dormido');
@@ -292,7 +298,7 @@ export default {
             plantArmed = false;
             pet = plantSeed(pet, Date.now());
             this.say('¡Plantada! Generación ' + pet.generation);
-            this.finishAction('');
+            this.finishAction('', 'star');
         } else {
             this.say('Toca otra vez para plantar');
             plantArmed = true;
@@ -379,6 +385,6 @@ export default {
         this.view = 'main';
         const result = record ? '¡Récord! ' + hits + ' chispas' : 'Atrapó ' + hits + ' · Récord ' + pet.best;
         this.say(result);
-        this.finishAction('');
+        this.finishAction('', 'star');
     }
 };

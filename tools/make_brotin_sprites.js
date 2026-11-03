@@ -115,6 +115,14 @@ const BUTTONS = {
 // The ripe adult's seed, next to the pot.
 const SEED_ICON = ['....l....', '...lg....', '..BBBBB..', '.BbccbbB.', '.BbcbbbB.', '.BbbbbbB.', '.BbbbbbB.', '..BbbbB..', '...BBB...'];
 
+// What the pet just got, shown over its head.
+const FX = {
+    heart: ['.PP...PP.', 'PppP.PppP', 'PpWpPpppP', 'PpppppppP', 'PpppppppP', '.PpppppP.', '..PpppP..', '...PpP...', '....P....'],
+    drop: ['....d....', '....d....', '...dDd...', '..dDDDd..', '.dDDDDDd.', '.dWDDDDd.', '.dWDDDDd.', '..dDDDd..', '...ddd...'],
+    sun: ['....y....', '.y..y..y.', '..yOOOy..', '..OyyyO..', 'yyOyyyOyy', '..OyyyO..', '..yOOOy..', '.y..y..y.', '....y....'],
+    star: ['....y....', '....y....', '...yWy...', '...yWy...', 'yyyWWWyyy', '...yWy...', '...yWy...', '....y....', '....y....']
+};
+
 // A form not yet in the herbarium.
 const LOCKED = [
     '....................', '.......nnnnnn.......', '.....nnnnnnnnnn.....', '....nnnnnnnnnnnn....',
@@ -221,7 +229,7 @@ if (!app) {
     console.error('Usage: node tools/make_brotin_sprites.js <app dir> [preview.png]');
     process.exit(1);
 }
-const all = Object.assign({}, FORMS, FACES, BUTTONS);
+const all = Object.assign({}, FORMS, FACES, BUTTONS, FX);
 Object.keys(all).forEach((name) => checkGrid(name, all[name]));
 checkGrid('pot', POT);
 checkGrid('pest', PEST);
@@ -234,6 +242,7 @@ const media = path.join(app, 'entry/src/main/resources/base/media');
 Object.keys(FORMS).forEach((name) => sprite(path.join(common, 'form_' + name + '.png'), FORMS[name], 9));
 Object.keys(FACES).forEach((name) => sprite(path.join(common, 'face_' + name + '.png'), FACES[name], 9));
 Object.keys(BUTTONS).forEach((name) => sprite(path.join(common, 'btn_' + name + '.png'), BUTTONS[name], 8));
+Object.keys(FX).forEach((name) => sprite(path.join(common, 'fx_' + name + '.png'), FX[name], 6));
 sprite(path.join(common, 'pot.png'), POT, 9);
 sprite(path.join(common, 'pest.png'), PEST, 8);
 sprite(path.join(common, 'spark.png'), SPARK, 8);

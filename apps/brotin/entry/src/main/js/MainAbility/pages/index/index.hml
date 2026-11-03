@@ -13,6 +13,7 @@
     <image class="pest pest-0" src="/common/pest.png" show="{{ pest0 }}"></image>
     <image class="pest pest-1" src="/common/pest.png" show="{{ pest1 }}"></image>
     <image class="pest pest-2" src="/common/pest.png" show="{{ pest2 }}"></image>
+    <image class="fx" src="{{ fxSrc }}" show="{{ fxShown }}"></image>
     <image class="seed-icon" src="/common/seed_icon.png" show="{{ seedShown }}"></image>
     <image class="button button-water" src="/common/btn_water.png" show="{{ view === 'main' }}"></image>
     <image class="button button-sun" src="/common/btn_sun.png" show="{{ view === 'main' }}"></image>
