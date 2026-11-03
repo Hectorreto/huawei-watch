@@ -7,6 +7,9 @@ const SAVE_EVERY_TICKS = 10;
 // Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
 // PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
 // the animation in index.css. The area keeps the 144x44 row inside the round screen.
+const COOKIE_PX = 466;
+const COOKIE_PRESSED_PX = 438;
+const PRESS_MS = 120;
 const PLUS_SLOTS = 5;
 const PLUS_MS = 1000;
 const PLUS_X_MIN = 60;
@@ -133,6 +136,7 @@ function iconPath(icon) {
 }
 
 let saveTimer = null;
+let pressTimer = null;
 let plusSlot = 0;
 // Where the last touch started, for the edge swipe; -1 when the event gave no position.
 let touchX = -1;
@@ -288,6 +292,7 @@ export default {
         items: [],
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
+        cookieSize: COOKIE_PX,
         cookieSmall: themePath(THEMES[0].id, '_small'),
         plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
         plusX0: 0, plusX1: 0, plusX2: 0, plusX3: 0, plusX4: 0,
@@ -341,6 +346,8 @@ export default {
     },
     onDestroy() {
         clearInterval(tickTimer);
+        clearTimeout(pressTimer);
+        pressTimer = null;
         this.save();
     },
     // savedAt is when count was last saved, so the time since then is exactly what was not produced.
@@ -426,12 +433,26 @@ export default {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
 
+        this.pressCookie();
         this.showPlus();
 
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             this.save();
         }, SAVE_DELAY_MS);
+    },
+    // Shrinks the cookie for a moment by changing the size of the same image, never making a new
+    // one: making it again on each tap lost quick taps on the watch. A tap during a press changes
+    // nothing, so tapping faster does not redraw the screen more often.
+    pressCookie() {
+        if (pressTimer !== null) {
+            return;
+        }
+        this.cookieSize = COOKIE_PRESSED_PX;
+        pressTimer = setTimeout(() => {
+            pressTimer = null;
+            this.cookieSize = COOKIE_PX;
+        }, PRESS_MS);
     },
     // Moves the next slot to a random spot and swaps which of its two "if" texts exists, so a
     // new text is created and its animation starts again (lite cannot bind class). The slot is

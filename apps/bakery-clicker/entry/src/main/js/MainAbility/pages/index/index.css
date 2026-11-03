@@ -9,15 +9,14 @@
 }
 /* The cookie fills the 466 px screen and the rest of the cookie view is laid over it with
    left/top. The overlays are kept small because taps on them do not reach the cookie. */
+/* Centres the cookie, whose size is bound so a press can shrink it. */
 .cookie-box {
   width: 466px;
   height: 466px;
   left: 0px;
   top: 0px;
-}
-.cookie {
-  width: 466px;
-  height: 466px;
+  justify-content: center;
+  align-items: center;
 }
 /* Black radial vignette over the cookie, the same for every theme. It covers the whole
    screen, so it takes the cookie's taps and swipe. */
