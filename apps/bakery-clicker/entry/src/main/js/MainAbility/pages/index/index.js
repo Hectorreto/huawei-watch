@@ -38,6 +38,8 @@ const TEXTS = {
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played', statStreak: 'Daily streak', streak: 'Streak ',
+        statRecipes: 'Recipes', batch: 'New batch', batchReady: 'New batch ready', batchTitle: 'New batch?',
+        batchGain: ' forever', batchLose: 'Cookies and buildings restart', batchConfirm: 'Bake',
         theme: 'Theme',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
@@ -49,6 +51,8 @@ const TEXTS = {
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado', statStreak: 'Racha diaria', streak: 'Racha ',
+        statRecipes: 'Recetas', batch: 'Otra hornada', batchReady: 'Nueva hornada lista', batchTitle: '¿Nueva hornada?',
+        batchGain: ' para siempre', batchLose: 'Galletas y edificios de cero', batchConfirm: 'Hornear',
         theme: 'Tema',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
@@ -125,6 +129,12 @@ const GOLDEN_BACK_MAX_S = 15;
 const STREAK_STEP_PERCENT = 5;
 const STREAK_MAX_PERCENT = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// A new batch starts cookies and buildings over for recipes, each a permanent +RECIPE_PERCENT.
+// A batch of BATCH_BAKED cookies earns 1, four times that 2, nine times 3, and so on.
+const BATCH_BAKED = 1e9;
+const RECIPE_PERCENT = 10;
+// The card for it in the upgrades list; buy() gets this instead of an index in UPGRADES.
+const BATCH_ID = -1;
 // The list only exists once the view has rendered, so its crown focus is requested a bit later.
 const FOCUS_DELAY_MS = 50;
 // The only gesture is a swipe that starts this close to the left edge and goes towards the centre.
@@ -142,7 +152,7 @@ const CATEGORIES = [
 const GRID_COLUMNS = 3;
 
 // s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps,
-// streak (the best daily streak).
+// streak (the best daily streak), recipes.
 // An achievement is done when value(s) reaches goal; goals above 1 show a progress bar.
 // cat is the index in CATEGORIES.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
@@ -171,7 +181,9 @@ const ACHIEVEMENTS = [
     { name: { en: 'Gold rush', es: 'Fiebre de oro' }, detail: { en: '50 golden', es: '50 doradas' }, cat: 4, icon: 'awards/gold', goal: 50, value: (s) => s.golden },
     { name: { en: 'Regular', es: 'Habitual' }, detail: { en: '3 days in a row', es: '3 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 3, value: (s) => s.streak },
     { name: { en: 'Devoted', es: 'Fiel' }, detail: { en: '7 days in a row', es: '7 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 7, value: (s) => s.streak },
-    { name: { en: 'Hooked', es: 'Sin parar' }, detail: { en: '30 days in a row', es: '30 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 30, value: (s) => s.streak }
+    { name: { en: 'Hooked', es: 'Sin parar' }, detail: { en: '30 days in a row', es: '30 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 30, value: (s) => s.streak },
+    { name: { en: 'Fresh batch', es: 'Recién hecho' }, detail: { en: 'Earn a recipe', es: 'Gana una receta' }, cat: 1, icon: 'shop/batch', goal: 1, value: (s) => s.recipes },
+    { name: { en: 'Master baker', es: 'Gran maestro' }, detail: { en: '25 recipes', es: '25 recetas' }, cat: 1, icon: 'shop/batch', goal: 25, value: (s) => s.recipes }
 ];
 
 function iconPath(icon) {
@@ -209,10 +221,18 @@ let cheapestPrice = Infinity;
 let streakDay = 0;
 let streak = 1;
 let bestStreak = 1;
+// Saved as "legacy": the recipes, and how many cookies had been baked when this batch began.
+let recipes = 0;
+let batchStart = 0;
+let batchReady = false;
 
 // The days are counted in the watch's local time, so the streak turns over at its midnight.
 function localDay() {
     return Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / DAY_MS);
+}
+
+function recipesToEarn(baked) {
+    return Math.floor(Math.sqrt((baked - batchStart) / BATCH_BAKED));
 }
 
 function streakPercent() {
@@ -356,6 +376,7 @@ export default {
         frenzyText: '',
         golden: '',
         canBuy: false,
+        batchText: '',
         plusText: '+1',
         items: [],
         cookieSrc: themePath(THEMES[0].id),
@@ -399,13 +420,18 @@ export default {
                     load('achieved', '', (achieved) => {
                         this.achieved = ACHIEVEMENTS.map((a, i) => achieved.charAt(i) === '1');
                         load('daily', '', (daily) => {
-                            load('savedAt', '0', (savedAt) => {
-                                loaded = true;
-                                // Before the offline earnings, which use the production with the streak.
-                                this.updateStreak(daily);
-                                this.welcomeGolden(parseInt(savedAt, 10) || 0);
-                                this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
-                                this.checkAchievements();
+                            load('legacy', '', (legacy) => {
+                                load('savedAt', '0', (savedAt) => {
+                                    loaded = true;
+                                    const l = numbers(legacy, 2);
+                                    recipes = l[0];
+                                    batchStart = l[1];
+                                    // Before the offline earnings, which use the production with the bonuses.
+                                    this.updateStreak(daily);
+                                    this.welcomeGolden(parseInt(savedAt, 10) || 0);
+                                    this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
+                                    this.checkAchievements();
+                                });
                             });
                         });
                     });
@@ -491,6 +517,10 @@ export default {
         this.tickGolden();
         // Here and not on each new cookie, so a tap does not walk the whole list of achievements.
         this.checkAchievements();
+        if (!batchReady && recipesToEarn(this.baked) > 0) {
+            batchReady = true;
+            this.showNotice(this.t.batchReady);
+        }
         if (this.view === 'stats' && this.playSeconds % STATS_EVERY_S === 0) {
             this.refreshStats();
         }
@@ -596,6 +626,8 @@ export default {
             this.openAchievements();
         } else if (this.view === 'themes' || this.view === 'confirmReset') {
             this.openSettings();
+        } else if (this.view === 'confirmBatch') {
+            this.openUpgrades();
         } else {
             this.closeView();
         }
@@ -629,7 +661,11 @@ export default {
             [t.statTime, formatTime(this.playSeconds), 'time'],
             [t.statStreak, streak + ' (+' + streakPercent() + '%)', 'streak']
         ];
-        this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
+        const items = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
+        if (recipes > 0) {
+            items.push({ label: t.statRecipes, value: recipes + ' (+' + recipes * RECIPE_PERCENT + '%)', icon: iconPath('shop/batch') });
+        }
+        this.statItems = items;
     },
     openUpgrades() {
         this.menu = false;
@@ -748,10 +784,34 @@ export default {
         streak = 1;
         bestStreak = 1;
         this.saveStreak();
+        recipes = 0;
+        batchStart = 0;
+        batchReady = false;
+        this.saveLegacy();
         this.setOwned(UPGRADES.map(() => 0));
         this.setCount(0);
         this.save();
         this.view = 'cookie';
+    },
+    openBatchConfirm() {
+        this.batchText = '+' + recipesToEarn(this.baked) * RECIPE_PERCENT + '%' + this.t.batchGain;
+        this.view = 'confirmBatch';
+    },
+    // Cookies, buildings and upgrades start over. Stats, achievements, the streak and recipes stay.
+    confirmBatch() {
+        recipes += recipesToEarn(this.baked);
+        batchStart = this.baked;
+        batchReady = false;
+        this.saveLegacy();
+        this.frenzyLeft = 0;
+        this.frenzyText = '';
+        this.setOwned(UPGRADES.map(() => 0));
+        this.setCount(0);
+        this.save();
+        this.view = 'cookie';
+    },
+    saveLegacy() {
+        storage.set({ key: 'legacy', value: [recipes, batchStart].join(',') });
     },
     // Turning the crown scrolls the list that has the crown focus.
     focusCrown(ref) {
@@ -766,6 +826,10 @@ export default {
         this.view = 'cookie';
     },
     buy(index) {
+        if (index === BATCH_ID) {
+            this.openBatchConfirm();
+            return;
+        }
         const price = this.price(index);
         if (this.count < price || (UPGRADES[index].once && this.owned[index] > 0)) {
             return;
@@ -825,7 +889,7 @@ export default {
             }
         });
         this.owned = owned;
-        const percent = 100 + streakPercent();
+        const percent = 100 + streakPercent() + recipes * RECIPE_PERCENT;
         this.tapPower = Math.floor((tap + Math.floor(cps * tapShare)) * percent / 100);
         this.cps = Math.floor(cps * percent / 100);
         this.updateCheapest();
@@ -855,7 +919,7 @@ export default {
         }
     },
     gameState() {
-        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps, streak: bestStreak };
+        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps, streak: bestStreak, recipes: recipes };
     },
     checkAchievements() {
         if (!loaded) {
@@ -920,6 +984,9 @@ export default {
             }
             shownIds.push(i);
         });
+        if (!buildings && recipesToEarn(this.baked) > 0) {
+            shownIds.unshift(BATCH_ID);
+        }
         itemsKey = '';
         this.refreshItems();
     },
@@ -938,15 +1005,26 @@ export default {
     // Only when a card would change, not on every new cookie, to spare the watch the redraw.
     // id is the index in UPGRADES, which buy() needs because each view lists only some of them.
     refreshItems() {
-        let key = this.owned.join(',');
+        let key = this.owned.join(',') + ',' + recipesToEarn(this.baked);
         shownIds.forEach((i) => {
-            key += this.count >= this.price(i) ? '1' : '0';
+            key += i === BATCH_ID || this.count >= this.price(i) ? '1' : '0';
         });
         if (key === itemsKey) {
             return;
         }
         itemsKey = key;
         this.items = shownIds.map((i) => {
+            if (i === BATCH_ID) {
+                return {
+                    id: i,
+                    icon: '/common/shop/batch.png',
+                    title: this.t.batch,
+                    detail: this.t.statRecipes + ' +' + recipesToEarn(this.baked),
+                    price: '+' + recipesToEarn(this.baked) * RECIPE_PERCENT + '%',
+                    affordable: true,
+                    bought: false
+                };
+            }
             const u = UPGRADES[i];
             const price = this.price(i);
             return {

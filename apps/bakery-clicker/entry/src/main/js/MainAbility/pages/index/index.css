@@ -577,6 +577,13 @@
   color: #9a9a9a;
   text-align: center;
 }
+.confirm-gain {
+  width: 340px;
+  height: 34px;
+  font-size: 24px;
+  color: #f5c16c;
+  text-align: center;
+}
 .confirm-buttons {
   width: 300px;
   height: 56px;
@@ -590,6 +597,15 @@
   font-size: 24px;
   color: #ffffff;
   background-color: #5a5a5a;
+  border-radius: 28px;
+  text-align: center;
+}
+.confirm-batch {
+  width: 140px;
+  height: 56px;
+  font-size: 24px;
+  color: #000000;
+  background-color: #f5c16c;
   border-radius: 28px;
   text-align: center;
 }
