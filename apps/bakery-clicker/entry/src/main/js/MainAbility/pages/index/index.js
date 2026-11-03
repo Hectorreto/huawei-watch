@@ -119,6 +119,11 @@ const GOLDEN_MAX_S = 120;
 const GOLDEN_STAY_S = 10;
 const FRENZY_MULT = 7;
 const FRENZY_S = 30;
+// One in three is lucky instead: at once, this many seconds of production or tap-worths of cookies,
+// whichever is more, so it pays in a short visit too and before anything produces.
+const LUCKY_CHANCE = 1 / 3;
+const LUCKY_CPS_S = 300;
+const LUCKY_TAPS = 100;
 // The watch closes the app after a few seconds without input, so visits are often too short for
 // that wait. After this long away, a golden cookie comes 5-15 s into the visit instead.
 const GOLDEN_BACK_AWAY_S = 10 * 60;
@@ -554,9 +559,15 @@ export default {
         this.golden = '';
         goldenIn = nextGolden();
         this.goldenClicks++;
-        this.frenzyLeft = FRENZY_S;
-        this.frenzyText = 'x' + FRENZY_MULT + '  ' + FRENZY_S + ' s';
-        this.updateRates();
+        if (Math.random() < LUCKY_CHANCE) {
+            const lucky = Math.max(this.cps * LUCKY_CPS_S, this.tapPower * LUCKY_TAPS);
+            this.bake(lucky);
+            this.showNotice('+' + format(lucky));
+        } else {
+            this.frenzyLeft = FRENZY_S;
+            this.frenzyText = 'x' + FRENZY_MULT + '  ' + FRENZY_S + ' s';
+            this.updateRates();
+        }
         this.checkAchievements();
     },
     multiplier() {
