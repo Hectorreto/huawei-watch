@@ -57,6 +57,7 @@ let sparkOn = false;
 let kind = 'spark';
 let plantArmed = false;
 let herbPick = -1;
+let canSave = true;
 
 function hourOf(ms) {
     return new Date(ms).getHours();
@@ -121,7 +122,11 @@ export default {
             key: SAVE_KEY,
             default: '',
             success: (value) => this.start(deserialize(value, Date.now())),
-            fail: () => this.start(newPet(Date.now()))
+            fail: () => {
+                // The real save may still be there, so this session must not write over it.
+                canSave = false;
+                this.start(newPet(Date.now()));
+            }
         });
     },
     onDestroy() {
@@ -147,6 +152,9 @@ export default {
         tickTimer = setInterval(() => this.tick(), TICK_MS);
     },
     save() {
+        if (!canSave) {
+            return;
+        }
         storage.set({ key: SAVE_KEY, value: serialize(pet) });
     },
     // Works out the time since the pet was last moved, also while the app was closed.
