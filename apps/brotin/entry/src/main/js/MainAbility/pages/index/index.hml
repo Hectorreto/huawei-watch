@@ -1,0 +1,31 @@
+<stack class="container">
+    <div class="sky" style="background-color: {{ sky }};"></div>
+    <div class="bar-back bar-1"></div>
+    <div class="bar-back bar-2"></div>
+    <div class="bar-back bar-3"></div>
+    <div class="bar bar-1 bar-water" style="width: {{ waterW }}px;"></div>
+    <div class="bar bar-2 bar-sun" style="width: {{ sunW }}px;"></div>
+    <div class="bar bar-3 bar-mood" style="width: {{ moodW }}px;"></div>
+    <text class="note">{{ note }}</text>
+    <image class="pet" src="{{ petSrc }}" style="top: {{ petTop }}px;"></image>
+    <image class="face" src="{{ faceSrc }}" style="left: {{ faceLeft }}px; top: {{ faceTop }}px;"></image>
+    <image class="pot" src="/common/pot.png"></image>
+    <image class="pest pest-0" src="/common/pest.png" show="{{ pest0 }}"></image>
+    <image class="pest pest-1" src="/common/pest.png" show="{{ pest1 }}"></image>
+    <image class="pest pest-2" src="/common/pest.png" show="{{ pest2 }}"></image>
+    <image class="button button-water" src="/common/btn_water.png" show="{{ view === 'main' }}"></image>
+    <image class="button button-sun" src="/common/btn_sun.png" show="{{ view === 'main' }}"></image>
+    <image class="button button-play" src="/common/btn_play.png" show="{{ view === 'main' }}"></image>
+    <image class="button button-clean" src="/common/btn_clean.png" show="{{ view === 'main' }}"></image>
+    <image class="spark" src="/common/spark.png" show="{{ sparkShown }}" style="left: {{ sparkX }}px; top: {{ sparkY }}px;"></image>
+    <div class="status" show="{{ view === 'status' }}">
+        <text class="status-title">{{ statusForm }}</text>
+        <text class="status-row">{{ statusAge }}</text>
+        <text class="status-row">{{ statusWater }}</text>
+        <text class="status-row">{{ statusSun }}</text>
+        <text class="status-row">{{ statusMood }}</text>
+        <text class="status-row">{{ statusHealth }}</text>
+        <text class="status-small">{{ statusGeneration }}</text>
+    </div>
+    <div class="touch" onclick="tap"></div>
+</stack>
