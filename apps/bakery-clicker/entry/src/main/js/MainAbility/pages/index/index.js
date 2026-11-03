@@ -26,7 +26,7 @@ const COUNT_DIGITS = 9;
 const TEXTS = {
     en: {
         shop: 'Shop', upgrades: 'Upgrades', stats: 'Stats', awards: 'Awards', settings: 'Settings',
-        perTap: '/tap', award: 'Award: ', away: ' away',
+        perTap: '/tap', tapShare: 'Tap +5% of /s', award: 'Award: ', away: ' away',
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played',
@@ -37,7 +37,7 @@ const TEXTS = {
     },
     es: {
         shop: 'Tienda', upgrades: 'Mejoras', stats: 'Estadísticas', awards: 'Logros', settings: 'Ajustes',
-        perTap: '/toque', award: 'Logro: ', away: ' al volver',
+        perTap: '/toque', tapShare: 'Toque +5% /s', award: 'Logro: ', away: ' al volver',
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado',
@@ -72,14 +72,29 @@ function themePath(id, suffix) {
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // building ones are sold in the shop, the rest in the upgrades view.
+// needs: shown once that entry is owned. once: bought a single time; doubles: the entry it makes
+// twice as good; tapShare: each tap also gives this share of the cookies per second.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
     { name: { en: 'Tastier taps', es: 'Mejor toque' }, icon: 'finger', building: false, base: 15, tap: 1, cps: 0 },
     { name: { en: 'Cursor', es: 'Cursor' }, icon: 'cursor', building: true, base: 25, tap: 0, cps: 1 },
     { name: { en: 'Grandma', es: 'Abuela' }, icon: 'grandma', building: true, base: 150, tap: 0, cps: 5 },
     { name: { en: 'Farm', es: 'Granja' }, icon: 'farm', building: true, base: 1500, tap: 0, cps: 40 },
-    { name: { en: 'Mine', es: 'Mina' }, icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 }
+    { name: { en: 'Mine', es: 'Mina' }, icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 },
+    { name: { en: 'Factory', es: 'Fábrica' }, icon: 'factory', building: true, base: 500000, tap: 0, cps: 2000, needs: 4 },
+    { name: { en: 'Bank', es: 'Banco' }, icon: 'bank', building: true, base: 20000000, tap: 0, cps: 25000, needs: 5 },
+    { name: { en: 'Steel cursor', es: 'Cursor fino' }, icon: 'cursor', building: false, base: 2000, tap: 0, cps: 0, needs: 1, once: true, doubles: 1 },
+    { name: { en: 'Strong thumb', es: 'Dedo fuerte' }, icon: 'finger', building: false, base: 3000, tap: 0, cps: 0, needs: 0, once: true, doubles: 0 },
+    { name: { en: 'Rolling pins', es: 'Rodillos' }, icon: 'grandma', building: false, base: 15000, tap: 0, cps: 0, needs: 2, once: true, doubles: 2 },
+    { name: { en: 'Fertilizer', es: 'Abono' }, icon: 'farm', building: false, base: 150000, tap: 0, cps: 0, needs: 3, once: true, doubles: 3 },
+    { name: { en: 'Sweet touch', es: 'Toque dulce' }, icon: 'finger', building: false, base: 1000000, tap: 0, cps: 0, needs: 4, once: true, tapShare: 0.05 },
+    { name: { en: 'Better picks', es: 'Mejor pico' }, icon: 'mine', building: false, base: 3000000, tap: 0, cps: 0, needs: 4, once: true, doubles: 4 },
+    { name: { en: 'Fast belts', es: 'Banda veloz' }, icon: 'factory', building: false, base: 100000000, tap: 0, cps: 0, needs: 5, once: true, doubles: 5 },
+    { name: { en: 'Interest', es: 'Intereses' }, icon: 'bank', building: false, base: 3000000000, tap: 0, cps: 0, needs: 6, once: true, doubles: 6 }
 ];
+// The upgrades view lists at most this many one-time upgrades, the cheapest ones not bought yet,
+// to keep the list as light as the shop.
+const ONCE_SHOWN = 4;
 const PRICE_GROWTH = 1.15;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
 const OFFLINE_MAX_S = 24 * 60 * 60;
@@ -125,7 +140,15 @@ const ACHIEVEMENTS = [
     { name: { en: 'Rolling', es: 'En marcha' }, detail: { en: '10 / s', es: '10 / s' }, cat: 3, icon: 'awards/production', goal: 10, value: (s) => s.cps },
     { name: { en: 'Production', es: 'Producción' }, detail: { en: '100 / s', es: '100 / s' }, cat: 3, icon: 'awards/cps', goal: 100, value: (s) => s.cps },
     { name: { en: 'Lucky', es: 'Suertudo' }, detail: { en: '1 golden cookie', es: '1 galleta dorada' }, cat: 4, icon: 'awards/golden', goal: 1, value: (s) => s.golden },
-    { name: { en: 'Gold digger', es: 'Buscaoro' }, detail: { en: '10 golden', es: '10 doradas' }, cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden }
+    { name: { en: 'Gold digger', es: 'Buscaoro' }, detail: { en: '10 golden', es: '10 doradas' }, cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden },
+    { name: { en: 'Tycoon', es: 'Magnate' }, detail: { en: 'Bake 1B', es: 'Hornea 1B' }, cat: 1, icon: 'awards/empire', goal: 1e9, value: (s) => s.baked },
+    { name: { en: 'Legend', es: 'Leyenda' }, detail: { en: 'Bake 1T', es: 'Hornea 1T' }, cat: 1, icon: 'awards/empire', goal: 1e12, value: (s) => s.baked },
+    { name: { en: 'Tireless', es: 'Incansable' }, detail: { en: '10K taps', es: '10K toques' }, cat: 0, icon: 'awards/clicks', goal: 1e4, value: (s) => s.taps },
+    { name: { en: 'Industrial', es: 'Industrial' }, detail: { en: 'Buy a Factory', es: 'Compra una fábrica' }, cat: 2, icon: 'shop/factory', goal: 1, value: (s) => s.owned[5] },
+    { name: { en: 'Banker', es: 'Banquero' }, detail: { en: 'Buy a Bank', es: 'Compra un banco' }, cat: 2, icon: 'shop/bank', goal: 1, value: (s) => s.owned[6] },
+    { name: { en: 'Full steam', es: 'A todo vapor' }, detail: { en: '1K / s', es: '1K / s' }, cat: 3, icon: 'awards/cps', goal: 1e3, value: (s) => s.cps },
+    { name: { en: 'Unstoppable', es: 'Imparable' }, detail: { en: '10K / s', es: '10K / s' }, cat: 3, icon: 'awards/cps', goal: 1e4, value: (s) => s.cps },
+    { name: { en: 'Gold rush', es: 'Fiebre de oro' }, detail: { en: '50 golden', es: '50 doradas' }, cat: 4, icon: 'awards/gold', goal: 50, value: (s) => s.golden }
 ];
 
 function iconPath(icon) {
@@ -149,6 +172,11 @@ let goldenLeft = 0;
 // Achievements are only checked once the save is loaded, so old ones are not announced again,
 // and nothing is saved before that.
 let loaded = false;
+// How many times better each entry is thanks to the one-time upgrades (setOwned).
+let boost = UPGRADES.map(() => 1);
+// The entries the open shop or upgrades view lists, and what its cards last showed.
+let shownIds = [];
+let itemsKey = '';
 
 function nextGolden() {
     return GOLDEN_MIN_S + Math.floor(Math.random() * (GOLDEN_MAX_S - GOLDEN_MIN_S + 1));
@@ -276,7 +304,7 @@ export default {
         categoryTitle: '',
         categoryCount: '',
         categoryItems: [],
-        owned: [0, 0, 0, 0, 0],
+        owned: UPGRADES.map(() => 0),
         tapPower: 1,
         cps: 0,
         rateText: '0 / s',
@@ -286,7 +314,6 @@ export default {
         golden: '',
         plusText: '+1',
         items: [],
-        upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
         cookieSmall: themePath(THEMES[0].id, '_small'),
         plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
@@ -508,13 +535,13 @@ export default {
     },
     openUpgrades() {
         this.menu = false;
-        this.refreshItems();
+        this.chooseItems(false);
         this.view = 'upgrades';
         this.focusCrown('upgradeList');
     },
     openShop() {
         this.menu = false;
-        this.refreshItems();
+        this.chooseItems(true);
         this.view = 'shop';
         this.focusCrown('shopList');
     },
@@ -565,7 +592,6 @@ export default {
     setLanguage(lang) {
         this.lang = lang;
         this.t = TEXTS[lang];
-        this.refreshItems();
         this.refreshStats();
         this.refreshAchievements();
         this.refreshThemes();
@@ -639,7 +665,7 @@ export default {
     },
     buy(index) {
         const price = this.price(index);
-        if (this.count < price) {
+        if (this.count < price || (UPGRADES[index].once && this.owned[index] > 0)) {
             return;
         }
         const owned = this.owned.slice();
@@ -667,14 +693,24 @@ export default {
         this.checkAchievements();
     },
     setOwned(owned) {
+        boost = UPGRADES.map(() => 1);
+        UPGRADES.forEach((u, i) => {
+            if (u.doubles !== undefined && owned[i] > 0) {
+                boost[u.doubles] *= 2;
+            }
+        });
         let tap = 1;
         let cps = 0;
+        let tapShare = 0;
         UPGRADES.forEach((u, i) => {
-            tap += u.tap * owned[i];
-            cps += u.cps * owned[i];
+            tap += u.tap * owned[i] * boost[i];
+            cps += u.cps * owned[i] * boost[i];
+            if (u.tapShare && owned[i] > 0) {
+                tapShare += u.tapShare;
+            }
         });
         this.owned = owned;
-        this.tapPower = tap;
+        this.tapPower = tap + Math.floor(cps * tapShare);
         this.cps = cps;
         this.updateRates();
         this.refreshItems();
@@ -722,25 +758,63 @@ export default {
             this.save();
         }
     },
+    // Chosen only when a view opens: a list keeps its length while it is alive, since swapping a
+    // "for" array under a living list closed the drawing lab on the watch. So what a purchase
+    // unlocks shows the next time, and a one-time upgrade just bought keeps its card until then.
+    chooseItems(buildings) {
+        let once = 0;
+        shownIds = [];
+        UPGRADES.forEach((u, i) => {
+            if (u.building !== buildings || (u.needs !== undefined && this.owned[u.needs] === 0)) {
+                return;
+            }
+            if (u.once) {
+                if (this.owned[i] > 0 || once === ONCE_SHOWN) {
+                    return;
+                }
+                once++;
+            }
+            shownIds.push(i);
+        });
+        itemsKey = '';
+        this.refreshItems();
+    },
+    // The line under a card's name: what a one-time upgrade does, else the gain and number owned.
+    itemDetail(u, i) {
+        if (u.tapShare) {
+            return this.t.tapShare;
+        }
+        if (u.once) {
+            return UPGRADES[u.doubles].name[this.lang] + ' x2';
+        }
+        const gain = u.tap > 0 ? '+' + format(u.tap * boost[i]) + this.t.perTap : '+' + format(u.cps * boost[i]) + '/s';
+        return gain + ' (' + this.owned[i] + ')';
+    },
     // Rebuilt as a new array: lite does not reliably notice changes inside array items.
+    // Only when a card would change, not on every new cookie, to spare the watch the redraw.
     // id is the index in UPGRADES, which buy() needs because each view lists only some of them.
     refreshItems() {
-        const items = [];
-        const upgradeItems = [];
-        UPGRADES.forEach((u, i) => {
+        let key = this.owned.join(',');
+        shownIds.forEach((i) => {
+            key += this.count >= this.price(i) ? '1' : '0';
+        });
+        if (key === itemsKey) {
+            return;
+        }
+        itemsKey = key;
+        this.items = shownIds.map((i) => {
+            const u = UPGRADES[i];
             const price = this.price(i);
-            const gain = u.tap > 0 ? '+' + u.tap + this.t.perTap : '+' + u.cps + '/s';
-            (u.building ? items : upgradeItems).push({
+            return {
                 id: i,
                 icon: '/common/shop/' + u.icon + '.png',
                 title: u.name[this.lang],
-                detail: gain + ' (' + this.owned[i] + ')',
+                detail: this.itemDetail(u, i),
                 price: format(price),
-                affordable: this.count >= price
-            });
+                affordable: this.count >= price,
+                bought: u.once === true && this.owned[i] > 0
+            };
         });
-        this.items = items;
-        this.upgradeItems = upgradeItems;
     },
     // The grid is a list of rows of GRID_COLUMNS tiles, so it scrolls if categories are added.
     refreshAchievements() {

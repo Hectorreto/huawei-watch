@@ -133,20 +133,21 @@
         <text class="rate">{{ rateText }}</text>
         <text class="title">{{ t.upgrades }}</text>
         <list class="shop-list" ref="upgradeList">
-            <list-item class="shop-item" for="{{ upgradeItems }}" onclick="buy($item.id)">
+            <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <div class="shop-text">
                     <text class="shop-name">{{ $item.title }}</text>
                     <text class="shop-detail">{{ $item.detail }}</text>
                 </div>
-                <div class="price" if="{{ $item.affordable }}">
+                <div class="price" if="{{ $item.affordable && !$item.bought }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
-                <div class="price-off" if="{{ !$item.affordable }}">
+                <div class="price-off" if="{{ !$item.affordable && !$item.bought }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
+                <image class="status" if="{{ $item.bought }}" src="/common/awards/check.png"></image>
             </list-item>
         </list>
     </div>
