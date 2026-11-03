@@ -1,7 +1,7 @@
 import storage from '@system.storage';
 import {
-    GAME_LIVES, FACE_ROW, newPet, serialize, deserialize, isNight, advance, water, giveSun, clean,
-    stroke, sparkMs, finishGame, faceFor, hintFor, formName, ageText, hit
+    GAME_LIVES, FACE_ROW, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay, takeWishNews,
+    water, giveSun, clean, stroke, sparkMs, finishGame, faceFor, hintFor, formName, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
@@ -48,6 +48,11 @@ let sparkOn = false;
 
 function hourOf(ms) {
     return new Date(ms).getHours();
+}
+
+function today() {
+    const date = new Date();
+    return dayNumber(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function barWidth(value) {
@@ -117,6 +122,7 @@ export default {
             this.say(EVENT_TEXT[result.events[result.events.length - 1]]);
             this.save();
         }
+        rollDay(pet, today(), Math.random);
         this.refresh();
     },
     tick() {
@@ -157,11 +163,19 @@ export default {
         const face = happy ? 'happy' : faceFor(pet, this.night(), blink);
         this.faceSrc = '/common/face_' + face + '.png';
     },
-    say(text) {
-        message = text;
+    say(text, next) {
         clearTimeout(messageTimer);
+        this.showMessage(text, next);
+    },
+    // The second message follows from the timer of the first, which must not clear itself.
+    showMessage(text, next) {
+        message = text;
         messageTimer = setTimeout(() => {
-            message = '';
+            if (next) {
+                this.showMessage(next, '');
+            } else {
+                message = '';
+            }
             this.refresh();
         }, MESSAGE_MS);
     },
@@ -180,6 +194,10 @@ export default {
         } else {
             this.cheer();
             this.save();
+            const news = takeWishNews(pet);
+            if (news) {
+                this.say(news);
+            }
         }
         this.refresh();
     },
@@ -226,7 +244,7 @@ export default {
         this.statusMood = 'Ánimo: ' + Math.round(pet.mood);
         this.statusHealth = 'Salud: ' + Math.round(pet.health);
         this.statusGeneration = 'Generación ' + pet.generation + ' · Plantas: ' + pet.blooms;
-        this.statusRecord = 'Récord: ' + pet.best + ' chispas';
+        this.statusRecord = 'Racha: ' + pet.streak + ' · Récord: ' + pet.best;
         this.view = 'status';
     },
     // The game: tap each spark before it goes, faster each time, until three get away.
@@ -281,7 +299,8 @@ export default {
     endGame() {
         const record = finishGame(pet, hits);
         this.view = 'main';
-        this.say(record ? '¡Récord! ' + hits + ' chispas' : 'Atrapó ' + hits + ' · Récord ' + pet.best);
+        const result = record ? '¡Récord! ' + hits + ' chispas' : 'Atrapó ' + hits + ' · Récord ' + pet.best;
+        this.say(result, takeWishNews(pet));
         this.finishAction('');
     }
 };

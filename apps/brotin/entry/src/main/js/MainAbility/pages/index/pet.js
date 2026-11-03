@@ -33,6 +33,22 @@ const SPARK_MS = 1100;
 const SPARK_MS_PER_HIT = 40;
 const SPARK_MIN_MS = 650;
 
+// One wish a day, counted by what the player does. All can be done on any day, unlike cleaning,
+// which needs a bug to have appeared.
+const WISH_WATER = 0;
+const WISH_SUN = 1;
+const WISH_STROKE = 2;
+const WISH_SPARKS = 3;
+const WISHES = [
+    { label: 'riego', goal: 2 },
+    { label: 'sol', goal: 2 },
+    { label: 'mimos', goal: 5 },
+    { label: 'chispas', goal: 6 }
+];
+const WISH_MOOD = 15;
+// Each wish granted lifts the care average of a pet that reaches adulthood by this much.
+const WISH_CARE = 3;
+
 // The row of each form's art where its face goes.
 export const FACE_ROW = { seed: 13, sprout: 13, young: 13, flower: 6, cactus: 13, mushroom: 12 };
 
@@ -40,8 +56,11 @@ function clamp(value) {
     return Math.max(0, Math.min(100, value));
 }
 
-export function newPet(now, generation, blooms, previousBest) {
-    return {
+// What the player has earned stays when a new seed replaces the pet.
+const KEPT = ['blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak'];
+
+export function newPet(now, previous) {
+    const pet = {
         form: 'seed',
         water: 70,
         sun: 70,
@@ -50,15 +69,27 @@ export function newPet(now, generation, blooms, previousBest) {
         bugs: 0,
         ageMin: 0,
         careSum: 0,
-        generation: generation || 1,
-        blooms: blooms || 0,
+        generation: previous ? previous.generation + 1 : 1,
+        blooms: 0,
         last: now,
-        best: previousBest || 0
+        best: 0,
+        wishDay: 0,
+        wishKind: 0,
+        wishDone: 0,
+        doneDay: 0,
+        streak: 0
     };
+    if (previous) {
+        KEPT.forEach((field) => {
+            pet[field] = previous[field];
+        });
+    }
+    return pet;
 }
 
 // New fields go at the end: older saves simply lack them and they load as 0.
-const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best'];
+const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best', 'wishDay', 'wishKind',
+    'wishDone', 'doneDay', 'streak'];
 const OLDEST_FIELDS = 10;
 
 // "form,water,sun,..." with no JSON, as the other apps save.
@@ -154,11 +185,59 @@ export function advance(pet, now, hourOf, random) {
         grow(pet, events);
         if (pet.health <= 0) {
             events.push('reseed');
-            return { pet: newPet(now, pet.generation + 1, pet.blooms, pet.best), events };
+            return { pet: newPet(now, pet), events };
         }
     }
     pet.last = now;
     return { pet, events };
+}
+
+// A day's number from its local year, month (0-11) and date; consecutive days differ by 1.
+export function dayNumber(year, month, date) {
+    const y = month < 2 ? year - 1 : year;
+    const m = (month + 10) % 12;
+    return 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) +
+        Math.floor((153 * m + 2) / 5) + date;
+}
+
+// Starts today's wish, never the same as the last one. A day with no wish granted ends the streak.
+export function rollDay(pet, today, random) {
+    if (pet.wishDay === today) {
+        return;
+    }
+    if (pet.doneDay < today - 1) {
+        pet.streak = 0;
+    }
+    pet.wishKind = (pet.wishKind + 1 + Math.floor(random() * (WISHES.length - 1))) % WISHES.length;
+    pet.wishDay = today;
+    pet.wishDone = 0;
+}
+
+function wishPending(pet) {
+    return pet.doneDay !== pet.wishDay;
+}
+
+function progressWish(pet, kind, amount) {
+    if (pet.wishKind !== kind || !wishPending(pet)) {
+        return;
+    }
+    pet.wishDone += amount;
+    if (pet.wishDone >= WISHES[kind].goal) {
+        pet.doneDay = pet.wishDay;
+        pet.streak++;
+        pet.mood = clamp(pet.mood + WISH_MOOD);
+        pet.careSum += WISH_CARE * ADULT_MIN;
+        pet.wishGranted = true;
+    }
+}
+
+// The message for a wish just granted, once; '' if there is none.
+export function takeWishNews(pet) {
+    if (!pet.wishGranted) {
+        return '';
+    }
+    pet.wishGranted = false;
+    return '¡Antojo cumplido! Racha ' + pet.streak;
 }
 
 export function water(pet) {
@@ -166,6 +245,7 @@ export function water(pet) {
         return 'Ya no quiere agua';
     }
     pet.water = clamp(pet.water + GIVE);
+    progressWish(pet, WISH_WATER, 1);
     return '';
 }
 
@@ -177,6 +257,7 @@ export function giveSun(pet, night) {
         return 'Ya tiene sol';
     }
     pet.sun = clamp(pet.sun + GIVE);
+    progressWish(pet, WISH_SUN, 1);
     return '';
 }
 
@@ -191,6 +272,7 @@ export function clean(pet) {
 
 export function stroke(pet) {
     pet.mood = clamp(pet.mood + PET_MOOD);
+    progressWish(pet, WISH_STROKE, 1);
 }
 
 // How long a spark stays, shorter with each one caught.
@@ -201,6 +283,7 @@ export function sparkMs(hits) {
 // Returns whether this game beat the record.
 export function finishGame(pet, hits) {
     pet.mood = clamp(pet.mood + hits * MOOD_PER_HIT);
+    progressWish(pet, WISH_SPARKS, hits);
     if (hits > pet.best) {
         pet.best = hits;
         return true;
@@ -238,6 +321,10 @@ export function hintFor(pet, night) {
     }
     if (pet.mood < 25) {
         return 'Está triste';
+    }
+    if (wishPending(pet)) {
+        const wish = WISHES[pet.wishKind];
+        return 'Antojo: ' + wish.label + ' ' + pet.wishDone + '/' + wish.goal;
     }
     return '';
 }
