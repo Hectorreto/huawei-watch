@@ -214,9 +214,9 @@ let boost = UPGRADES.map(() => 1);
 // The entries the open shop or upgrades view lists, and what its cards last showed.
 let shownIds = [];
 let itemsKey = '';
-// The cheapest entry on sale and its price, so each new cookie only needs one comparison.
-let cheapestId = 0;
-let cheapestPrice = Infinity;
+// The cheapest entry never bought and its price, so each new cookie only needs one comparison.
+let newId = 0;
+let newPrice = Infinity;
 // Saved as "daily": the last day the game was opened, the streak up to it and the best streak.
 let streakDay = 0;
 let streak = 1;
@@ -892,7 +892,7 @@ export default {
         const percent = 100 + streakPercent() + recipes * RECIPE_PERCENT;
         this.tapPower = Math.floor((tap + Math.floor(cps * tapShare)) * percent / 100);
         this.cps = Math.floor(cps * percent / 100);
-        this.updateCheapest();
+        this.updateNew();
         this.updateCanBuy();
         this.updateRates();
         this.refreshItems();
@@ -944,23 +944,25 @@ export default {
     onSale(u, i) {
         return (u.needs === undefined || this.owned[u.needs] > 0) && !(u.once && this.owned[i] > 0);
     },
-    updateCheapest() {
-        cheapestPrice = Infinity;
+    // Only what was never bought: mid-game there is nearly always enough for one more of something,
+    // and a button that never leaves says nothing and hides the cookie.
+    updateNew() {
+        newPrice = Infinity;
         UPGRADES.forEach((u, i) => {
-            if (this.onSale(u, i) && this.price(i) < cheapestPrice) {
-                cheapestPrice = this.price(i);
-                cheapestId = i;
+            if (this.owned[i] === 0 && this.onSale(u, i) && u.base < newPrice) {
+                newPrice = u.base;
+                newId = i;
             }
         });
     },
     updateCanBuy() {
-        const canBuy = this.count >= cheapestPrice;
+        const canBuy = this.count >= newPrice;
         if (canBuy !== this.canBuy) {
             this.canBuy = canBuy;
         }
     },
-    openCheapest() {
-        if (UPGRADES[cheapestId].building) {
+    openNew() {
+        if (UPGRADES[newId].building) {
             this.openShop();
         } else {
             this.openUpgrades();

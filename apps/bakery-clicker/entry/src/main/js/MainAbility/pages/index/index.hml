@@ -105,7 +105,7 @@
         <image class="menu-upgrades" if="{{ menu }}" src="/common/menu/upgrades.png" onclick="openUpgrades"></image>
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
-        <image class="buy-hint" if="{{ canBuy && !menu }}" src="/common/menu/shop.png" onclick="openCheapest"></image>
+        <image class="buy-hint" if="{{ canBuy && !menu }}" src="/common/menu/shop.png" onclick="openNew"></image>
     </stack>
     <div class="shop-view" if="{{ view === 'shop' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>

@@ -153,8 +153,8 @@
   left: 346px;
   top: 188px;
 }
-/* Shows on the big cookie when something can be bought; a tap goes there. At the bottom,
-   away from where the thumb usually taps, and only as big as a tap needs. */
+/* Shows on the big cookie when something never bought before can be bought; a tap goes there.
+   At the bottom, away from where the thumb usually taps, and only as big as a tap needs. */
 .buy-hint {
   width: 64px;
   height: 64px;
