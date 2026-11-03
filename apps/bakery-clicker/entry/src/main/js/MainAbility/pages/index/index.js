@@ -4,12 +4,13 @@ import storage from '@system.storage';
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
-// Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
-// PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
-// the animation in index.css. The area keeps the 144x44 row inside the round screen.
+// A tap shrinks the cookie for a moment.
 const COOKIE_PX = 466;
 const COOKIE_PRESSED_PX = 438;
 const PRESS_MS = 120;
+// Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
+// PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
+// the animation in index.css. The area keeps the 144x44 row inside the round screen.
 const PLUS_SLOTS = 5;
 const PLUS_MS = 1000;
 const PLUS_X_MIN = 60;
@@ -24,6 +25,10 @@ const SCREEN_CENTRE = 233;
 const COUNT_ARC = { radius: 215, font: 38, boxW: 44, boxH: 50 };
 const SUB_ARC = { radius: 177, font: 30, boxW: 36, boxH: 40 };
 const COUNT_DIGITS = 9;
+// Rebuilding the count's letters is the heaviest thing a tap does, so it happens at most this often.
+const ARC_MIN_MS = 300;
+// The stats list is rebuilt whole, so while it is open it follows the game every few seconds.
+const STATS_EVERY_S = 3;
 
 // Every text the player sees, per language. Names in the tables below have one per language too.
 const TEXTS = {
@@ -185,6 +190,7 @@ let notices = [];
 let arcCount = '';
 let arcSub = '';
 let arcSubGold = false;
+let arcTimer = null;
 let ticks = 0;
 let goldenIn = 0;
 let goldenLeft = 0;
@@ -410,6 +416,8 @@ export default {
         clearInterval(tickTimer);
         clearTimeout(pressTimer);
         pressTimer = null;
+        clearTimeout(arcTimer);
+        arcTimer = null;
         this.save();
     },
     welcomeGolden(savedAt) {
@@ -477,7 +485,9 @@ export default {
             }
         }
         this.tickGolden();
-        if (this.view === 'stats') {
+        // Here and not on each new cookie, so a tap does not walk the whole list of achievements.
+        this.checkAchievements();
+        if (this.view === 'stats' && this.playSeconds % STATS_EVERY_S === 0) {
             this.refreshStats();
         }
     },
@@ -774,11 +784,23 @@ export default {
     setCount(count) {
         this.count = count;
         this.countText = formatCount(count);
-        this.updateArc();
+        this.throttledArc();
         if (this.view === 'shop' || this.view === 'upgrades') {
             this.refreshItems();
         }
-        this.checkAchievements();
+    },
+    // The first change shows at once; the timer then catches up with whatever came during the wait.
+    throttledArc() {
+        if (arcTimer !== null) {
+            return;
+        }
+        this.updateArc();
+        arcTimer = setTimeout(() => {
+            arcTimer = null;
+            if (this.countText !== arcCount) {
+                this.throttledArc();
+            }
+        }, ARC_MIN_MS);
     },
     setOwned(owned) {
         boost = UPGRADES.map(() => 1);
