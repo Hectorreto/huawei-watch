@@ -105,6 +105,10 @@ let dailyStreak = 0;
 let dailyStars = 0;
 let dailyBest = 0;
 let theme = THEMES[0];
+// This maze's wall colours, filled as they come up, so a tap does not rebuild 39 strings.
+let colours = [];
+// Whether the gem list on screen has any, so an empty list is not set over an empty one.
+let spritesOn = false;
 // Fewest steps to the exit, by maze size (key 'best' + cells in storage), 0 if none.
 let best = 0;
 // Stars earned in all mazes so far (key 'stars' in storage).
@@ -147,6 +151,7 @@ function random() {
 function makeMaze() {
     size = 2 * LEVEL_CELLS[Math.min(mazeLevel, LEVEL_CELLS.length - 1)] + 1;
     theme = THEMES[(daily ? today() : level) % THEMES.length];
+    colours = [];
     grid = [];
     // The cell each cell was carved from, by y * size + x, to measure walks in placeGems.
     const parent = [];
@@ -250,7 +255,10 @@ function shortestWalk(parent) {
     for (let c = exitCell; c !== start; c = parent[c]) {
         toExit++;
     }
-    const marks = {};
+    const marks = [];
+    for (let i = 0; i < size * size; i++) {
+        marks.push(false);
+    }
     let cells = 0;
     const targets = [exitCell];
     for (let i = 0; i < gems.length; i++) {
@@ -378,9 +386,13 @@ function hex2(v) {
 // distance, darkened in four bands so a column keeps its colour over small changes.
 function wallColour(cell, side, dist) {
     const band = Math.min(3, Math.floor(dist / 2));
-    const light = (side === 0 ? 1 : 0.75) * (1 - band * 0.2);
-    const base = cell === EXIT ? [80, 220, 110] : theme.wall;
-    return '#' + base.map((v) => hex2(Math.round(v * light))).join('');
+    const key = (cell === EXIT ? 8 : 0) + side * 4 + band;
+    if (!colours[key]) {
+        const light = (side === 0 ? 1 : 0.75) * (1 - band * 0.2);
+        const base = cell === EXIT ? [80, 220, 110] : theme.wall;
+        colours[key] = '#' + base.map((v) => hex2(Math.round(v * light))).join('');
+    }
+    return colours[key];
 }
 
 // Casts one ray per column from the centre of the player's cell (DDA on the grid) and
@@ -532,7 +544,7 @@ export default {
     showMenu() {
         ctx = null;
         this.live = false;
-        this.sprites = [];
+        this.setSprites([]);
         this.guardX = SCREEN;
         this.note = '';
         this.menuLevel = 'Nivel ' + (level + 1);
@@ -573,7 +585,7 @@ export default {
         busy = true;
         ctx = null;
         this.live = false;
-        this.sprites = [];
+        this.setSprites([]);
         this.guardX = SCREEN;
         setTimeout(() => {
             this.live = true;
@@ -631,10 +643,17 @@ export default {
             shownH[c] = h;
             shownColour[c] = view[c].colour;
         }
-        this.sprites = gemSprites(view);
+        this.setSprites(gemSprites(view));
         this.showGuard(view);
         this.hud = COMPASS[facing] + ' ' + steps + '/' + par;
         this.record = (daily ? 'Reto del día' : 'Nivel ' + (level + 1)) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
+    },
+    // Most views show no gem, so this leaves the `for` alone unless there is one to show or hide.
+    setSprites(list) {
+        if (list.length > 0 || spritesOn) {
+            this.sprites = list;
+            spritesOn = list.length > 0;
+        }
     },
     // Stands the guardian on the floor when the player can see it (one fixed image, moved off
     // the screen when not), and warns when it woke or comes near, unless a note is showing.
@@ -662,8 +681,9 @@ export default {
     },
     // Left third turns left, right third turns right, the bottom turns around, the compass
     // at the top opens the map, the rest of the middle steps forward; while the map is open
-    // any tap closes it, and on the result screen any tap starts the next maze. The click event carries the position (globalX, globalY);
-    // ontouchstart on this div did not fire in the Previewer.
+    // any tap closes it, and on the result screen any tap starts the next maze. The click
+    // event carries the position (globalX, globalY); ontouchstart on this div did not fire in
+    // the Previewer.
     tap(e) {
         if (busy) {
             return;
