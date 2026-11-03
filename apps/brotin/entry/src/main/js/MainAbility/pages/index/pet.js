@@ -598,6 +598,12 @@ export function herbariumHint(pet) {
     return missing.length > 0 ? ADULT_HINTS[missing[0]] : '¡Herbario completo!';
 }
 
+// A form's name if found, its clue if not.
+export function herbariumLine(pet, place) {
+    const form = ADULTS[place];
+    return isFound(pet, place) ? formName(form) : ADULT_HINTS[form];
+}
+
 export function ageText(ageMin) {
     const hours = Math.floor(ageMin / 60);
     if (hours < 1) {
@@ -627,6 +633,24 @@ const POT_LEFT = 170;
 const POT_RIGHT = 296;
 const POT_TOP = 296;
 const POT_BOTTOM = 359;
+
+// Which image of the herbarium's 3 x 2 grid a tap is on, or -1. The view is a centred column, so
+// these follow from the heights in index.css.
+const HERB_LEFT = 119;
+const HERB_TOP = 143;
+const HERB_CELL_W = 76;
+const HERB_CELL_H = 72;
+const HERB_COLS = 3;
+const HERB_ROWS = 2;
+
+export function herbariumPlace(x, y) {
+    const col = Math.floor((x - HERB_LEFT) / HERB_CELL_W);
+    const row = Math.floor((y - HERB_TOP) / HERB_CELL_H);
+    if (col < 0 || col >= HERB_COLS || row < 0 || row >= HERB_ROWS) {
+        return -1;
+    }
+    return row * HERB_COLS + col;
+}
 
 // What a tap at x, y on the main view means. The pet is everything left between the buttons.
 export function hit(x, y) {

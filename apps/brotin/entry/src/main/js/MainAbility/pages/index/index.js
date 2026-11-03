@@ -2,7 +2,7 @@ import storage from '@system.storage';
 import {
     GAME_LIVES, GOLD_HITS, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
     rollVisitor, receiveVisitor, canChangePot, nextPot, potImage, takePotNews, potGoal, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, sparkKind,
-    finishGame, faceFor, hintFor, greeting, idleLine, skyFor, formName, isFound, foundCount, herbariumHint, ageText, hit
+    finishGame, faceFor, hintFor, greeting, idleLine, skyFor, formName, isFound, foundCount, herbariumHint, herbariumLine, herbariumPlace, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
@@ -56,6 +56,7 @@ let lives = 0;
 let sparkOn = false;
 let kind = 'spark';
 let plantArmed = false;
+let herbPick = -1;
 
 function hourOf(ms) {
     return new Date(ms).getHours();
@@ -303,7 +304,7 @@ export default {
         if (this.view === 'status') {
             this.openHerbarium();
         } else if (this.view === 'herbarium') {
-            this.view = 'main';
+            this.tapHerbarium(x, y);
         } else if (this.view === 'game') {
             this.tapSpark(x, y);
         } else {
@@ -370,6 +371,7 @@ export default {
     // The images change only here, so a closed herbarium costs no image swaps.
     openHerbarium() {
         this.herbariumTitle = 'Herbario ' + foundCount(pet) + '/' + ADULTS.length;
+        herbPick = -1;
         this.herbariumHint = herbariumHint(pet);
         this.herbariumPot = potGoal(pet);
         this.herb0 = this.herbSrc(0);
@@ -379,6 +381,16 @@ export default {
         this.herb4 = this.herbSrc(4);
         this.herb5 = this.herbSrc(5);
         this.view = 'herbarium';
+    },
+    // A tap on an image tells about it; on the same one again, or outside, it closes.
+    tapHerbarium(x, y) {
+        const place = herbariumPlace(x, y);
+        if (place < 0 || place === herbPick) {
+            this.view = 'main';
+        } else {
+            herbPick = place;
+            this.herbariumHint = herbariumLine(pet, place);
+        }
     },
     herbSrc(place) {
         return isFound(pet, place) ? '/common/mini_' + ADULTS[place] + '.png' : LOCKED_SRC;
