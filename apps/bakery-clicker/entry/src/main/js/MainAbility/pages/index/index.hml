@@ -107,33 +107,11 @@
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="buy-hint" if="{{ canBuy && !menu }}" src="/common/menu/shop.png" onclick="openNew"></image>
     </stack>
-    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
+    <div class="shop-view" if="{{ view === 'shop' || view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
-        <text class="title">{{ t.shop }}</text>
-        <list class="shop-list" ref="shopList">
-            <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
-                <image class="shop-icon" src="{{ $item.icon }}"></image>
-                <div class="shop-text">
-                    <text class="shop-name">{{ $item.title }}</text>
-                    <text class="shop-detail">{{ $item.detail }}</text>
-                </div>
-                <div class="price" if="{{ $item.affordable }}">
-                    <image class="coin" src="/common/shop/coin.png"></image>
-                    <text class="price-text">{{ $item.price }}</text>
-                </div>
-                <div class="price-off" if="{{ !$item.affordable }}">
-                    <image class="coin" src="/common/shop/coin.png"></image>
-                    <text class="price-text">{{ $item.price }}</text>
-                </div>
-            </list-item>
-        </list>
-    </div>
-    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
-        <text class="count">{{ countText }}</text>
-        <text class="rate">{{ rateText }}</text>
-        <text class="title">{{ t.upgrades }}</text>
-        <list class="shop-list" ref="upgradeList">
+        <text class="title">{{ view === 'shop' ? t.shop : t.upgrades }}</text>
+        <list class="shop-list" ref="itemList">
             <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <div class="shop-text">

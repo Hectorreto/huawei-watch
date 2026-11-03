@@ -671,13 +671,13 @@ export default {
         this.menu = false;
         this.chooseItems(false);
         this.view = 'upgrades';
-        this.focusCrown('upgradeList');
+        this.focusCrown('itemList');
     },
     openShop() {
         this.menu = false;
         this.chooseItems(true);
         this.view = 'shop';
-        this.focusCrown('shopList');
+        this.focusCrown('itemList');
     },
     openAchievements() {
         this.menu = false;
@@ -722,13 +722,10 @@ export default {
         this.setLanguage(LANGUAGES[(LANGUAGES.indexOf(this.lang) + 1) % LANGUAGES.length]);
         this.saveSettings();
     },
-    // Lists that hold translated names are rebuilt, so they show the new language right away.
+    // Lists with translated names need nothing here: each view builds its own when it opens.
     setLanguage(lang) {
         this.lang = lang;
         this.t = TEXTS[lang];
-        this.refreshStats();
-        this.refreshAchievements();
-        this.refreshThemes();
     },
     openThemes() {
         this.refreshThemes();
@@ -756,7 +753,6 @@ export default {
         this.theme = theme;
         this.cookieSrc = themePath(theme);
         this.cookieSmall = themePath(theme, '_small');
-        this.refreshThemes();
     },
     saveSettings() {
         storage.set({ key: 'settings', value: [this.lang, this.theme].join(',') });
@@ -925,17 +921,19 @@ export default {
         if (!loaded) {
             return;
         }
+        // A plain loop and no copy until one is new: this runs every second.
         const state = this.gameState();
-        const achieved = this.achieved.slice();
-        let changed = false;
-        ACHIEVEMENTS.forEach((a, i) => {
-            if (!achieved[i] && a.value(state) >= a.goal) {
+        const old = this.achieved;
+        let achieved = null;
+        for (let i = 0; i < ACHIEVEMENTS.length; i++) {
+            const a = ACHIEVEMENTS[i];
+            if (!old[i] && a.value(state) >= a.goal) {
+                achieved = achieved || old.slice();
                 achieved[i] = true;
-                changed = true;
                 this.showNotice(this.t.award + a.name[this.lang]);
             }
-        });
-        if (changed) {
+        }
+        if (achieved !== null) {
             this.achieved = achieved;
             this.save();
         }
