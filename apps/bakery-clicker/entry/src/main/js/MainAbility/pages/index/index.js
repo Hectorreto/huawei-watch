@@ -761,7 +761,7 @@ export default {
         });
     },
     chooseTheme(index) {
-        if (this.achieved.filter((a) => a).length < THEMES[index].awards) {
+        if (THEMES[index].id !== this.theme && this.achieved.filter((a) => a).length < THEMES[index].awards) {
             return;
         }
         this.setTheme(THEMES[index].id);
