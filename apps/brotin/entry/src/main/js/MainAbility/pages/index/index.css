@@ -81,6 +81,13 @@
   left: 312px;
   top: 262px;
 }
+/* The ripe adult's seed, up and to the left of the pot, clear of the pet and the pests. */
+.seed-icon {
+  width: 54px;
+  height: 54px;
+  left: 77px;
+  top: 163px;
+}
 .button {
   width: 88px;
   height: 88px;
@@ -136,6 +143,18 @@
   font-size: 22px;
   color: #aaaaaa;
   text-align: center;
+}
+.herb-row {
+  width: 300px;
+  height: 88px;
+  justify-content: center;
+  align-items: center;
+}
+.herb {
+  width: 80px;
+  height: 80px;
+  margin-left: 8px;
+  margin-right: 8px;
 }
 .touch {
   width: 466px;

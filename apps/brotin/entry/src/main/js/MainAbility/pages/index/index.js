@@ -1,7 +1,8 @@
 import storage from '@system.storage';
 import {
-    GAME_LIVES, FACE_ROW, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay, takeWishNews,
-    water, giveSun, clean, stroke, sparkMs, finishGame, faceFor, hintFor, formName, ageText, hit
+    GAME_LIVES, FACE_ROW, ADULTS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
+    takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, finishGame, faceFor, hintFor,
+    formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
@@ -23,14 +24,19 @@ const PET_TOP = 128;
 const FACE_COL = 5;
 const BOB = 6;
 const BAR_WIDTH = 150;
+const LOCKED_SRC = '/common/mini_locked.png';
 const SKY_DAY = '#12303f';
 const SKY_NIGHT = '#060913';
 const EVENT_TEXT = {
     sprout: '¡Brotó!',
     young: '¡Está creciendo!',
     flower: '¡Es una flor!',
+    sunflower: '¡Es un girasol!',
+    lily: '¡Es un lirio!',
+    golden: '¡Una flor dorada!',
     cactus: '¡Es un cactus!',
     mushroom: '¡Es un hongo!',
+    ripe: '¡Tiene una semilla!',
     reseed: 'Se marchitó y dejó una semilla'
 };
 
@@ -45,6 +51,7 @@ let message = '';
 let hits = 0;
 let lives = 0;
 let sparkOn = false;
+let plantArmed = false;
 
 function hourOf(ms) {
     return new Date(ms).getHours();
@@ -75,6 +82,7 @@ export default {
         pest0: false,
         pest1: false,
         pest2: false,
+        seedShown: false,
         sparkShown: false,
         sparkX: 0,
         sparkY: 0,
@@ -85,7 +93,15 @@ export default {
         statusMood: '',
         statusHealth: '',
         statusGeneration: '',
-        statusRecord: ''
+        statusRecord: '',
+        herbariumTitle: '',
+        herbariumHint: '',
+        herb0: LOCKED_SRC,
+        herb1: LOCKED_SRC,
+        herb2: LOCKED_SRC,
+        herb3: LOCKED_SRC,
+        herb4: LOCKED_SRC,
+        herb5: LOCKED_SRC
     },
     onInit() {
         storage.get({
@@ -149,6 +165,7 @@ export default {
         this.pest0 = pet.bugs > 0;
         this.pest1 = pet.bugs > 1;
         this.pest2 = pet.bugs > 2;
+        this.seedShown = isRipe(pet);
         if (this.view !== 'game') {
             this.note = message || hintFor(pet, night);
         }
@@ -175,6 +192,7 @@ export default {
                 this.showMessage(next, '');
             } else {
                 message = '';
+                plantArmed = false;
             }
             this.refresh();
         }, MESSAGE_MS);
@@ -209,6 +227,8 @@ export default {
         const x = e && typeof e.globalX === 'number' ? e.globalX : CENTRE;
         const y = e && typeof e.globalY === 'number' ? e.globalY : CENTRE;
         if (this.view === 'status') {
+            this.openHerbarium();
+        } else if (this.view === 'herbarium') {
             this.view = 'main';
         } else if (this.view === 'game') {
             this.tapSpark(x, y);
@@ -217,6 +237,11 @@ export default {
         }
     },
     tapMain(action) {
+        if (action === 'seed') {
+            this.tapSeed();
+            return;
+        }
+        plantArmed = false;
         if (action === 'water') {
             this.finishAction(water(pet));
         } else if (action === 'sun') {
@@ -235,6 +260,37 @@ export default {
             stroke(pet);
             this.finishAction('');
         }
+    },
+    // Planting replaces the adult, so it takes a second tap while the question is showing.
+    tapSeed() {
+        if (!isRipe(pet)) {
+            return;
+        }
+        if (plantArmed) {
+            plantArmed = false;
+            pet = plantSeed(pet, Date.now());
+            this.say('¡Plantada! Generación ' + pet.generation);
+            this.finishAction('');
+        } else {
+            this.say('Toca otra vez para plantar');
+            plantArmed = true;
+            this.refresh();
+        }
+    },
+    // The images change only here, so a closed herbarium costs no image swaps.
+    openHerbarium() {
+        this.herbariumTitle = 'Herbario ' + foundCount(pet) + ' de ' + ADULTS.length;
+        this.herbariumHint = herbariumHint(pet);
+        this.herb0 = this.herbSrc(0);
+        this.herb1 = this.herbSrc(1);
+        this.herb2 = this.herbSrc(2);
+        this.herb3 = this.herbSrc(3);
+        this.herb4 = this.herbSrc(4);
+        this.herb5 = this.herbSrc(5);
+        this.view = 'herbarium';
+    },
+    herbSrc(place) {
+        return isFound(pet, place) ? '/common/mini_' + ADULTS[place] + '.png' : LOCKED_SRC;
     },
     openStatus() {
         this.statusForm = formName(pet.form);

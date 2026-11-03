@@ -13,14 +13,17 @@ const MAX_BUGS = 3;
 const NIGHT_RATE = 0.25;
 const NIGHT_FROM = 22;
 const NIGHT_TO = 7;
-const WITHER_PER_MIN = 100 / 720;
+const WITHER_PER_MIN = 100 / 1440;
 const HEAL_PER_MIN = 0.2;
 const HEAL_ABOVE = 40;
 const SPROUT_MIN = 30;
 const YOUNG_MIN = 720;
 const ADULT_MIN = 2880;
+// An adult has a seed to plant a day after it matures, and stays until the player plants it.
+const RIPE_MIN = 4320;
+const GOLDEN_CARE = 86;
 const FLOWER_CARE = 70;
-const CACTUS_CARE = 40;
+const CACTUS_CARE = 50;
 // A long absence is worked out in at most this many steps, since the watch's JS is slow.
 const MAX_STEPS = 200;
 const GIVE = 35;
@@ -50,14 +53,27 @@ const WISH_MOOD = 15;
 const WISH_CARE = 3;
 
 // The row of each form's art where its face goes.
-export const FACE_ROW = { seed: 13, sprout: 13, young: 13, flower: 6, cactus: 13, mushroom: 12 };
+export const FACE_ROW = {
+    seed: 13, sprout: 13, young: 13, flower: 6, sunflower: 6, lily: 6, golden: 6, cactus: 13, mushroom: 12
+};
+
+// The herbarium, in the order it shows them. Each form's place is its bit in pet.found.
+export const ADULTS = ['flower', 'sunflower', 'lily', 'golden', 'cactus', 'mushroom'];
+const ADULT_HINTS = {
+    flower: 'Pista: cuídalo bien',
+    sunflower: 'Pista: más sol que agua',
+    lily: 'Pista: doble agua que sol',
+    golden: 'Pista: gran cuidado y antojos',
+    cactus: 'Pista: cuidado a medias',
+    mushroom: 'Pista: lo justo para vivir'
+};
 
 function clamp(value) {
     return Math.max(0, Math.min(100, value));
 }
 
 // What the player has earned stays when a new seed replaces the pet.
-const KEPT = ['blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak'];
+const KEPT = ['blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak', 'found'];
 
 export function newPet(now, previous) {
     const pet = {
@@ -77,7 +93,10 @@ export function newPet(now, previous) {
         wishKind: 0,
         wishDone: 0,
         doneDay: 0,
-        streak: 0
+        streak: 0,
+        waters: 0,
+        suns: 0,
+        found: 0
     };
     if (previous) {
         KEPT.forEach((field) => {
@@ -89,7 +108,7 @@ export function newPet(now, previous) {
 
 // New fields go at the end: older saves simply lack them and they load as 0.
 const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best', 'wishDay', 'wishKind',
-    'wishDone', 'doneDay', 'streak'];
+    'wishDone', 'doneDay', 'streak', 'waters', 'suns', 'found'];
 const OLDEST_FIELDS = 10;
 
 // "form,water,sun,..." with no JSON, as the other apps save.
@@ -107,11 +126,37 @@ export function deserialize(text, now) {
         pet[FIELDS[i]] = parseInt(parts[i + 1], 10) || 0;
     }
     pet.generation = Math.max(1, pet.generation);
+    markFound(pet);
     return pet;
+}
+
+// A save from before the herbarium may already hold an adult.
+function markFound(pet) {
+    const place = ADULTS.indexOf(pet.form);
+    if (place >= 0) {
+        pet.found |= 1 << place;
+    }
 }
 
 export function isNight(hour) {
     return hour >= NIGHT_FROM || hour < NIGHT_TO;
+}
+
+function adultForm(pet) {
+    const care = pet.careSum / pet.ageMin;
+    if (care < CACTUS_CARE) {
+        return 'mushroom';
+    }
+    if (care < FLOWER_CARE) {
+        return 'cactus';
+    }
+    if (care >= GOLDEN_CARE) {
+        return 'golden';
+    }
+    if (pet.suns > pet.waters) {
+        return 'sunflower';
+    }
+    return pet.waters > 0 && pet.waters >= 2 * pet.suns ? 'lily' : 'flower';
 }
 
 function grow(pet, events) {
@@ -121,18 +166,12 @@ function grow(pet, events) {
     } else if (pet.form === 'sprout' && pet.ageMin >= YOUNG_MIN) {
         next = 'young';
     } else if (pet.form === 'young' && pet.ageMin >= ADULT_MIN) {
-        const care = pet.careSum / pet.ageMin;
-        if (care >= FLOWER_CARE) {
-            next = 'flower';
-        } else if (care >= CACTUS_CARE) {
-            next = 'cactus';
-        } else {
-            next = 'mushroom';
-        }
+        next = adultForm(pet);
         pet.blooms++;
     }
     if (next !== pet.form) {
         pet.form = next;
+        markFound(pet);
         events.push(next);
     }
 }
@@ -167,8 +206,18 @@ function step(pet, minutes, night, random) {
     pet.careSum += minutes * (pet.water + pet.sun + pet.mood + pet.health) / 4;
 }
 
-// Moves the pet to now and returns what happened ('sprout', 'young', 'flower', 'cactus',
-// 'mushroom', 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
+// Whether it is an adult with a seed ready to plant.
+export function isRipe(pet) {
+    return ADULTS.indexOf(pet.form) >= 0 && pet.ageMin >= RIPE_MIN;
+}
+
+// The ripe adult gives way to its seed; the herbarium keeps it.
+export function plantSeed(pet, now) {
+    return newPet(now, pet);
+}
+
+// Moves the pet to now and returns what happened ('sprout', 'young', an adult form, 'ripe',
+// 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
 // the generation goes up. hourOf(ms) gives the local hour; random() is as Math.random.
 export function advance(pet, now, hourOf, random) {
     const events = [];
@@ -181,8 +230,12 @@ export function advance(pet, now, hourOf, random) {
     const minutes = totalMin / steps;
     const stepMs = (now - pet.last) / steps;
     for (let i = 0; i < steps; i++) {
+        const wasRipe = isRipe(pet);
         step(pet, minutes, isNight(hourOf(pet.last + (i + 0.5) * stepMs)), random);
         grow(pet, events);
+        if (!wasRipe && isRipe(pet)) {
+            events.push('ripe');
+        }
         if (pet.health <= 0) {
             events.push('reseed');
             return { pet: newPet(now, pet), events };
@@ -245,6 +298,7 @@ export function water(pet) {
         return 'Ya no quiere agua';
     }
     pet.water = clamp(pet.water + GIVE);
+    pet.waters++;
     progressWish(pet, WISH_WATER, 1);
     return '';
 }
@@ -257,6 +311,7 @@ export function giveSun(pet, night) {
         return 'Ya tiene sol';
     }
     pet.sun = clamp(pet.sun + GIVE);
+    pet.suns++;
     progressWish(pet, WISH_SUN, 1);
     return '';
 }
@@ -326,7 +381,7 @@ export function hintFor(pet, night) {
         const wish = WISHES[pet.wishKind];
         return 'Antojo: ' + wish.label + ' ' + pet.wishDone + '/' + wish.goal;
     }
-    return '';
+    return isRipe(pet) ? 'Toca la semilla para plantar' : '';
 }
 
 export function formName(form) {
@@ -335,9 +390,26 @@ export function formName(form) {
         sprout: 'Brote',
         young: 'Retoño',
         flower: 'Flor',
+        sunflower: 'Girasol',
+        lily: 'Lirio',
+        golden: 'Flor dorada',
         cactus: 'Cactus',
         mushroom: 'Hongo'
     }[form];
+}
+
+export function isFound(pet, place) {
+    return (pet.found & (1 << place)) !== 0;
+}
+
+export function foundCount(pet) {
+    return ADULTS.filter((form, place) => isFound(pet, place)).length;
+}
+
+// The clue to the first form still missing from the herbarium.
+export function herbariumHint(pet) {
+    const missing = ADULTS.filter((form, place) => !isFound(pet, place));
+    return missing.length > 0 ? ADULT_HINTS[missing[0]] : '¡Herbario completo!';
 }
 
 export function ageText(ageMin) {
@@ -359,6 +431,9 @@ const BUTTONS = [
 ];
 const BUTTON_RADIUS = 48;
 const STATUS_BOTTOM = 110;
+const SEED_X = 104;
+const SEED_Y = 190;
+const SEED_RADIUS = 44;
 
 // What a tap at x, y on the main view means. The pet is everything left between the buttons.
 export function hit(x, y) {
@@ -372,6 +447,11 @@ export function hit(x, y) {
     }
     if (y < STATUS_BOTTOM) {
         return 'status';
+    }
+    const sx = x - SEED_X;
+    const sy = y - SEED_Y;
+    if (sx * sx + sy * sy <= SEED_RADIUS * SEED_RADIUS) {
+        return 'seed';
     }
     return x > 130 && x < 336 && y < 360 ? 'pet' : '';
 }

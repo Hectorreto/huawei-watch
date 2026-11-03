@@ -11,8 +11,13 @@ const COLOURS = {
     b: [150, 98, 56, 255], B: [92, 56, 34, 255], c: [246, 230, 196, 255], C: [176, 140, 104, 255],
     p: [244, 142, 178, 255], P: [204, 84, 136, 255], y: [255, 214, 74, 255], W: [255, 250, 220, 255],
     r: [216, 62, 58, 255], R: [140, 34, 44, 255], w: [255, 255, 255, 255], k: [24, 22, 30, 255],
-    T: [158, 80, 52, 255], t: [204, 112, 70, 255], n: [34, 52, 66, 255], D: [90, 182, 244, 255]
+    T: [158, 80, 52, 255], t: [204, 112, 70, 255], n: [34, 52, 66, 255], D: [90, 182, 244, 255],
+    O: [240, 150, 40, 255], d: [48, 104, 190, 255], Y: [255, 196, 44, 255]
 };
+
+function recolour(grid, map) {
+    return grid.map((row) => [...row].map((ch) => map[ch] || ch).join(''));
+}
 
 // The body forms, 20 x 20. Each leaves room for a face at the row in FACE_ROW in pet.js.
 const FORMS = {
@@ -45,6 +50,13 @@ const FORMS = {
         '...ppppPPppPPpppp...', '.....ppPPppPPpp.....', '.......pppGGpp......', '.........GG.........',
         '...ll....GG....ll...', '..lgGl...GG...lGgl..', '...lgGl..GG..lGgl...', '.....lgGlGGlGgl.....'
     ],
+    sunflower: [
+        '.........yy.........', '...y.....yy.....y...', '...yy.yyyyyyyy.yy...', '....yyOOyyyyOOyy....',
+        '..yyyObbbbbbbbOyyy..', '.yyyObbbbbbbbbbOyyy.', 'yyyyObbbbbbbbbbOyyyy', 'yyyyObbbbbbbbbbOyyyy',
+        'yyyyObbbbbbbbbbOyyyy', 'yyyyObbbbbbbbbbOyyyy', '.yyyObbbbbbbbbbOyyy.', '..yyyObbbbbbbbOyyy..',
+        '....yyOOyyyyOOyy....', '...yy.yyyyyyyy.yy...', '...y....yGGy....y...', '.........GG.........',
+        '...ll....GG....ll...', '..lgGl...GG...lGgl..', '...lgGl..GG..lGgl...', '.....lgGlGGlGgl.....'
+    ],
     cactus: [
         '.........pp.........', '........pyyp........', '........pppp........', '.......oooooo.......',
         '......ogllllgo......', '.....ogllllllgo.....', '....ogllllllllgo....', '.oo.ogllllllllgo.oo.',
@@ -60,6 +72,10 @@ const FORMS = {
         '....CccccccccccC....', '....CccccccccccC....', '....CCccccccccCC....', '.....CCCCCCCCCC.....'
     ]
 };
+FORMS.lily = recolour(FORMS.flower, { p: 'D', P: 'd', y: 'W' });
+FORMS.golden = recolour(FORMS.flower, { p: 'Y', P: 'W', y: 'y' });
+FORMS.golden[0] = 'W......YYYYYY......W';
+FORMS.golden[13] = 'W....YYWWYYWWYY....W';
 
 // The faces, 10 x 4, laid over a body.
 const FACES = {
@@ -95,6 +111,18 @@ const BUTTONS = {
         'nkkrrkrrkkn', 'nnnnrkrnnnn', '.nnnnnnnnn.', '.nnnnnnnnn.', '...nnnnn...'
     ]
 };
+
+// The ripe adult's seed, next to the pot.
+const SEED_ICON = ['....l....', '...lg....', '..BBBBB..', '.BbccbbB.', '.BbcbbbB.', '.BbbbbbB.', '.BbbbbbB.', '..BbbbB..', '...BBB...'];
+
+// A form not yet in the herbarium.
+const LOCKED = [
+    '....................', '.......nnnnnn.......', '.....nnnnnnnnnn.....', '....nnnnnnnnnnnn....',
+    '...nnnnwwwwwwnnnn...', '..nnnnwwnnnnwwnnnn..', '..nnnnwwnnnnwwnnnn..', '..nnnnnnnnnnwwnnnn..',
+    '..nnnnnnnnwwwnnnnn..', '..nnnnnnnwwwnnnnnn..', '..nnnnnnnwwnnnnnnn..', '..nnnnnnnwwnnnnnnn..',
+    '..nnnnnnnnnnnnnnnn..', '..nnnnnnnwwnnnnnnn..', '...nnnnnnwwnnnnnn...', '....nnnnnnnnnnnn....',
+    '.....nnnnnnnnnn.....', '.......nnnnnn.......', '....................', '....................'
+];
 
 const PEST = ['.k.k.', 'rrkrr', 'rrkrr', 'rrkrr', '.rkr.'];
 
@@ -198,6 +226,8 @@ Object.keys(all).forEach((name) => checkGrid(name, all[name]));
 checkGrid('pot', POT);
 checkGrid('pest', PEST);
 checkGrid('spark', SPARK);
+checkGrid('seed icon', SEED_ICON);
+checkGrid('locked', LOCKED);
 
 const common = path.join(app, 'entry/src/main/js/MainAbility/common');
 const media = path.join(app, 'entry/src/main/resources/base/media');
@@ -207,15 +237,22 @@ Object.keys(BUTTONS).forEach((name) => sprite(path.join(common, 'btn_' + name + 
 sprite(path.join(common, 'pot.png'), POT, 9);
 sprite(path.join(common, 'pest.png'), PEST, 8);
 sprite(path.join(common, 'spark.png'), SPARK, 8);
+sprite(path.join(common, 'seed_icon.png'), SEED_ICON, 6);
+sprite(path.join(common, 'mini_locked.png'), LOCKED, 4);
+['flower', 'sunflower', 'lily', 'golden', 'cactus', 'mushroom'].forEach((name) => {
+    sprite(path.join(common, 'mini_' + name + '.png'), FORMS[name], 4);
+});
 launcherIcon(path.join(media, 'icon.png'), 104, 5);
 launcherIcon(path.join(media, 'icon_small.png'), 92, 4);
 
 // A contact sheet of the forms in their pots, to check the art without building.
 if (process.argv[3]) {
     const scale = 6;
-    const faceRow = { seed: 13, sprout: 13, young: 13, flower: 6, cactus: 13, mushroom: 12 };
+    const faceRow = {
+        seed: 13, sprout: 13, young: 13, flower: 6, sunflower: 6, lily: 6, golden: 6, cactus: 13, mushroom: 12
+    };
     const faces = Object.keys(FACES);
-    const sheet = canvas(3 * 21 * scale, 2 * 26 * scale);
+    const sheet = canvas(3 * 21 * scale, 3 * 26 * scale);
     for (let i = 0; i < sheet.data.length; i += 4) {
         Buffer.from([18, 48, 63, 255]).copy(sheet.data, i);
     }
@@ -223,7 +260,7 @@ if (process.argv[3]) {
         const left = (i % 3) * 21 * scale;
         const top = Math.floor(i / 3) * 26 * scale;
         paint(sheet, FORMS[name], left, top, scale);
-        paint(sheet, FACES[faces[i]], left + 5 * scale, top + faceRow[name] * scale, scale);
+        paint(sheet, FACES[faces[i % faces.length]], left + 5 * scale, top + faceRow[name] * scale, scale);
         paint(sheet, POT, left + 3 * scale, top + 18 * scale, scale);
     });
     writePng(process.argv[3], sheet);

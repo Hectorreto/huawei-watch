@@ -13,6 +13,7 @@
     <image class="pest pest-0" src="/common/pest.png" show="{{ pest0 }}"></image>
     <image class="pest pest-1" src="/common/pest.png" show="{{ pest1 }}"></image>
     <image class="pest pest-2" src="/common/pest.png" show="{{ pest2 }}"></image>
+    <image class="seed-icon" src="/common/seed_icon.png" show="{{ seedShown }}"></image>
     <image class="button button-water" src="/common/btn_water.png" show="{{ view === 'main' }}"></image>
     <image class="button button-sun" src="/common/btn_sun.png" show="{{ view === 'main' }}"></image>
     <image class="button button-play" src="/common/btn_play.png" show="{{ view === 'main' }}"></image>
@@ -27,6 +28,21 @@
         <text class="status-row">{{ statusHealth }}</text>
         <text class="status-small">{{ statusGeneration }}</text>
         <text class="status-small">{{ statusRecord }}</text>
+        <text class="status-small">Toca: herbario</text>
+    </div>
+    <div class="status" show="{{ view === 'herbarium' }}">
+        <text class="status-title">{{ herbariumTitle }}</text>
+        <div class="herb-row">
+            <image class="herb" src="{{ herb0 }}"></image>
+            <image class="herb" src="{{ herb1 }}"></image>
+            <image class="herb" src="{{ herb2 }}"></image>
+        </div>
+        <div class="herb-row">
+            <image class="herb" src="{{ herb3 }}"></image>
+            <image class="herb" src="{{ herb4 }}"></image>
+            <image class="herb" src="{{ herb5 }}"></image>
+        </div>
+        <text class="status-small">{{ herbariumHint }}</text>
     </div>
     <div class="touch" onclick="tap"></div>
 </stack>
