@@ -39,6 +39,11 @@ const MOOD_PER_HIT = 6;
 const SPARK_MS = 1100;
 const SPARK_MS_PER_HIT = 40;
 const SPARK_MIN_MS = 650;
+// The first sparks are always plain, so a new game starts easy.
+const PLAIN_SPARKS = 3;
+const GOLD_CHANCE = 0.12;
+const BUG_CHANCE = 0.15;
+export const GOLD_HITS = 3;
 
 // One wish a day, counted by what the player does. All can be done on any day, unlike cleaning,
 // which needs a bug to have appeared.
@@ -391,6 +396,19 @@ export function stroke(pet) {
 // How long a spark stays, shorter with each one caught.
 export function sparkMs(hits) {
     return Math.max(SPARK_MIN_MS, SPARK_MS - hits * SPARK_MS_PER_HIT);
+}
+
+// What comes next in the game, also the name of its image: a plain spark, a golden one worth more,
+// or a bug that costs a life if tapped and nothing if left alone.
+export function sparkKind(hits, random) {
+    if (hits < PLAIN_SPARKS) {
+        return 'spark';
+    }
+    const roll = random();
+    if (roll < GOLD_CHANCE) {
+        return 'spark_gold';
+    }
+    return roll < GOLD_CHANCE + BUG_CHANCE ? 'spark_bug' : 'spark';
 }
 
 // Returns whether this game beat the record.

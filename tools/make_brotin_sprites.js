@@ -146,6 +146,14 @@ const SPARK = [
     '....y....', '....y....', '...yWy...', 'yyyWWWyyy', '..yWWWy..', '...yWy...', '...y.y...', '..y...y..', '.y.....y.'
 ];
 
+const SPARK_GOLD = [
+    'O...O...O', '.O..O..O.', '..OyWyO..', '...yWy...', 'OOyWWWyOO', '...yWy...', '..OyWyO..', '.O..O..O.', 'O...O...O'
+];
+
+const SPARK_BUG = [
+    '..k...k..', '...k.k...', '..rrkrr..', '.rrrkrrr.', 'rrkrkrkrr', 'rrrrkrrrr', '.rrkkkrr.', '..rrkrr..', '...k.k...'
+];
+
 function checkGrid(name, grid) {
     grid.forEach((row) => {
         if (row.length !== grid[0].length) {
@@ -242,6 +250,8 @@ Object.keys(all).forEach((name) => checkGrid(name, all[name]));
 checkGrid('pot', POT);
 checkGrid('pest', PEST);
 checkGrid('spark', SPARK);
+checkGrid('spark gold', SPARK_GOLD);
+checkGrid('spark bug', SPARK_BUG);
 checkGrid('seed icon', SEED_ICON);
 checkGrid('locked', LOCKED);
 
@@ -255,6 +265,8 @@ Object.keys(FX).forEach((name) => sprite(path.join(common, 'fx_' + name + '.png'
 sprite(path.join(common, 'pot.png'), POT, 9);
 sprite(path.join(common, 'pest.png'), PEST, 8);
 sprite(path.join(common, 'spark.png'), SPARK, 8);
+sprite(path.join(common, 'spark_gold.png'), SPARK_GOLD, 8);
+sprite(path.join(common, 'spark_bug.png'), SPARK_BUG, 8);
 sprite(path.join(common, 'seed_icon.png'), SEED_ICON, 6);
 sprite(path.join(common, 'mini_locked.png'), LOCKED, 3);
 ['flower', 'sunflower', 'lily', 'golden', 'cactus', 'mushroom'].forEach((name) => {

@@ -20,7 +20,7 @@
     <image class="button button-sun" src="/common/btn_sun.png" show="{{ view === 'main' }}"></image>
     <image class="button button-play" src="/common/btn_play.png" show="{{ view === 'main' }}"></image>
     <image class="button button-clean" src="/common/btn_clean.png" show="{{ view === 'main' }}"></image>
-    <image class="spark" src="/common/spark.png" show="{{ sparkShown }}" style="left: {{ sparkX }}px; top: {{ sparkY }}px;"></image>
+    <image class="spark" src="{{ sparkSrc }}" show="{{ sparkShown }}" style="left: {{ sparkX }}px; top: {{ sparkY }}px;"></image>
     <div class="status" show="{{ view === 'status' }}">
         <text class="status-title">{{ statusForm }}</text>
         <text class="status-row">{{ statusAge }}</text>

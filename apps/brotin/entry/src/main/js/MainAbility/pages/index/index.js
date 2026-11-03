@@ -1,7 +1,7 @@
 import storage from '@system.storage';
 import {
-    GAME_LIVES, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
-    rollVisitor, receiveVisitor, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs,
+    GAME_LIVES, GOLD_HITS, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
+    rollVisitor, receiveVisitor, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, sparkKind,
     finishGame, faceFor, hintFor, formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
 
@@ -55,6 +55,7 @@ let refusing = false;
 let hits = 0;
 let lives = 0;
 let sparkOn = false;
+let kind = 'spark';
 let plantArmed = false;
 
 function hourOf(ms) {
@@ -93,6 +94,7 @@ export default {
         fxShown: false,
         fxSrc: '/common/fx_heart.png',
         sparkShown: false,
+        sparkSrc: '/common/spark.png',
         sparkX: 0,
         sparkY: 0,
         statusForm: '',
@@ -389,13 +391,18 @@ export default {
         const radius = Math.random() * SPARK_RADIUS;
         this.sparkX = Math.round(CENTRE + radius * Math.cos(angle) - SPARK_SIZE / 2);
         this.sparkY = Math.round(CENTRE + radius * Math.sin(angle) - SPARK_SIZE / 2);
+        kind = sparkKind(hits, Math.random);
+        this.sparkSrc = '/common/' + kind + '.png';
         this.sparkShown = true;
         sparkOn = true;
         sparkTimer = setTimeout(() => this.missSpark(), sparkMs(hits));
     },
+    // A bug that goes away costs nothing.
     missSpark() {
-        lives--;
-        this.showScore();
+        if (kind !== 'spark_bug') {
+            lives--;
+            this.showScore();
+        }
         this.hideSpark();
     },
     showScore() {
@@ -413,8 +420,13 @@ export default {
         const dx = x - (this.sparkX + SPARK_SIZE / 2);
         const dy = y - (this.sparkY + SPARK_SIZE / 2);
         if (dx * dx + dy * dy <= SPARK_HIT * SPARK_HIT) {
-            hits++;
-            this.showScore();
+            if (kind === 'spark_bug') {
+                lives--;
+                this.note = '¡Un bicho! ' + lives + (lives === 1 ? ' vida' : ' vidas');
+            } else {
+                hits += kind === 'spark_gold' ? GOLD_HITS : 1;
+                this.showScore();
+            }
             clearTimeout(sparkTimer);
             this.hideSpark();
         }
