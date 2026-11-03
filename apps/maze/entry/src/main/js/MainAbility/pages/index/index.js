@@ -16,9 +16,17 @@ const COL_W = 12;
 const PLANE = 0.66;
 // Wall height on screen is WALL_SCALE / distance, in px.
 const WALL_SCALE = 380;
-// Fixed bands above and below the horizon; a wall that shrinks is painted over with them.
-const CEILING = '#1c2233';
-const FLOOR = '#3a2c20';
+// One look per level, in turn, so each new maze looks different even once the size stops
+// growing: wall colour and the fixed bands above and below the horizon (a wall that shrinks
+// is painted over with them). No green walls, so the exit door stands out, and no cyan, so
+// the gems do.
+const THEMES = [
+    { wall: [230, 160, 70], ceiling: '#1c2233', floor: '#3a2c20' },
+    { wall: [120, 150, 235], ceiling: '#101428', floor: '#26283c' },
+    { wall: [215, 95, 75], ceiling: '#2a1414', floor: '#301c18' },
+    { wall: [175, 110, 220], ceiling: '#1a1030', floor: '#2a2030' },
+    { wall: [190, 190, 175], ceiling: '#181c1c', floor: '#303028' }
+];
 // Draw calls allowed on one canvas before it is remade, under the ~1,100 that crash it.
 const CANVAS_LIMIT = 900;
 const CANVAS_WAIT_MS = 50;
@@ -45,6 +53,7 @@ let grid = [];
 // Grid side: 2 * cells + 1, walls included.
 let size = 15;
 let level = 0;
+let theme = THEMES[0];
 // Fewest steps to the exit, by maze size (key 'best' + cells in storage), 0 if none.
 let best = 0;
 let seed = 1;
@@ -74,6 +83,7 @@ function random() {
 // outer wall next to the bottom-right cell.
 function makeMaze() {
     size = 2 * LEVEL_CELLS[Math.min(level, LEVEL_CELLS.length - 1)] + 1;
+    theme = THEMES[level % THEMES.length];
     grid = [];
     for (let y = 0; y < size; y++) {
         const row = [];
@@ -182,7 +192,7 @@ function hex2(v) {
 function wallColour(cell, side, dist) {
     const band = Math.min(3, Math.floor(dist / 2));
     const light = (side === 0 ? 1 : 0.75) * (1 - band * 0.2);
-    const base = cell === EXIT ? [80, 220, 110] : [230, 160, 70];
+    const base = cell === EXIT ? [80, 220, 110] : theme.wall;
     return '#' + base.map((v) => hex2(Math.round(v * light))).join('');
 }
 
@@ -318,9 +328,9 @@ export default {
                     drawMap();
                     return;
                 }
-                ctx.fillStyle = CEILING;
+                ctx.fillStyle = theme.ceiling;
                 ctx.fillRect(0, 0, SCREEN, SCREEN / 2);
-                ctx.fillStyle = FLOOR;
+                ctx.fillStyle = theme.floor;
                 ctx.fillRect(0, SCREEN / 2, SCREEN, SCREEN / 2);
                 onCanvas = 2;
                 for (let c = 0; c < COLS; c++) {
@@ -359,8 +369,8 @@ export default {
                 fill(x, mid + old / 2, mid + h / 2, view[c].colour);
             }
             if (h < old) {
-                fill(x, mid - old / 2, mid - h / 2, CEILING);
-                fill(x, mid + h / 2, mid + old / 2, FLOOR);
+                fill(x, mid - old / 2, mid - h / 2, theme.ceiling);
+                fill(x, mid + h / 2, mid + old / 2, theme.floor);
             }
             shownH[c] = h;
             shownColour[c] = view[c].colour;
