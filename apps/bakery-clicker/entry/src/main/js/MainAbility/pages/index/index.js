@@ -109,6 +109,10 @@ const UPGRADES = [
 // to keep the list as light as the shop.
 const ONCE_SHOWN = 4;
 const PRICE_GROWTH = 1.15;
+// A tap on a card buys one, plus as many more as fit in this share of the cookies, up to BULK_MAX.
+// After a day away it saves dozens of taps, each of which would rebuild the list.
+const BULK_SHARE = 0.25;
+const BULK_MAX = 25;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
 const OFFLINE_MAX_S = 24 * 60 * 60;
 // Messages in place of the rate (offline earnings, achievements) show one after another.
@@ -580,7 +584,9 @@ export default {
 
         this.pressCookie();
         this.showPlus();
-
+        this.saveSoon();
+    },
+    saveSoon() {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             this.save();
@@ -847,19 +853,29 @@ export default {
             this.openBatchConfirm();
             return;
         }
-        const price = this.price(index);
-        if (this.count < price || (UPGRADES[index].once && this.owned[index] > 0)) {
+        const once = UPGRADES[index].once;
+        let spent = this.price(index);
+        if (this.count < spent || (once && this.owned[index] > 0)) {
             return;
         }
         const owned = this.owned.slice();
         owned[index]++;
-        this.count -= price;
+        const budget = this.count * BULK_SHARE;
+        let next = this.price(index, owned[index]);
+        while (!once && owned[index] - this.owned[index] < BULK_MAX && spent + next <= budget) {
+            spent += next;
+            owned[index]++;
+            next = this.price(index, owned[index]);
+        }
+        this.count -= spent;
         this.setOwned(owned);
         this.setCount(this.count);
-        this.save();
+        // Once purchases pause, as with taps, since a save is five writes to flash.
+        this.saveSoon();
     },
-    price(index) {
-        return Math.floor(UPGRADES[index].base * Math.pow(PRICE_GROWTH, this.owned[index]));
+    price(index, owned) {
+        const n = owned === undefined ? this.owned[index] : owned;
+        return Math.floor(UPGRADES[index].base * Math.pow(PRICE_GROWTH, n));
     },
     // New cookies, as opposed to setCount, which also spends them.
     bake(n) {
