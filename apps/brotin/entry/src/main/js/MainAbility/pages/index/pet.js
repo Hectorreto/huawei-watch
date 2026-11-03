@@ -21,7 +21,7 @@ const YOUNG_MIN = 720;
 const ADULT_MIN = 2880;
 // An adult has a seed to plant a day after it matures, and stays until the player plants it.
 const RIPE_MIN = 4320;
-const GOLDEN_CARE = 86;
+const GOLDEN_CARE = 87;
 const FLOWER_CARE = 70;
 const CACTUS_CARE = 50;
 // A long absence is worked out in at most this many steps, since the watch's JS is slow.
@@ -29,6 +29,8 @@ const MAX_STEPS = 200;
 const GIVE = 35;
 const FULL = 95;
 const PET_MOOD = 3;
+// Stroking lifts the mood only this far; above it the game is what helps.
+const STROKE_CAP = 60;
 const CLEAN_MOOD = 5;
 export const GAME_LIVES = 3;
 const MOOD_PER_HIT = 6;
@@ -130,12 +132,15 @@ export function deserialize(text, now) {
     return pet;
 }
 
-// A save from before the herbarium may already hold an adult.
+// Returns whether the pet's form is new to the herbarium. A save from before the herbarium may
+// already hold an adult.
 function markFound(pet) {
     const place = ADULTS.indexOf(pet.form);
-    if (place >= 0) {
-        pet.found |= 1 << place;
+    if (place < 0 || isFound(pet, place)) {
+        return false;
     }
+    pet.found |= 1 << place;
+    return true;
 }
 
 export function isNight(hour) {
@@ -171,8 +176,10 @@ function grow(pet, events) {
     }
     if (next !== pet.form) {
         pet.form = next;
-        markFound(pet);
         events.push(next);
+        if (markFound(pet)) {
+            events.push('new');
+        }
     }
 }
 
@@ -216,8 +223,8 @@ export function plantSeed(pet, now) {
     return newPet(now, pet);
 }
 
-// Moves the pet to now and returns what happened ('sprout', 'young', an adult form, 'ripe',
-// 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
+// Moves the pet to now and returns what happened ('sprout', 'young', an adult form, 'new' when
+// that form is new to the herbarium, 'ripe', 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
 // the generation goes up. hourOf(ms) gives the local hour; random() is as Math.random.
 export function advance(pet, now, hourOf, random) {
     const events = [];
@@ -325,9 +332,14 @@ export function clean(pet) {
     return '';
 }
 
+// Returns whether it lifted the mood. It always counts for the wish.
 export function stroke(pet) {
-    pet.mood = clamp(pet.mood + PET_MOOD);
+    const gained = pet.mood < STROKE_CAP;
+    if (gained) {
+        pet.mood = Math.min(STROKE_CAP, pet.mood + PET_MOOD);
+    }
     progressWish(pet, WISH_STROKE, 1);
+    return gained;
 }
 
 // How long a spark stays, shorter with each one caught.

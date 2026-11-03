@@ -238,9 +238,9 @@ sprite(path.join(common, 'pot.png'), POT, 9);
 sprite(path.join(common, 'pest.png'), PEST, 8);
 sprite(path.join(common, 'spark.png'), SPARK, 8);
 sprite(path.join(common, 'seed_icon.png'), SEED_ICON, 6);
-sprite(path.join(common, 'mini_locked.png'), LOCKED, 4);
+sprite(path.join(common, 'mini_locked.png'), LOCKED, 3);
 ['flower', 'sunflower', 'lily', 'golden', 'cactus', 'mushroom'].forEach((name) => {
-    sprite(path.join(common, 'mini_' + name + '.png'), FORMS[name], 4);
+    sprite(path.join(common, 'mini_' + name + '.png'), FORMS[name], 3);
 });
 launcherIcon(path.join(media, 'icon.png'), 104, 5);
 launcherIcon(path.join(media, 'icon_small.png'), 92, 4);

@@ -36,6 +36,7 @@ const EVENT_TEXT = {
     golden: '¡Una flor dorada!',
     cactus: '¡Es un cactus!',
     mushroom: '¡Es un hongo!',
+    new: 'Nueva en el herbario',
     ripe: '¡Tiene una semilla!',
     reseed: 'Se marchitó y dejó una semilla'
 };
@@ -48,6 +49,7 @@ let sparkTimer = null;
 let ticks = 0;
 let happy = false;
 let message = '';
+let queued = [];
 let hits = 0;
 let lives = 0;
 let sparkOn = false;
@@ -135,7 +137,8 @@ export default {
         const result = advance(pet, Date.now(), hourOf, Math.random);
         pet = result.pet;
         if (result.events.length > 0) {
-            this.say(EVENT_TEXT[result.events[result.events.length - 1]]);
+            const texts = result.events.map((event) => EVENT_TEXT[event]);
+            this.say(texts[0], texts.slice(1));
             this.save();
         }
         rollDay(pet, today(), Math.random);
@@ -180,16 +183,17 @@ export default {
         const face = happy ? 'happy' : faceFor(pet, this.night(), blink);
         this.faceSrc = '/common/face_' + face + '.png';
     },
-    say(text, next) {
+    say(text, more) {
         clearTimeout(messageTimer);
-        this.showMessage(text, next);
+        queued = more || [];
+        this.showMessage(text);
     },
-    // The second message follows from the timer of the first, which must not clear itself.
-    showMessage(text, next) {
+    // Each queued message follows from the timer of the last, which must not clear itself.
+    showMessage(text) {
         message = text;
         messageTimer = setTimeout(() => {
-            if (next) {
-                this.showMessage(next, '');
+            if (queued.length > 0) {
+                this.showMessage(queued.shift());
             } else {
                 message = '';
                 plantArmed = false;
@@ -212,11 +216,30 @@ export default {
         } else {
             this.cheer();
             this.save();
-            const news = takeWishNews(pet);
-            if (news) {
-                this.say(news);
-            }
+            this.tellWishNews();
         }
+        this.refresh();
+    },
+    // After whatever is being said, if anything.
+    tellWishNews() {
+        const news = takeWishNews(pet);
+        if (news && message) {
+            queued.push(news);
+        } else if (news) {
+            this.say(news);
+        }
+    },
+    // A stroke is too small to write to storage each time; the periodic save and closing keep it,
+    // unless it grants the wish.
+    tapPet() {
+        if (!stroke(pet)) {
+            this.say('Quiere jugar');
+        }
+        this.cheer();
+        if (pet.wishGranted) {
+            this.save();
+        }
+        this.tellWishNews();
         this.refresh();
     },
     // One full-screen div takes the taps, as in the maze; the click carries the position.
@@ -257,8 +280,7 @@ export default {
         } else if (action === 'status') {
             this.openStatus();
         } else if (action === 'pet' && !this.night()) {
-            stroke(pet);
-            this.finishAction('');
+            this.tapPet();
         }
     },
     // Planting replaces the adult, so it takes a second tap while the question is showing.
@@ -356,7 +378,7 @@ export default {
         const record = finishGame(pet, hits);
         this.view = 'main';
         const result = record ? '¡Récord! ' + hits + ' chispas' : 'Atrapó ' + hits + ' · Récord ' + pet.best;
-        this.say(result, takeWishNews(pet));
+        this.say(result);
         this.finishAction('');
     }
 };
