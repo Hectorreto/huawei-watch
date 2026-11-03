@@ -107,6 +107,11 @@ const GOLDEN_MAX_S = 120;
 const GOLDEN_STAY_S = 10;
 const FRENZY_MULT = 7;
 const FRENZY_S = 30;
+// The watch closes the app after a few seconds without input, so visits are often too short for
+// that wait. After this long away, a golden cookie comes 5-15 s into the visit instead.
+const GOLDEN_BACK_AWAY_S = 10 * 60;
+const GOLDEN_BACK_MIN_S = 5;
+const GOLDEN_BACK_MAX_S = 15;
 // Each day in a row after the first adds this % to taps and production, up to STREAK_MAX_PERCENT.
 // A missed day starts the streak again.
 const STREAK_STEP_PERCENT = 5;
@@ -381,6 +386,7 @@ export default {
                                 loaded = true;
                                 // Before the offline earnings, which use the production with the streak.
                                 this.updateStreak(daily);
+                                this.welcomeGolden(parseInt(savedAt, 10) || 0);
                                 this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
                                 this.checkAchievements();
                             });
@@ -396,6 +402,11 @@ export default {
     onDestroy() {
         clearInterval(tickTimer);
         this.save();
+    },
+    welcomeGolden(savedAt) {
+        if (savedAt > 0 && Date.now() - savedAt >= GOLDEN_BACK_AWAY_S * 1000) {
+            goldenIn = randomBetween(GOLDEN_BACK_MIN_S, GOLDEN_BACK_MAX_S);
+        }
     },
     // savedAt is when count was last saved, so the time since then is exactly what was not produced.
     addOfflineEarnings(savedAt) {
