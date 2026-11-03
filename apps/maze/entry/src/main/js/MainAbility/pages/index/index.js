@@ -46,6 +46,8 @@ const MAP_SIDE = 320;
 const MAP_PATH = '#5a6478';
 const MAP_PLAYER = '#ffe119';
 const MAP_GUARD = '#e6194b';
+const MAP_GEM = '#50d2f0';
+const MAP_EXIT = '#50dc6e';
 // Gems per maze, put in dead ends; picked up by stepping on them.
 const GEMS = 3;
 // Gem size and how far below the horizon it sits, as shares of the wall height there.
@@ -62,6 +64,7 @@ const PAR_SLACK = 1.5;
 const GUARD_FROM_LEVEL = 1;
 const GUARD_FAST_LEVEL = 3;
 const GUARD_WAKE = 3;
+const GUARD_WAKE_LATE = 5;
 const GUARD_EVERY = 3;
 const GUARD_EVERY_FAST = 2;
 // Its height as a share of the wall height there, and how near it starts the warnings.
@@ -72,6 +75,7 @@ const GUARD_BUZZ = 3;
 // Grid cells a catch sends the player back along the way, per cell of the maze's side. Not
 // all the way to the start: that is some 180 taps to walk again in the largest mazes.
 const GUARD_SETBACK = 2;
+const GUARD_SETBACK_SHORT = 1;
 // The daily challenge plays as this level (its size and guardian), on a maze made from the
 // date. The first finish of a day pays a bonus of one star per day of streak, up to the max.
 const DAILY_LEVEL = 1;
@@ -88,15 +92,19 @@ const RUN_FIELDS = 9;
 const IDLE_MS = 120000;
 const STAR_ON = '/common/star.png';
 const STAR_OFF = '/common/star_off.png';
-// Total stars needed for each rank.
+// Total stars needed for each rank, and what it gives from then on.
 const RANKS = [
-    { stars: 0, name: 'Novato' },
-    { stars: 10, name: 'Explorador' },
-    { stars: 30, name: 'Cazagemas' },
-    { stars: 60, name: 'Veterano' },
-    { stars: 100, name: 'Maestro' },
-    { stars: 150, name: 'Leyenda' }
+    { stars: 0, name: 'Novato', perk: '' },
+    { stars: 10, name: 'Explorador', perk: 'gemas en el mapa' },
+    { stars: 30, name: 'Cazagemas', perk: 'salida en el mapa' },
+    { stars: 60, name: 'Veterano', perk: 'guardián tardío' },
+    { stars: 100, name: 'Maestro', perk: 'retroceso menor' },
+    { stars: 150, name: 'Leyenda', perk: 'título máximo' }
 ];
+const RANK_MAP_GEMS = 1;
+const RANK_MAP_EXIT = 2;
+const RANK_LATE_GUARD = 3;
+const RANK_SHORT_SETBACK = 4;
 
 let grid = [];
 // Grid side: 2 * cells + 1, walls included.
@@ -275,7 +283,8 @@ function toStart() {
 function setBack() {
     // An odd length, so the player lands on a maze cell and never on the one between two:
     // a tap walks two grid cells, and from there the second could be a wall.
-    let keep = Math.max(1, trail.length - GUARD_SETBACK * (size - 1) / 2);
+    const back = totalStars >= RANKS[RANK_SHORT_SETBACK].stars ? GUARD_SETBACK_SHORT : GUARD_SETBACK;
+    let keep = Math.max(1, trail.length - back * (size - 1) / 2);
     keep -= (keep + 1) % 2;
     const next = trail[keep];
     trail.length = keep;
@@ -289,13 +298,19 @@ function setBack() {
     guardSteps = 0;
 }
 
+// Steps from the start or the last catch until the guardian wakes.
+function guardWake() {
+    const perCell = totalStars >= RANKS[RANK_LATE_GUARD].stars ? GUARD_WAKE_LATE : GUARD_WAKE;
+    return perCell * (size - 1) / 2;
+}
+
 // Where the guardian is on the trail, or -1 while it sleeps or on the first level. It moves
 // a whole number of cells from its steps alone, so it needs no state of its own.
 function guardIndex() {
     if (mazeLevel < GUARD_FROM_LEVEL) {
         return -1;
     }
-    const awake = guardSteps - GUARD_WAKE * (size - 1) / 2;
+    const awake = guardSteps - guardWake();
     if (awake < 0) {
         return -1;
     }
@@ -348,16 +363,21 @@ function saveDaily() {
     storage.set({ key: 'daily', value: [dailyDate, dailyStreak, dailyStars, dailyBest].join(',') });
 }
 
-// Names the player's rank and the next one for this many stars.
-function rankLines(stars) {
+function rankOf(stars) {
     let r = 0;
     while (r + 1 < RANKS.length && stars >= RANKS[r + 1].stars) {
         r++;
     }
+    return r;
+}
+
+// Names the player's rank for this many stars, and what the next one gives.
+function rankLines(stars) {
+    const r = rankOf(stars);
     return {
         rank: 'Total ' + stars + ' estrellas: ' + RANKS[r].name,
         next: r + 1 < RANKS.length
-            ? 'Faltan ' + (RANKS[r + 1].stars - stars) + ' para ' + RANKS[r + 1].name
+            ? 'Faltan ' + (RANKS[r + 1].stars - stars) + ': ' + RANKS[r + 1].perk
             : 'Rango máximo'
     };
 }
@@ -568,6 +588,16 @@ function drawMap() {
             }
             ctx.fillRect(left + start * cell, top + y * cell, (x - start) * cell, cell);
         }
+    }
+    if (totalStars >= RANKS[RANK_MAP_GEMS].stars) {
+        ctx.fillStyle = MAP_GEM;
+        for (let i = 0; i < gems.length; i++) {
+            ctx.fillRect(left + gems[i][0] * cell, top + gems[i][1] * cell, cell, cell);
+        }
+    }
+    if (totalStars >= RANKS[RANK_MAP_EXIT].stars) {
+        ctx.fillStyle = MAP_EXIT;
+        ctx.fillRect(left + (size - 1) * cell, top + (size - 2) * cell, cell, cell);
     }
     const g = guardIndex();
     if (g >= 0) {
@@ -783,7 +813,7 @@ export default {
         const gap = trail.length - 1 - g;
         if (gap <= GUARD_WARN) {
             this.note = 'Guardián a ' + gap + (gap === 1 ? ' paso' : ' pasos');
-        } else if (guardSteps - GUARD_WAKE * (size - 1) / 2 < 2) {
+        } else if (guardSteps - guardWake() < 2) {
             // A tap walks two steps, so the step it woke on may fall inside one.
             this.note = 'El guardián despertó';
         }
@@ -904,6 +934,7 @@ export default {
         const allGems = gems.length === 0;
         const withinPar = taken <= par;
         const earned = 1 + (allGems ? 1 : 0) + (withinPar ? 1 : 0);
+        const rankBefore = rankOf(totalStars);
         if (daily) {
             this.scoreDaily(taken, earned);
         } else {
@@ -916,7 +947,9 @@ export default {
         this.resultGems = 'Gemas ' + gemsFound + '/' + totalGems;
         this.resultSteps = 'Pasos ' + taken + '  par ' + par;
         this.resultRank = lines.rank;
-        this.resultNext = lines.next;
+        // A rank just reached says what it gives, over what the next one needs.
+        const rankNow = rankOf(totalStars);
+        this.resultNext = rankNow > rankBefore ? 'Nuevo: ' + RANKS[rankNow].perk : lines.next;
         this.result = true;
         resultOpen = true;
         setTimeout(() => {
