@@ -1,7 +1,7 @@
 import storage from '@system.storage';
 import {
     GAME_LIVES, GOLD_HITS, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
-    rollVisitor, receiveVisitor, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, sparkKind,
+    rollVisitor, receiveVisitor, canChangePot, nextPot, potImage, takePotNews, potGoal, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, sparkKind,
     finishGame, faceFor, hintFor, formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
 
@@ -87,6 +87,7 @@ export default {
         pest0: false,
         pest1: false,
         pest2: false,
+        potSrc: '/common/pot.png',
         seedShown: false,
         visitorShown: false,
         visitorSrc: '/common/visitor_butterfly.png',
@@ -107,6 +108,7 @@ export default {
         statusRecord: '',
         herbariumTitle: '',
         herbariumHint: '',
+        herbariumPot: '',
         herb0: LOCKED_SRC,
         herb1: LOCKED_SRC,
         herb2: LOCKED_SRC,
@@ -152,6 +154,7 @@ export default {
         }
         rollDay(pet, today(), Math.random);
         rollVisitor(pet, Date.now(), this.night(), Math.random);
+        this.tellNews();
         this.refresh();
     },
     tick() {
@@ -178,6 +181,7 @@ export default {
         this.pest0 = pet.bugs > 0;
         this.pest1 = pet.bugs > 1;
         this.pest2 = pet.bugs > 2;
+        this.potSrc = '/common/' + potImage(pet) + '.png';
         this.seedShown = isRipe(pet);
         this.visitorShown = pet.visitor > 0 && this.view !== 'game';
         if (pet.visitor > 0) {
@@ -248,18 +252,27 @@ export default {
         } else {
             this.cheer(fx);
             this.save();
-            this.tellWishNews();
+            this.tellNews();
         }
         this.refresh();
     },
-    // After whatever is being said, if anything.
-    tellWishNews() {
-        const news = takeWishNews(pet);
-        if (news && message) {
-            queued.push(news);
-        } else if (news) {
-            this.say(news);
+    // After whatever is being said, if anything. The game's note is its own, so its news waits.
+    tellNews() {
+        if (this.view === 'game') {
+            return;
         }
+        const wish = takeWishNews(pet);
+        const pot = takePotNews(pet);
+        if (pot) {
+            this.save();
+        }
+        [wish, pot].forEach((news) => {
+            if (news && message) {
+                queued.push(news);
+            } else if (news) {
+                this.say(news);
+            }
+        });
     },
     // A stroke is too small to write to storage each time; the periodic save and closing keep it,
     // unless it grants the wish.
@@ -272,7 +285,7 @@ export default {
         if (pet.wishGranted) {
             this.save();
         }
-        this.tellWishNews();
+        this.tellNews();
         this.refresh();
     },
     // One full-screen div takes the taps, as in the maze; the click carries the position.
@@ -314,7 +327,11 @@ export default {
             }
         } else if (action === 'status') {
             this.openStatus();
-        } else if (action === 'pet') {
+        } else if (action === 'pot' && canChangePot(pet)) {
+            nextPot(pet);
+            this.save();
+            this.refresh();
+        } else if (action === 'pet' || action === 'pot') {
             if (this.night()) {
                 this.finishAction('Está dormido');
             } else {
@@ -349,6 +366,7 @@ export default {
     openHerbarium() {
         this.herbariumTitle = 'Herbario ' + foundCount(pet) + '/' + ADULTS.length;
         this.herbariumHint = herbariumHint(pet);
+        this.herbariumPot = potGoal(pet);
         this.herb0 = this.herbSrc(0);
         this.herb1 = this.herbSrc(1);
         this.herb2 = this.herbSrc(2);

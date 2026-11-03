@@ -9,7 +9,7 @@
     <text class="note">{{ note }}</text>
     <image class="pet" src="{{ petSrc }}" style="top: {{ petTop }}px;"></image>
     <image class="face" src="{{ faceSrc }}" style="left: {{ faceLeft }}px; top: {{ faceTop }}px;"></image>
-    <image class="pot" src="/common/pot.png"></image>
+    <image class="pot" src="{{ potSrc }}"></image>
     <image class="pest pest-0" src="/common/pest.png" show="{{ pest0 }}"></image>
     <image class="pest pest-1" src="/common/pest.png" show="{{ pest1 }}"></image>
     <image class="pest pest-2" src="/common/pest.png" show="{{ pest2 }}"></image>
@@ -45,6 +45,7 @@
             <image class="herb" src="{{ herb5 }}"></image>
         </div>
         <text class="status-small">{{ herbariumHint }}</text>
+        <text class="status-small">{{ herbariumPot }}</text>
     </div>
     <div class="touch" onclick="tap"></div>
 </stack>

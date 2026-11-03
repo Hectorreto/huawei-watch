@@ -92,6 +92,13 @@ const POT = [
     '.TttttttttttT.', '..TttttttttT..', '...TTTTTTTT...'
 ];
 
+// The pots earned by playing, the same shape in other colours.
+const POTS = {
+    pot_blue: recolour(POT, { T: 'd', t: 'D' }),
+    pot_pink: recolour(POT, { T: 'P', t: 'p' }),
+    pot_gold: recolour(POT, { T: 'O', t: 'Y' })
+};
+
 // The action buttons, 11 x 11, with their round chip in the art.
 const BUTTONS = {
     water: [
@@ -263,6 +270,7 @@ Object.keys(BUTTONS).forEach((name) => sprite(path.join(common, 'btn_' + name + 
 Object.keys(VISITORS).forEach((name) => sprite(path.join(common, 'visitor_' + name + '.png'), VISITORS[name], 6));
 Object.keys(FX).forEach((name) => sprite(path.join(common, 'fx_' + name + '.png'), FX[name], 6));
 sprite(path.join(common, 'pot.png'), POT, 9);
+Object.keys(POTS).forEach((name) => sprite(path.join(common, name + '.png'), POTS[name], 9));
 sprite(path.join(common, 'pest.png'), PEST, 8);
 sprite(path.join(common, 'spark.png'), SPARK, 8);
 sprite(path.join(common, 'spark_gold.png'), SPARK_GOLD, 8);

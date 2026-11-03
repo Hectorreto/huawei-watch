@@ -70,6 +70,16 @@ const LADYBUG_MOOD = 10;
 // pet.visitor is a place here plus 1; 0 is nobody. The star is last.
 export const VISITORS = ['butterfly', 'cloud', 'ladybug', 'star'];
 
+// Pots earned for good; pet.pot is a place here. Each also names its image.
+const POT_STREAK = 3;
+const POT_SPARKS = 15;
+const POTS = [
+    { image: 'pot', goal: '', earned: () => true },
+    { image: 'pot_blue', goal: 'Maceta: racha de ' + POT_STREAK + ' días', earned: (pet) => pet.bestStreak >= POT_STREAK },
+    { image: 'pot_pink', goal: 'Maceta: ' + POT_SPARKS + ' chispas', earned: (pet) => pet.best >= POT_SPARKS },
+    { image: 'pot_gold', goal: 'Maceta: herbario completo', earned: (pet) => foundCount(pet) === ADULTS.length }
+];
+
 // The row of each form's art where its face goes.
 export const FACE_ROW = {
     seed: 13, sprout: 13, young: 13, flower: 6, sunflower: 6, lily: 6, golden: 6, cactus: 13, mushroom: 12
@@ -92,7 +102,8 @@ function clamp(value) {
 
 // What the player has earned stays when a new seed replaces the pet.
 const KEPT = [
-    'blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak', 'found', 'lastVisit', 'visitor'
+    'blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak', 'found', 'lastVisit', 'visitor',
+    'bestStreak', 'pot', 'potsSeen'
 ];
 
 export function newPet(now, previous) {
@@ -118,7 +129,10 @@ export function newPet(now, previous) {
         suns: 0,
         found: 0,
         lastVisit: now,
-        visitor: 0
+        visitor: 0,
+        bestStreak: 0,
+        pot: 0,
+        potsSeen: 1
     };
     if (previous) {
         KEPT.forEach((field) => {
@@ -130,7 +144,8 @@ export function newPet(now, previous) {
 
 // New fields go at the end: older saves simply lack them and they load as 0.
 const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best', 'wishDay', 'wishKind',
-    'wishDone', 'doneDay', 'streak', 'waters', 'suns', 'found', 'lastVisit', 'visitor'];
+    'wishDone', 'doneDay', 'streak', 'waters', 'suns', 'found', 'lastVisit', 'visitor',
+    'bestStreak', 'pot', 'potsSeen'];
 const OLDEST_FIELDS = 10;
 
 // "form,water,sun,..." with no JSON, as the other apps save.
@@ -148,6 +163,8 @@ export function deserialize(text, now) {
         pet[FIELDS[i]] = parseInt(parts[i + 1], 10) || 0;
     }
     pet.generation = Math.max(1, pet.generation);
+    pet.bestStreak = Math.max(pet.bestStreak, pet.streak);
+    pet.potsSeen = Math.max(1, pet.potsSeen);
     markFound(pet);
     return pet;
 }
@@ -296,10 +313,50 @@ function progressWish(pet, kind, amount) {
     if (pet.wishDone >= WISHES[kind].goal) {
         pet.doneDay = pet.wishDay;
         pet.streak++;
+        pet.bestStreak = Math.max(pet.bestStreak, pet.streak);
         pet.mood = clamp(pet.mood + WISH_MOOD);
         pet.careSum += WISH_CARE * ADULT_MIN;
         pet.wishGranted = true;
     }
+}
+
+function earnedPots(pet) {
+    return POTS.filter((pot) => pot.earned(pet)).length;
+}
+
+export function canChangePot(pet) {
+    return earnedPots(pet) > 1;
+}
+
+// The next pot earned after the one in use.
+export function nextPot(pet) {
+    let place = pet.pot;
+    do {
+        place = (place + 1) % POTS.length;
+    } while (!POTS[place].earned(pet));
+    pet.pot = place;
+}
+
+export function potImage(pet) {
+    const pot = POTS[pet.pot];
+    return pot ? pot.image : POTS[0].image;
+}
+
+// The message for a pot just earned, once; '' if there is none. A save that already earned one
+// tells it on opening.
+export function takePotNews(pet) {
+    const earned = earnedPots(pet);
+    if (earned <= pet.potsSeen) {
+        return '';
+    }
+    pet.potsSeen = earned;
+    return '¡Maceta nueva! Tócala';
+}
+
+// What the next pot takes; '' once all are earned.
+export function potGoal(pet) {
+    const missing = POTS.filter((pot) => !pot.earned(pet));
+    return missing.length > 0 ? missing[0].goal : '';
 }
 
 // The message for a wish just granted, once; '' if there is none.
@@ -513,6 +570,10 @@ const SEED_RADIUS = 44;
 const VISITOR_X = 373;
 const VISITOR_Y = 157;
 const VISITOR_RADIUS = 44;
+const POT_LEFT = 170;
+const POT_RIGHT = 296;
+const POT_TOP = 296;
+const POT_BOTTOM = 359;
 
 // What a tap at x, y on the main view means. The pet is everything left between the buttons.
 export function hit(x, y) {
@@ -536,6 +597,9 @@ export function hit(x, y) {
     const vy = y - VISITOR_Y;
     if (vx * vx + vy * vy <= VISITOR_RADIUS * VISITOR_RADIUS) {
         return 'visitor';
+    }
+    if (x >= POT_LEFT && x <= POT_RIGHT && y >= POT_TOP && y <= POT_BOTTOM) {
+        return 'pot';
     }
     return x > 130 && x < 336 && y < 360 ? 'pet' : '';
 }
