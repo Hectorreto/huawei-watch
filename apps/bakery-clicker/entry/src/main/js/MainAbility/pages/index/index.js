@@ -202,6 +202,9 @@ let boost = UPGRADES.map(() => 1);
 // The entries the open shop or upgrades view lists, and what its cards last showed.
 let shownIds = [];
 let itemsKey = '';
+// The cheapest entry on sale and its price, so each new cookie only needs one comparison.
+let cheapestId = 0;
+let cheapestPrice = Infinity;
 // Saved as "daily": the last day the game was opened, the streak up to it and the best streak.
 let streakDay = 0;
 let streak = 1;
@@ -352,6 +355,7 @@ export default {
         frenzyLeft: 0,
         frenzyText: '',
         golden: '',
+        canBuy: false,
         plusText: '+1',
         items: [],
         cookieSrc: themePath(THEMES[0].id),
@@ -784,6 +788,7 @@ export default {
     setCount(count) {
         this.count = count;
         this.countText = formatCount(count);
+        this.updateCanBuy();
         this.throttledArc();
         if (this.view === 'shop' || this.view === 'upgrades') {
             this.refreshItems();
@@ -823,6 +828,8 @@ export default {
         const percent = 100 + streakPercent();
         this.tapPower = Math.floor((tap + Math.floor(cps * tapShare)) * percent / 100);
         this.cps = Math.floor(cps * percent / 100);
+        this.updateCheapest();
+        this.updateCanBuy();
         this.updateRates();
         this.refreshItems();
         this.checkAchievements();
@@ -869,6 +876,32 @@ export default {
             this.save();
         }
     },
+    // On sale: its "needs" is met, and a one-time upgrade is not bought yet.
+    onSale(u, i) {
+        return (u.needs === undefined || this.owned[u.needs] > 0) && !(u.once && this.owned[i] > 0);
+    },
+    updateCheapest() {
+        cheapestPrice = Infinity;
+        UPGRADES.forEach((u, i) => {
+            if (this.onSale(u, i) && this.price(i) < cheapestPrice) {
+                cheapestPrice = this.price(i);
+                cheapestId = i;
+            }
+        });
+    },
+    updateCanBuy() {
+        const canBuy = this.count >= cheapestPrice;
+        if (canBuy !== this.canBuy) {
+            this.canBuy = canBuy;
+        }
+    },
+    openCheapest() {
+        if (UPGRADES[cheapestId].building) {
+            this.openShop();
+        } else {
+            this.openUpgrades();
+        }
+    },
     // Chosen only when a view opens: a list keeps its length while it is alive, since swapping a
     // "for" array under a living list closed the drawing lab on the watch. So what a purchase
     // unlocks shows the next time, and a one-time upgrade just bought keeps its card until then.
@@ -876,11 +909,11 @@ export default {
         let once = 0;
         shownIds = [];
         UPGRADES.forEach((u, i) => {
-            if (u.building !== buildings || (u.needs !== undefined && this.owned[u.needs] === 0)) {
+            if (u.building !== buildings || !this.onSale(u, i)) {
                 return;
             }
             if (u.once) {
-                if (this.owned[i] > 0 || once === ONCE_SHOWN) {
+                if (once === ONCE_SHOWN) {
                     return;
                 }
                 once++;
