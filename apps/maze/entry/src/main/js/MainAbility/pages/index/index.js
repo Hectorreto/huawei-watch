@@ -30,7 +30,8 @@ const THEMES = [
 // Draw calls allowed on one canvas before it is remade, under the ~1,100 that crash it.
 const CANVAS_LIMIT = 900;
 const CANVAS_WAIT_MS = 50;
-const WIN_MS = 1500;
+// Taps are ignored this long on the result screen, so a fast last step does not skip it.
+const RESULT_LOCK_MS = 600;
 // North, east, south, west, as steps on the grid (y grows downwards).
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 const COMPASS = ['N', 'E', 'S', 'O'];
@@ -48,6 +49,21 @@ const GEMS = 3;
 // Gem size and how far below the horizon it sits, as shares of the wall height there.
 const GEM_SIZE = 0.35;
 const GEM_FLOOR = 0.35;
+// Steps allowed for the third star: this share of the shortest walk that takes every gem
+// and leaves. About a third of blind depth-first walks that take all gems make it at
+// 7 x 7 cells and about a sixth at 15 x 15 (in Node); a player also sees dead ends from afar.
+const PAR_SLACK = 1.5;
+const STAR_ON = '/common/star.png';
+const STAR_OFF = '/common/star_off.png';
+// Total stars needed for each rank.
+const RANKS = [
+    { stars: 0, name: 'Novato' },
+    { stars: 10, name: 'Explorador' },
+    { stars: 30, name: 'Cazagemas' },
+    { stars: 60, name: 'Veterano' },
+    { stars: 100, name: 'Maestro' },
+    { stars: 150, name: 'Leyenda' }
+];
 
 let grid = [];
 // Grid side: 2 * cells + 1, walls included.
@@ -56,6 +72,10 @@ let level = 0;
 let theme = THEMES[0];
 // Fewest steps to the exit, by maze size (key 'best' + cells in storage), 0 if none.
 let best = 0;
+// Stars earned in all mazes so far (key 'stars' in storage).
+let totalStars = 0;
+// Steps allowed for this maze's third star.
+let par = 0;
 let seed = 1;
 let px = 1;
 let py = 1;
@@ -65,6 +85,7 @@ let ctx = null;
 let onCanvas = 0;
 let busy = true;
 let mapOpen = false;
+let resultOpen = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
 // Gems still in the maze, as [x, y] grid cells, and how many were picked up.
@@ -85,6 +106,11 @@ function makeMaze() {
     size = 2 * LEVEL_CELLS[Math.min(level, LEVEL_CELLS.length - 1)] + 1;
     theme = THEMES[level % THEMES.length];
     grid = [];
+    // The cell each cell was carved from, by y * size + x, to measure walks in placeGems.
+    const parent = [];
+    for (let i = 0; i < size * size; i++) {
+        parent.push(-1);
+    }
     for (let y = 0; y < size; y++) {
         const row = [];
         for (let x = 0; x < size; x++) {
@@ -109,9 +135,15 @@ function makeMaze() {
             continue;
         }
         const d = options[Math.floor(random() * options.length)];
-        grid[cur[1] + DIRS[d][1]][cur[0] + DIRS[d][0]] = 0;
-        grid[cur[1] + 2 * DIRS[d][1]][cur[0] + 2 * DIRS[d][0]] = 0;
-        stack.push([cur[0] + 2 * DIRS[d][0], cur[1] + 2 * DIRS[d][1]]);
+        const wx = cur[0] + DIRS[d][0];
+        const wy = cur[1] + DIRS[d][1];
+        const nx = wx + DIRS[d][0];
+        const ny = wy + DIRS[d][1];
+        grid[wy][wx] = 0;
+        grid[ny][nx] = 0;
+        parent[wy * size + wx] = cur[1] * size + cur[0];
+        parent[ny * size + nx] = wy * size + wx;
+        stack.push([nx, ny]);
     }
     grid[size - 2][size - 1] = EXIT;
     px = 1;
@@ -124,6 +156,46 @@ function makeMaze() {
     }
     visited[py * size + px] = 1;
     placeGems();
+    par = Math.round(shortestWalk(parent) * PAR_SLACK);
+}
+
+// Steps of the shortest walk from the start through every gem and out of the door. The maze
+// is a tree: that walk goes twice over every cell on the way to a gem or the exit, except
+// for the way to the exit, which it walks once.
+function shortestWalk(parent) {
+    const start = py * size + px;
+    const exitCell = (size - 2) * size + size - 2;
+    let toExit = 0;
+    for (let c = exitCell; c !== start; c = parent[c]) {
+        toExit++;
+    }
+    const marks = {};
+    let cells = 0;
+    const targets = [exitCell];
+    for (let i = 0; i < gems.length; i++) {
+        targets.push(gems[i][1] * size + gems[i][0]);
+    }
+    for (let i = 0; i < targets.length; i++) {
+        for (let c = targets[i]; c !== start && !marks[c]; c = parent[c]) {
+            marks[c] = true;
+            cells++;
+        }
+    }
+    return 2 * cells - toExit + 1;
+}
+
+// Names the player's rank and the next one for this many stars.
+function rankLines(stars) {
+    let r = 0;
+    while (r + 1 < RANKS.length && stars >= RANKS[r + 1].stars) {
+        r++;
+    }
+    return {
+        rank: 'Total ' + stars + ' estrellas: ' + RANKS[r].name,
+        next: r + 1 < RANKS.length
+            ? 'Faltan ' + (RANKS[r + 1].stars - stars) + ' para ' + RANKS[r + 1].name
+            : 'Rango máximo'
+    };
 }
 
 // Puts the gems in random dead ends (cells with one way out), never on the start.
@@ -289,7 +361,16 @@ export default {
         hud: '',
         record: '',
         note: '',
-        sprites: []
+        sprites: [],
+        result: false,
+        resultTitle: '',
+        starGems: STAR_OFF,
+        starPar: STAR_OFF,
+        resultGems: '',
+        resultSteps: '',
+        resultRecord: '',
+        resultRank: '',
+        resultNext: ''
     },
     onInit() {
         try {
@@ -300,7 +381,10 @@ export default {
         seed = Date.now() & 0x7fffffff;
         loadNumber('level', (value) => {
             level = value;
-            this.startMaze();
+            loadNumber('stars', (stars) => {
+                totalStars = stars;
+                this.startMaze();
+            });
         });
     },
     // Makes the maze for the current level and loads that size's record before showing it.
@@ -376,15 +460,22 @@ export default {
             shownColour[c] = view[c].colour;
         }
         this.sprites = gemSprites(view);
-        this.hud = COMPASS[facing] + '  ' + steps;
+        this.hud = COMPASS[facing] + ' ' + steps + '/' + par;
         this.record = 'Nivel ' + (level + 1) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
     },
     // Left third turns left, right third turns right, the bottom turns around, the compass
     // at the top opens the map, the rest of the middle steps forward; while the map is open
-    // any tap closes it. The click event carries the position (globalX, globalY);
+    // any tap closes it, and on the result screen any tap starts the next maze. The click event carries the position (globalX, globalY);
     // ontouchstart on this div did not fire in the Previewer.
     tap(e) {
         if (busy) {
+            return;
+        }
+        if (resultOpen) {
+            resultOpen = false;
+            busy = true;
+            this.result = false;
+            this.startMaze();
             return;
         }
         const touchX = e && typeof e.globalX === 'number' ? e.globalX : SCREEN / 2;
@@ -432,21 +523,36 @@ export default {
         }
         this.draw();
     },
-    // Shows the steps, saves a new record for this size, and moves on to the next level.
+    // Scores the maze: one star for leaving, one for all its gems, one for staying within par.
+    // Saves the record, the stars and the next level, and shows the result until a tap.
     win() {
         busy = true;
         const taken = steps + 1;
+        const totalGems = gems.length + gemsFound;
+        const allGems = gems.length === 0;
+        const withinPar = taken <= par;
+        totalStars += 1 + (allGems ? 1 : 0) + (withinPar ? 1 : 0);
         if (best === 0 || taken < best) {
-            this.note = 'Nuevo récord: ' + taken + ' pasos';
+            this.resultRecord = 'Nuevo récord';
             storage.set({ key: 'best' + (size - 1) / 2, value: String(taken) });
         } else {
-            this.note = 'Salida en ' + taken + ' pasos';
+            this.resultRecord = 'Récord: ' + best + ' pasos';
         }
+        const lines = rankLines(totalStars);
+        this.resultTitle = 'Nivel ' + (level + 1) + ' superado';
+        this.starGems = allGems ? STAR_ON : STAR_OFF;
+        this.starPar = withinPar ? STAR_ON : STAR_OFF;
+        this.resultGems = 'Gemas ' + gemsFound + '/' + totalGems;
+        this.resultSteps = 'Pasos ' + taken + '  par ' + par;
+        this.resultRank = lines.rank;
+        this.resultNext = lines.next;
+        this.result = true;
         level++;
         storage.set({ key: 'level', value: String(level) });
+        storage.set({ key: 'stars', value: String(totalStars) });
+        resultOpen = true;
         setTimeout(() => {
-            this.note = '';
-            this.startMaze();
-        }, WIN_MS);
+            busy = false;
+        }, RESULT_LOCK_MS);
     }
 };

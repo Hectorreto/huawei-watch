@@ -4,5 +4,16 @@
     <text class="hud">{{ hud }}</text>
     <text class="record">{{ record }}</text>
     <text class="note">{{ note }}</text>
+    <stack class="panel" if="{{ result }}">
+        <text class="result-title">{{ resultTitle }}</text>
+        <image class="star-exit" src="/common/star.png"></image>
+        <image class="star-gems" src="{{ starGems }}"></image>
+        <image class="star-par" src="{{ starPar }}"></image>
+        <text class="result-gems">{{ resultGems }}</text>
+        <text class="result-steps">{{ resultSteps }}</text>
+        <text class="result-record">{{ resultRecord }}</text>
+        <text class="result-rank">{{ resultRank }}</text>
+        <text class="result-next">{{ resultNext }}</text>
+    </stack>
     <div class="touch" onclick="tap"></div>
 </stack>
