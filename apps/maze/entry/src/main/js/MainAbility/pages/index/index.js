@@ -167,6 +167,7 @@ let busy = true;
 let mapOpen = false;
 let resultOpen = false;
 let menuOpen = false;
+let helpOpen = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
 // Gems still in the maze, as [x, y, number] with x and y grid cells, how many were picked up,
@@ -676,6 +677,7 @@ export default {
         keyX: SCREEN,
         keyY: 0,
         keyS: 64,
+        help: false,
         menu: false,
         menuLevel: '',
         menuDaily: '',
@@ -761,6 +763,11 @@ export default {
         const resumed = run !== null && restoreRun(run, parent);
         runActive = true;
         runSaved = '';
+        // The tap zones cannot be seen, so a player with no star yet is shown them first.
+        if (totalStars === 0 && !resumed) {
+            helpOpen = true;
+            this.help = true;
+        }
         if (daily) {
             best = dailyDate === today() ? dailyBest : 0;
             this.note = this.startNote(resumed, best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '');
@@ -910,6 +917,11 @@ export default {
         }
         const touchX = e && typeof e.globalX === 'number' ? e.globalX : SCREEN / 2;
         const touchY = e && typeof e.globalY === 'number' ? e.globalY : SCREEN / 2;
+        if (helpOpen) {
+            helpOpen = false;
+            this.help = false;
+            return;
+        }
         if (menuOpen) {
             menuOpen = false;
             busy = true;

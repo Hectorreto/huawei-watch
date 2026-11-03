@@ -6,6 +6,14 @@
     <text class="hud">{{ hud }}</text>
     <text class="record">{{ record }}</text>
     <text class="note">{{ note }}</text>
+    <stack class="panel" if="{{ help }}">
+        <text class="help-map">Mapa</text>
+        <text class="help-left">Girar</text>
+        <text class="help-step">Avanzar</text>
+        <text class="help-right">Girar</text>
+        <text class="help-back">Media vuelta</text>
+        <text class="help-start">Toca para empezar</text>
+    </stack>
     <stack class="panel" if="{{ menu }}">
         <text class="menu-title">Laberinto</text>
         <div class="menu-levels"></div>

@@ -49,6 +49,61 @@
   top: 0px;
   background-color: #000000;
 }
+/* Each word sits on the zone it names (see TURN_ZONE, BACK_ZONE and MAP_ZONE in index.js). */
+.help-map {
+  width: 156px;
+  height: 34px;
+  left: 155px;
+  top: 50px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-left {
+  width: 125px;
+  height: 34px;
+  left: 20px;
+  top: 200px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-step {
+  width: 156px;
+  height: 40px;
+  left: 155px;
+  top: 196px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.help-right {
+  width: 125px;
+  height: 34px;
+  left: 321px;
+  top: 200px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-back {
+  width: 300px;
+  height: 34px;
+  left: 83px;
+  top: 350px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-start {
+  width: 260px;
+  height: 28px;
+  left: 103px;
+  top: 396px;
+  font-size: 20px;
+  color: #ffe119;
+  text-align: center;
+}
 .menu-title {
   width: 340px;
   height: 40px;
