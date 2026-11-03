@@ -123,6 +123,14 @@ const FX = {
     star: ['....y....', '....y....', '...yWy...', '...yWy...', 'yyyWWWyyy', '...yWy...', '...yWy...', '....y....', '....y....']
 };
 
+// What comes by now and then.
+const VISITORS = {
+    butterfly: ['.OO...OO.', 'OyyO.OyyO', 'OyWykyWyO', 'OyyykyyyO', '.OOykyOO.', '.OyOkOyO.', '.Oy.k.yO.', '..O...O..', '.........'],
+    cloud: ['.........', '...WWW...', '..WWWWW..', '.WWWWWWW.', 'WWWWWWWWW', 'WCCCCCCCW', '.........', '.D..D..D.', '..D..D...'],
+    ladybug: ['...k.k...', '....k....', '..kkkkk..', '.rrkkkrr.', 'rrkrkrkrr', 'rrrrkrrrr', 'rkrrkrrkr', '.rrrkrrr.', '..rrkrr..'],
+    star: ['.......Wy', '......yWy', '....WyWy.', '...yWWy..', '.yWWWy...', '..yWy.y..', '...y...y.', '..y......', '.y.......']
+};
+
 // A form not yet in the herbarium.
 const LOCKED = [
     '....................', '.......nnnnnn.......', '.....nnnnnnnnnn.....', '....nnnnnnnnnnnn....',
@@ -229,7 +237,7 @@ if (!app) {
     console.error('Usage: node tools/make_brotin_sprites.js <app dir> [preview.png]');
     process.exit(1);
 }
-const all = Object.assign({}, FORMS, FACES, BUTTONS, FX);
+const all = Object.assign({}, FORMS, FACES, BUTTONS, FX, VISITORS);
 Object.keys(all).forEach((name) => checkGrid(name, all[name]));
 checkGrid('pot', POT);
 checkGrid('pest', PEST);
@@ -242,6 +250,7 @@ const media = path.join(app, 'entry/src/main/resources/base/media');
 Object.keys(FORMS).forEach((name) => sprite(path.join(common, 'form_' + name + '.png'), FORMS[name], 9));
 Object.keys(FACES).forEach((name) => sprite(path.join(common, 'face_' + name + '.png'), FACES[name], 9));
 Object.keys(BUTTONS).forEach((name) => sprite(path.join(common, 'btn_' + name + '.png'), BUTTONS[name], 8));
+Object.keys(VISITORS).forEach((name) => sprite(path.join(common, 'visitor_' + name + '.png'), VISITORS[name], 6));
 Object.keys(FX).forEach((name) => sprite(path.join(common, 'fx_' + name + '.png'), FX[name], 6));
 sprite(path.join(common, 'pot.png'), POT, 9);
 sprite(path.join(common, 'pest.png'), PEST, 8);

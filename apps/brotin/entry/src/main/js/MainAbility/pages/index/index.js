@@ -1,6 +1,6 @@
 import storage from '@system.storage';
 import {
-    GAME_LIVES, FACE_ROW, ADULTS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
+    GAME_LIVES, FACE_ROW, ADULTS, VISITORS, rollVisitor, receiveVisitor, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
     takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, finishGame, faceFor, hintFor,
     formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
@@ -23,6 +23,7 @@ const PET_LEFT = 143;
 const PET_TOP = 128;
 const FACE_COL = 5;
 const BOB = 6;
+const VISITOR_TOP = 130;
 const BAR_WIDTH = 150;
 const LOCKED_SRC = '/common/mini_locked.png';
 const SKY_DAY = '#12303f';
@@ -85,6 +86,9 @@ export default {
         pest1: false,
         pest2: false,
         seedShown: false,
+        visitorShown: false,
+        visitorSrc: '/common/visitor_butterfly.png',
+        visitorTop: VISITOR_TOP,
         fxShown: false,
         fxSrc: '/common/fx_heart.png',
         sparkShown: false,
@@ -144,6 +148,7 @@ export default {
             this.save();
         }
         rollDay(pet, today(), Math.random);
+        rollVisitor(pet, Date.now(), this.night(), Math.random);
         this.refresh();
     },
     tick() {
@@ -171,6 +176,10 @@ export default {
         this.pest1 = pet.bugs > 1;
         this.pest2 = pet.bugs > 2;
         this.seedShown = isRipe(pet);
+        this.visitorShown = pet.visitor > 0 && this.view !== 'game';
+        if (pet.visitor > 0) {
+            this.visitorSrc = '/common/visitor_' + VISITORS[pet.visitor - 1] + '.png';
+        }
         if (this.view !== 'game') {
             this.note = message || hintFor(pet, night);
         }
@@ -181,6 +190,9 @@ export default {
         const bob = ticks % 2 === 0 ? 0 : BOB;
         const blink = ticks % BLINK_TICKS === 0;
         this.petTop = PET_TOP + bob;
+        if (pet.visitor > 0) {
+            this.visitorTop = VISITOR_TOP + BOB - bob;
+        }
         this.faceTop = PET_TOP + FACE_ROW[pet.form] * CELL + bob;
         const face = happy ? 'happy' : faceFor(pet, this.night(), blink);
         this.faceSrc = '/common/face_' + face + '.png';
@@ -271,7 +283,9 @@ export default {
             return;
         }
         plantArmed = false;
-        if (action === 'water') {
+        if (action === 'visitor') {
+            this.tapVisitor();
+        } else if (action === 'water') {
             this.finishAction(water(pet), 'drop');
         } else if (action === 'sun') {
             this.finishAction(giveSun(pet, this.night()), 'sun');
@@ -287,6 +301,13 @@ export default {
             this.openStatus();
         } else if (action === 'pet' && !this.night()) {
             this.tapPet();
+        }
+    },
+    tapVisitor() {
+        const text = receiveVisitor(pet);
+        if (text) {
+            this.say(text);
+            this.finishAction('', 'star');
         }
     },
     // Planting replaces the adult, so it takes a second tap while the question is showing.
@@ -339,6 +360,7 @@ export default {
         this.view = 'game';
         message = '';
         this.note = 'Atrapa las chispas';
+        this.visitorShown = false;
         this.nextSpark();
     },
     nextSpark() {

@@ -54,6 +54,15 @@ const WISH_MOOD = 15;
 // Each wish granted lifts the care average of a pet that reaches adulthood by this much.
 const WISH_CARE = 3;
 
+// Now and then something comes by while the app is open, and stays until tapped.
+const VISIT_GAP_MIN = 120;
+const VISIT_CHANCE = 0.6;
+const STAR_CHANCE = 0.1;
+const VISIT_GIVE = 25;
+const LADYBUG_MOOD = 10;
+// pet.visitor is a place here plus 1; 0 is nobody. The star is last.
+export const VISITORS = ['butterfly', 'cloud', 'ladybug', 'star'];
+
 // The row of each form's art where its face goes.
 export const FACE_ROW = {
     seed: 13, sprout: 13, young: 13, flower: 6, sunflower: 6, lily: 6, golden: 6, cactus: 13, mushroom: 12
@@ -75,7 +84,9 @@ function clamp(value) {
 }
 
 // What the player has earned stays when a new seed replaces the pet.
-const KEPT = ['blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak', 'found'];
+const KEPT = [
+    'blooms', 'best', 'wishDay', 'wishKind', 'wishDone', 'doneDay', 'streak', 'found', 'lastVisit', 'visitor'
+];
 
 export function newPet(now, previous) {
     const pet = {
@@ -98,7 +109,9 @@ export function newPet(now, previous) {
         streak: 0,
         waters: 0,
         suns: 0,
-        found: 0
+        found: 0,
+        lastVisit: now,
+        visitor: 0
     };
     if (previous) {
         KEPT.forEach((field) => {
@@ -110,7 +123,7 @@ export function newPet(now, previous) {
 
 // New fields go at the end: older saves simply lack them and they load as 0.
 const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best', 'wishDay', 'wishKind',
-    'wishDone', 'doneDay', 'streak', 'waters', 'suns', 'found'];
+    'wishDone', 'doneDay', 'streak', 'waters', 'suns', 'found', 'lastVisit', 'visitor'];
 const OLDEST_FIELDS = 10;
 
 // "form,water,sun,..." with no JSON, as the other apps save.
@@ -300,6 +313,45 @@ export function takeWishNews(pet) {
     return '¡Antojo cumplido! Racha ' + pet.streak;
 }
 
+// At most one roll per gap, so the 30 s tick cannot keep trying until one comes. Asleep, nobody
+// comes. A clock moved backwards just rolls again.
+export function rollVisitor(pet, now, night, random) {
+    const gap = now - pet.lastVisit;
+    if (night || pet.visitor > 0 || (gap >= 0 && gap * TIME_SCALE < VISIT_GAP_MIN * MS_PER_MIN)) {
+        return;
+    }
+    pet.lastVisit = now;
+    if (random() < VISIT_CHANCE) {
+        const star = VISITORS.length;
+        pet.visitor = random() < STAR_CHANCE ? star : 1 + Math.floor(random() * (star - 1));
+    }
+}
+
+// What the visitor does when tapped, and what to say about it; '' if nobody is there.
+export function receiveVisitor(pet) {
+    const name = VISITORS[pet.visitor - 1];
+    pet.visitor = 0;
+    if (name === 'butterfly') {
+        pet.mood = clamp(pet.mood + VISIT_GIVE);
+        return '¡Una mariposa lo alegra!';
+    }
+    if (name === 'cloud') {
+        pet.water = clamp(pet.water + VISIT_GIVE);
+        return '¡Una nube lo riega!';
+    }
+    if (name === 'ladybug') {
+        pet.bugs = 0;
+        pet.mood = clamp(pet.mood + LADYBUG_MOOD);
+        return '¡La mariquita come bichos!';
+    }
+    if (name === 'star') {
+        pet.mood = clamp(pet.mood + VISIT_GIVE);
+        progressWish(pet, pet.wishKind, WISHES[pet.wishKind].goal);
+        return '¡Una estrella fugaz!';
+    }
+    return '';
+}
+
 export function water(pet) {
     if (pet.water >= FULL) {
         return 'Ya no quiere agua';
@@ -446,6 +498,9 @@ const STATUS_BOTTOM = 110;
 const SEED_X = 104;
 const SEED_Y = 190;
 const SEED_RADIUS = 44;
+const VISITOR_X = 373;
+const VISITOR_Y = 157;
+const VISITOR_RADIUS = 44;
 
 // What a tap at x, y on the main view means. The pet is everything left between the buttons.
 export function hit(x, y) {
@@ -464,6 +519,11 @@ export function hit(x, y) {
     const sy = y - SEED_Y;
     if (sx * sx + sy * sy <= SEED_RADIUS * SEED_RADIUS) {
         return 'seed';
+    }
+    const vx = x - VISITOR_X;
+    const vy = y - VISITOR_Y;
+    if (vx * vx + vy * vy <= VISITOR_RADIUS * VISITOR_RADIUS) {
+        return 'visitor';
     }
     return x > 130 && x < 336 && y < 360 ? 'pet' : '';
 }

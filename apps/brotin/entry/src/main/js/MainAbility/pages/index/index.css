@@ -81,6 +81,12 @@
   left: 312px;
   top: 262px;
 }
+/* Up and to the right of the pet, above the pests. */
+.visitor {
+  width: 54px;
+  height: 54px;
+  left: 346px;
+}
 /* Over the pet's head, clear of the row where any form has its face. */
 .fx {
   width: 54px;
