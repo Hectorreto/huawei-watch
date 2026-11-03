@@ -1,5 +1,6 @@
 import brightness from '@system.brightness';
 import storage from '@system.storage';
+import vibrator from '@system.vibrator';
 
 // Maze prototype: a first-person view of a small maze, drawn on a canvas one step at a time.
 // What the watch allows shaped it (docs/compare-drawing-methods.md): a canvas takes about
@@ -66,6 +67,8 @@ const GUARD_EVERY_FAST = 2;
 // Its height as a share of the wall height there, and how near it starts the warnings.
 const GUARD_SIZE = 0.85;
 const GUARD_WARN = 6;
+// How near it makes each step buzz on the wrist, like a heartbeat.
+const GUARD_BUZZ = 3;
 // Grid cells a catch sends the player back along the way, per cell of the maze's side. Not
 // all the way to the start: that is some 180 taps to walk again in the largest mazes.
 const GUARD_SETBACK = 2;
@@ -356,6 +359,15 @@ function gemSprites(view) {
     }
     shown.sort((a, b) => b.ahead - a.ahead);
     return shown;
+}
+
+// Vibrates for rare events only, never for every tap; 'short' or 'long'.
+function buzz(mode) {
+    try {
+        vibrator.vibrate({ mode: mode });
+    } catch (e) {
+        // The game goes on without it.
+    }
 }
 
 function hex2(v) {
@@ -708,8 +720,11 @@ export default {
             // A tap crosses a whole maze cell: the grid cell between two of them offers no
             // choice, so it would only be one more tap. Steps still count grid cells, so old
             // records compare, and only the end is drawn.
-            if (this.stepOnce()) {
-                this.stepOnce();
+            if (this.stepOnce() && this.stepOnce()) {
+                const g = guardIndex();
+                if (g >= 0 && trail.length - 1 - g <= GUARD_BUZZ) {
+                    buzz('short');
+                }
             }
         }
         this.draw();
@@ -732,6 +747,7 @@ export default {
                 gems.splice(i, 1);
                 gemsFound++;
                 this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
+                buzz('short');
                 break;
             }
         }
@@ -740,6 +756,7 @@ export default {
             // Steps, gems and the map stay; the walk back and the steps are the price.
             setBack();
             this.note = 'Te atrapó: retrocedes';
+            buzz('long');
             return false;
         }
         return true;
@@ -748,6 +765,7 @@ export default {
     // Saves the result and shows it until a tap.
     win() {
         busy = true;
+        buzz('long');
         const taken = steps + 1;
         const totalGems = gems.length + gemsFound;
         const allGems = gems.length === 0;
