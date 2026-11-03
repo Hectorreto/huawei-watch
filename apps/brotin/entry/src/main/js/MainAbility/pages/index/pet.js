@@ -16,6 +16,7 @@ const NIGHT_TO = 7;
 const WITHER_PER_MIN = 100 / 1440;
 const HEAL_PER_MIN = 0.2;
 const HEAL_ABOVE = 40;
+const WEAK_HEALTH = 50;
 const SPROUT_MIN = 30;
 const YOUNG_MIN = 720;
 const ADULT_MIN = 2880;
@@ -523,6 +524,10 @@ export function hintFor(pet, night) {
     }
     if (pet.mood < 25) {
         return 'Está triste';
+    }
+    if (pet.health < WEAK_HEALTH) {
+        return pet.water > HEAL_ABOVE && pet.sun > HEAL_ABOVE && pet.mood > HEAL_ABOVE ?
+            'Se está curando' : 'Para curarse, llena todo';
     }
     if (wishPending(pet)) {
         const wish = WISHES[pet.wishKind];
