@@ -48,11 +48,21 @@ const MAP_PLAYER = '#ffe119';
 const MAP_GUARD = '#e6194b';
 const MAP_GEM = '#50d2f0';
 const MAP_EXIT = '#50dc6e';
+const MAP_KEY = '#ffc800';
 // Gems per maze, put in dead ends; picked up by stepping on them.
 const GEMS = 3;
 // Gem size and how far below the horizon it sits, as shares of the wall height there.
 const GEM_SIZE = 0.35;
 const GEM_FLOOR = 0.35;
+// What sets a level apart, so they stay different once the size stops growing: the even ones
+// from the third on take turns. On a key level the door stays shut until the key, in another
+// dead end, is found; it counts as one more gem in the saved bits and in par.
+const MOD_NONE = 0;
+const MOD_KEY = 1;
+const FIRST_MOD_LEVEL = 2;
+const KEY_BIT = GEMS;
+const DOOR_LOCKED = [235, 235, 235];
+const DOOR_OPEN = [80, 220, 110];
 // Steps allowed for the third star: this share of the shortest walk that takes every gem
 // and leaves. Blind depth-first walks that take all gems get three stars 43% of the time
 // on level 1 and 9% on level 5, guardian included (in Node); a player also sees dead ends
@@ -157,6 +167,9 @@ let visited = [];
 let gems = [];
 let gemsFound = 0;
 let gemsTaken = 0;
+let mod = MOD_NONE;
+// The key still in the maze as [x, y], so also whether the door is shut; null if none.
+let keyCell = null;
 // The way from the start to the player, as grid cells by y * size + x. The maze is a tree,
 // so stepping back to the cell before pops it. The guardian only ever walks this way, so it
 // is never ahead of the player and the exit can always be reached.
@@ -177,6 +190,7 @@ function random() {
 function makeMaze() {
     size = 2 * LEVEL_CELLS[Math.min(mazeLevel, LEVEL_CELLS.length - 1)] + 1;
     theme = THEMES[(daily ? today() : level) % THEMES.length];
+    mod = pickMod();
     colours = [];
     grid = [];
     // The cell each cell was carved from, by y * size + x, to measure walks in placeGems.
@@ -258,6 +272,9 @@ function restoreRun(run, parent) {
     guardSteps = run[7];
     gemsTaken = run[8];
     gems = gems.filter((g) => (gemsTaken & (1 << g[2])) === 0);
+    if ((gemsTaken & (1 << KEY_BIT)) !== 0) {
+        keyCell = null;
+    }
     for (let i = 0; i < GEMS; i++) {
         gemsFound += (gemsTaken >> i) & 1;
     }
@@ -336,6 +353,9 @@ function shortestWalk(parent) {
     for (let i = 0; i < gems.length; i++) {
         targets.push(gems[i][1] * size + gems[i][0]);
     }
+    if (keyCell !== null) {
+        targets.push(keyCell[1] * size + keyCell[0]);
+    }
     for (let i = 0; i < targets.length; i++) {
         for (let c = targets[i]; c !== start && !marks[c]; c = parent[c]) {
             marks[c] = true;
@@ -343,6 +363,17 @@ function shortestWalk(parent) {
         }
     }
     return 2 * cells - toExit + 1;
+}
+
+// Levels are fixed, so resuming finds the same one; the challenge changes with the date.
+function pickMod() {
+    if (daily) {
+        return today() % 2 === 1 ? MOD_KEY : MOD_NONE;
+    }
+    if (level < FIRST_MOD_LEVEL || level % 2 === 1) {
+        return MOD_NONE;
+    }
+    return MOD_KEY;
 }
 
 function dayNumber(date) {
@@ -405,6 +436,10 @@ function placeGems() {
         const gem = ends.splice(Math.floor(random() * ends.length), 1)[0];
         gem.push(gems.length);
         gems.push(gem);
+    }
+    keyCell = null;
+    if (mod === MOD_KEY && ends.length > 0) {
+        keyCell = ends.splice(Math.floor(random() * ends.length), 1)[0];
     }
 }
 
@@ -490,7 +525,8 @@ function wallColour(cell, side, dist) {
     const key = (cell === EXIT ? 8 : 0) + side * 4 + band;
     if (!colours[key]) {
         const light = (side === 0 ? 1 : 0.75) * (1 - band * 0.2);
-        const base = cell === EXIT ? [80, 220, 110] : theme.wall;
+        const door = keyCell !== null ? DOOR_LOCKED : DOOR_OPEN;
+        const base = cell === EXIT ? door : theme.wall;
         colours[key] = '#' + base.map((v) => hex2(Math.round(v * light))).join('');
     }
     return colours[key];
@@ -595,6 +631,10 @@ function drawMap() {
             ctx.fillRect(left + gems[i][0] * cell, top + gems[i][1] * cell, cell, cell);
         }
     }
+    if (keyCell !== null && totalStars >= RANKS[RANK_MAP_GEMS].stars) {
+        ctx.fillStyle = MAP_KEY;
+        ctx.fillRect(left + keyCell[0] * cell, top + keyCell[1] * cell, cell, cell);
+    }
     if (totalStars >= RANKS[RANK_MAP_EXIT].stars) {
         ctx.fillStyle = MAP_EXIT;
         ctx.fillRect(left + (size - 1) * cell, top + (size - 2) * cell, cell, cell);
@@ -622,6 +662,9 @@ export default {
         guardX: SCREEN,
         guardY: 0,
         guardS: 64,
+        keyX: SCREEN,
+        keyY: 0,
+        keyS: 64,
         menu: false,
         menuLevel: '',
         menuDaily: '',
@@ -672,6 +715,7 @@ export default {
         this.live = false;
         this.setSprites([]);
         this.guardX = SCREEN;
+        this.keyX = SCREEN;
         this.note = '';
         const levelRun = savedRun !== null && savedRun[1] === 0;
         const dailyRun = savedRun !== null && savedRun[1] === 1;
@@ -708,15 +752,22 @@ export default {
         runSaved = '';
         if (daily) {
             best = dailyDate === today() ? dailyBest : 0;
-            this.note = resumed ? 'Sigues donde ibas' : (best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '');
+            this.note = this.startNote(resumed, best > 0 ? 'Mejor hoy: ' + best + ' pasos' : '');
             this.newCanvas();
             return;
         }
         loadNumber('best' + (size - 1) / 2, (value) => {
             best = value;
-            this.note = resumed ? 'Sigues donde ibas' : (best > 0 ? 'Récord: ' + best + ' pasos' : '');
+            this.note = this.startNote(resumed, best > 0 ? 'Récord: ' + best + ' pasos' : '');
             this.newCanvas();
         });
+    },
+    // What a new maze says first: what sets it apart comes before the record.
+    startNote(resumed, record) {
+        if (resumed) {
+            return 'Sigues donde ibas';
+        }
+        return mod === MOD_KEY ? 'Busca la llave' : record;
     },
     // Removes the canvas (if it exists) and makes a fresh one, then draws the whole view, or
     // the map while it is open.
@@ -726,6 +777,7 @@ export default {
         this.live = false;
         this.setSprites([]);
         this.guardX = SCREEN;
+        this.keyX = SCREEN;
         setTimeout(() => {
             this.live = true;
             setTimeout(() => {
@@ -783,15 +835,29 @@ export default {
             shownColour[c] = view[c].colour;
         }
         this.setSprites(gemSprites(view));
+        this.showKey(view);
         this.showGuard(view);
         this.hud = COMPASS[facing] + ' ' + steps + '/' + par;
-        this.record = (daily ? 'Reto del día' : 'Nivel ' + (level + 1)) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
+        this.record = (daily ? 'Reto' : 'Nivel ' + (level + 1)) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound)
+            + (keyCell !== null ? '  llave' : '');
     },
     // Most views show no gem, so this leaves the `for` alone unless there is one to show or hide.
     setSprites(list) {
         if (list.length > 0 || spritesOn) {
             this.sprites = list;
             spritesOn = list.length > 0;
+        }
+    },
+    // Places the key like a gem, as one fixed image moved off the screen when not in view.
+    showKey(view) {
+        const at = keyCell === null ? null : project(keyCell[0], keyCell[1], view);
+        if (at === null) {
+            this.keyX = SCREEN;
+        } else {
+            const s = Math.max(8, Math.round(at.wallH * GEM_SIZE));
+            this.keyS = s;
+            this.keyX = Math.round(at.centreX - s / 2);
+            this.keyY = Math.round(SCREEN / 2 + at.wallH * GEM_FLOOR - s / 2);
         }
     },
     // Stands the guardian on the floor when the player can see it (one fixed image, moved off
@@ -870,6 +936,10 @@ export default {
             const nx = px + DIRS[facing][0];
             const ny = py + DIRS[facing][1];
             if (grid[ny][nx] === EXIT) {
+                if (keyCell !== null) {
+                    this.note = 'Falta la llave';
+                    return;
+                }
                 this.win();
                 return;
             }
@@ -911,6 +981,14 @@ export default {
                 buzz('short');
                 break;
             }
+        }
+        if (keyCell !== null && keyCell[0] === px && keyCell[1] === py) {
+            keyCell = null;
+            gemsTaken |= 1 << KEY_BIT;
+            // The door changes colour, and its strings are kept.
+            colours = [];
+            this.note = 'Llave: la salida abre';
+            buzz('short');
         }
         const g = guardIndex();
         if (g >= 0 && g >= trail.length - 1) {

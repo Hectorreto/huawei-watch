@@ -21,11 +21,11 @@
   background-color: #000000;
   border-radius: 20px;
 }
-/* Level (or the daily challenge) and gems picked up, under the compass. */
+/* Level (or the daily challenge), gems picked up and the key, under the compass. */
 .record {
-  width: 270px;
+  width: 300px;
   height: 28px;
-  left: 98px;
+  left: 83px;
   top: 64px;
   font-size: 20px;
   color: #c8c8c8;
