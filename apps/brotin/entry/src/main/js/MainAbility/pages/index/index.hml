@@ -26,6 +26,7 @@
         <text class="status-row">{{ statusMood }}</text>
         <text class="status-row">{{ statusHealth }}</text>
         <text class="status-small">{{ statusGeneration }}</text>
+        <text class="status-small">{{ statusRecord }}</text>
     </div>
     <div class="touch" onclick="tap"></div>
 </stack>

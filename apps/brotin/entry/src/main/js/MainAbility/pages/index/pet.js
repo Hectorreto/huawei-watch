@@ -27,8 +27,11 @@ const GIVE = 35;
 const FULL = 95;
 const PET_MOOD = 3;
 const CLEAN_MOOD = 5;
-export const GAME_ROUNDS = 8;
+export const GAME_LIVES = 3;
 const MOOD_PER_HIT = 6;
+const SPARK_MS = 1100;
+const SPARK_MS_PER_HIT = 40;
+const SPARK_MIN_MS = 650;
 
 // The row of each form's art where its face goes.
 export const FACE_ROW = { seed: 13, sprout: 13, young: 13, flower: 6, cactus: 13, mushroom: 12 };
@@ -37,7 +40,7 @@ function clamp(value) {
     return Math.max(0, Math.min(100, value));
 }
 
-export function newPet(now, generation, blooms) {
+export function newPet(now, generation, blooms, previousBest) {
     return {
         form: 'seed',
         water: 70,
@@ -49,11 +52,14 @@ export function newPet(now, generation, blooms) {
         careSum: 0,
         generation: generation || 1,
         blooms: blooms || 0,
-        last: now
+        last: now,
+        best: previousBest || 0
     };
 }
 
-const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last'];
+// New fields go at the end: older saves simply lack them and they load as 0.
+const FIELDS = ['water', 'sun', 'mood', 'health', 'bugs', 'ageMin', 'careSum', 'generation', 'blooms', 'last', 'best'];
+const OLDEST_FIELDS = 10;
 
 // "form,water,sun,..." with no JSON, as the other apps save.
 export function serialize(pet) {
@@ -62,7 +68,7 @@ export function serialize(pet) {
 
 export function deserialize(text, now) {
     const parts = String(text || '').split(',');
-    if (FACE_ROW[parts[0]] === undefined || parts.length !== FIELDS.length + 1) {
+    if (FACE_ROW[parts[0]] === undefined || parts.length < OLDEST_FIELDS + 1) {
         return newPet(now);
     }
     const pet = { form: parts[0] };
@@ -148,7 +154,7 @@ export function advance(pet, now, hourOf, random) {
         grow(pet, events);
         if (pet.health <= 0) {
             events.push('reseed');
-            return { pet: newPet(now, pet.generation + 1, pet.blooms), events };
+            return { pet: newPet(now, pet.generation + 1, pet.blooms, pet.best), events };
         }
     }
     pet.last = now;
@@ -187,8 +193,19 @@ export function stroke(pet) {
     pet.mood = clamp(pet.mood + PET_MOOD);
 }
 
+// How long a spark stays, shorter with each one caught.
+export function sparkMs(hits) {
+    return Math.max(SPARK_MIN_MS, SPARK_MS - hits * SPARK_MS_PER_HIT);
+}
+
+// Returns whether this game beat the record.
 export function finishGame(pet, hits) {
     pet.mood = clamp(pet.mood + hits * MOOD_PER_HIT);
+    if (hits > pet.best) {
+        pet.best = hits;
+        return true;
+    }
+    return false;
 }
 
 // What the pet's face shows when nothing has just happened.

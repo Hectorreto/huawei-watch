@@ -1,7 +1,7 @@
 import storage from '@system.storage';
 import {
-    GAME_ROUNDS, FACE_ROW, newPet, serialize, deserialize, isNight, advance, water, giveSun, clean,
-    stroke, finishGame, faceFor, hintFor, formName, ageText, hit
+    GAME_LIVES, FACE_ROW, newPet, serialize, deserialize, isNight, advance, water, giveSun, clean,
+    stroke, sparkMs, finishGame, faceFor, hintFor, formName, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
@@ -11,7 +11,6 @@ const SAVE_TICKS = 600;
 const BLINK_TICKS = 5;
 const HAPPY_MS = 1200;
 const MESSAGE_MS = 2000;
-const SPARK_MS = 1100;
 const SPARK_GAP_MS = 250;
 const SPARK_SIZE = 72;
 const SPARK_HIT = 62;
@@ -44,7 +43,7 @@ let ticks = 0;
 let happy = false;
 let message = '';
 let hits = 0;
-let round = 0;
+let lives = 0;
 let sparkOn = false;
 
 function hourOf(ms) {
@@ -80,7 +79,8 @@ export default {
         statusSun: '',
         statusMood: '',
         statusHealth: '',
-        statusGeneration: ''
+        statusGeneration: '',
+        statusRecord: ''
     },
     onInit() {
         storage.get({
@@ -226,30 +226,39 @@ export default {
         this.statusMood = 'Ánimo: ' + Math.round(pet.mood);
         this.statusHealth = 'Salud: ' + Math.round(pet.health);
         this.statusGeneration = 'Generación ' + pet.generation + ' · Plantas: ' + pet.blooms;
+        this.statusRecord = 'Récord: ' + pet.best + ' chispas';
         this.view = 'status';
     },
-    // The game: tap each spark before it goes. Each hit lifts the mood at the end.
+    // The game: tap each spark before it goes, faster each time, until three get away.
+    // Each hit lifts the mood at the end.
     startGame() {
         hits = 0;
-        round = 0;
+        lives = GAME_LIVES;
         this.view = 'game';
         message = '';
         this.note = 'Atrapa las chispas';
         this.nextSpark();
     },
     nextSpark() {
-        if (round >= GAME_ROUNDS) {
+        if (lives <= 0) {
             this.endGame();
             return;
         }
-        round++;
         const angle = Math.random() * 2 * Math.PI;
         const radius = Math.random() * SPARK_RADIUS;
         this.sparkX = Math.round(CENTRE + radius * Math.cos(angle) - SPARK_SIZE / 2);
         this.sparkY = Math.round(CENTRE + radius * Math.sin(angle) - SPARK_SIZE / 2);
         this.sparkShown = true;
         sparkOn = true;
-        sparkTimer = setTimeout(() => this.hideSpark(), SPARK_MS);
+        sparkTimer = setTimeout(() => this.missSpark(), sparkMs(hits));
+    },
+    missSpark() {
+        lives--;
+        this.showScore();
+        this.hideSpark();
+    },
+    showScore() {
+        this.note = hits + (hits === 1 ? ' chispa · ' : ' chispas · ') + lives + (lives === 1 ? ' vida' : ' vidas');
     },
     hideSpark() {
         sparkOn = false;
@@ -264,15 +273,15 @@ export default {
         const dy = y - (this.sparkY + SPARK_SIZE / 2);
         if (dx * dx + dy * dy <= SPARK_HIT * SPARK_HIT) {
             hits++;
-            this.note = hits + ' de ' + GAME_ROUNDS;
+            this.showScore();
             clearTimeout(sparkTimer);
             this.hideSpark();
         }
     },
     endGame() {
-        finishGame(pet, hits);
+        const record = finishGame(pet, hits);
         this.view = 'main';
-        this.say('Atrapó ' + hits + ' de ' + GAME_ROUNDS);
+        this.say(record ? '¡Récord! ' + hits + ' chispas' : 'Atrapó ' + hits + ' · Récord ' + pet.best);
         this.finishAction('');
     }
 };
