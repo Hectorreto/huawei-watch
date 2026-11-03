@@ -83,6 +83,9 @@ const MENU_SPLIT = 225;
 // app closes. Numbers in key 'run': seed, daily, level, px, py, facing, steps, guardSteps, gems.
 const SAVE_DELAY_MS = 1000;
 const RUN_FIELDS = 9;
+// With no tap for this long the screen may turn off again, which closes the app; the maze
+// is saved by then. Otherwise a watch left alone would stay lit until the battery ran out.
+const IDLE_MS = 120000;
 const STAR_ON = '/common/star.png';
 const STAR_OFF = '/common/star_off.png';
 // Total stars needed for each rank.
@@ -128,6 +131,7 @@ let runSaved = '';
 // The maze found in storage, until one is started.
 let savedRun = null;
 let saveTimer = null;
+let screenKept = false;
 let px = 1;
 let py = 1;
 let facing = 1;
@@ -232,8 +236,9 @@ function saveRun() {
 }
 
 // Puts a saved run back on the maze remade from its seed. The way back comes from the
-// carving; side trips are not saved (128 bytes is the most a value is sure to hold), so the
-// map shows only the way from the start. False if the position is not a maze cell.
+// carving; side trips are not saved (how long a value the watch holds is not known, so this
+// one stays short), so the map shows only the way from the start. False if the position is
+// not a maze cell.
 function restoreRun(run, parent) {
     if (run[3] % 2 !== 1 || run[4] % 2 !== 1 || !grid[run[4]] || grid[run[4]][run[3]] !== 0) {
         return false;
@@ -433,6 +438,27 @@ function buzz(mode) {
     }
 }
 
+function keepScreen(on) {
+    screenKept = on;
+    try {
+        brightness.setKeepScreenOn({ keepScreenOn: on });
+    } catch (e) {
+        // The screen just behaves as usual.
+    }
+}
+
+// One timer after a tap: first it saves, then it waits to let the screen turn off.
+function afterTap() {
+    if (!screenKept) {
+        keepScreen(true);
+    }
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        saveRun();
+        saveTimer = setTimeout(() => keepScreen(false), IDLE_MS);
+    }, SAVE_DELAY_MS);
+}
+
 function hex2(v) {
     return (v < 16 ? '0' : '') + v.toString(16);
 }
@@ -581,11 +607,7 @@ export default {
         resultNext: ''
     },
     onInit() {
-        try {
-            brightness.setKeepScreenOn({ keepScreenOn: true });
-        } catch (e) {
-            // The screen just turns off as usual.
-        }
+        afterTap();
         loadNumber('level', (value) => {
             level = value;
             loadNumber('stars', (stars) => {
@@ -612,6 +634,7 @@ export default {
     onDestroy() {
         clearTimeout(saveTimer);
         saveRun();
+        keepScreen(false);
     },
     // The first screen, and where the daily challenge returns to. No canvas lives under it.
     showMenu() {
@@ -771,8 +794,7 @@ export default {
     // event carries the position (globalX, globalY); ontouchstart on this div did not fire in
     // the Previewer.
     tap(e) {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(saveRun, SAVE_DELAY_MS);
+        afterTap();
         if (busy) {
             return;
         }
