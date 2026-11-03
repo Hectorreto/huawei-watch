@@ -34,7 +34,7 @@ const STATS_EVERY_S = 3;
 const TEXTS = {
     en: {
         shop: 'Shop', upgrades: 'Upgrades', stats: 'Stats', awards: 'Awards', settings: 'Settings',
-        perTap: '/tap', tapShare: 'Tap +5% of /s', award: 'Award: ', away: ' away',
+        newTheme: 'New theme', perTap: '/tap', tapShare: 'Tap +5% of /s', award: 'Award: ', away: ' away',
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
         statAwards: 'Awards', statTime: 'Time played', statStreak: 'Daily streak', streak: 'Streak ',
@@ -47,7 +47,7 @@ const TEXTS = {
     },
     es: {
         shop: 'Tienda', upgrades: 'Mejoras', stats: 'Estadísticas', awards: 'Logros', settings: 'Ajustes',
-        perTap: '/toque', tapShare: 'Toque +5% /s', award: 'Logro: ', away: ' al volver',
+        newTheme: 'Tema nuevo', perTap: '/toque', tapShare: 'Toque +5% /s', award: 'Logro: ', away: ' al volver',
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
         statAwards: 'Logros', statTime: 'Tiempo jugado', statStreak: 'Racha diaria', streak: 'Racha ',
@@ -65,17 +65,18 @@ const LANGUAGES = ['en', 'es'];
 // nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big
 // cookie) and <id>_small.png (170 px, menu centre, theme list and settings row).
 // The id is what the settings save, so ids must not change. The first one is the default.
+// awards: how many achievements unlock it. A saved theme stays in use even if it is locked.
 const THEMES = [
-    { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
-    { id: 'cookie', name: { en: 'A cookie', es: 'Una galleta' } },
-    { id: 'donut', name: { en: 'Everyday', es: 'Para diario' } },
-    { id: 'concha', name: { en: 'Concha', es: 'Concha' } },
-    { id: 'gingerbread', name: { en: 'Gingerbread', es: 'Jengibre' } },
-    { id: 'cinnamon', name: { en: 'For the cold', es: 'Para el frío' } },
-    { id: 'skull', name: { en: 'Day of the Dead', es: 'Día de muertos' } },
-    { id: 'rosca', name: { en: 'Kings\' Day', es: 'Día de reyes' } },
-    { id: 'bunuelo', name: { en: 'Christmas', es: 'Navidad' } },
-    { id: 'pan_de_muerto', name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
+    { id: 'classic', awards: 0, name: { en: 'A classic', es: 'Un clásico' } },
+    { id: 'cookie', awards: 0, name: { en: 'A cookie', es: 'Una galleta' } },
+    { id: 'donut', awards: 0, name: { en: 'Everyday', es: 'Para diario' } },
+    { id: 'concha', awards: 3, name: { en: 'Concha', es: 'Concha' } },
+    { id: 'gingerbread', awards: 6, name: { en: 'Gingerbread', es: 'Jengibre' } },
+    { id: 'cinnamon', awards: 9, name: { en: 'For the cold', es: 'Para el frío' } },
+    { id: 'skull', awards: 12, name: { en: 'Day of the Dead', es: 'Día de muertos' } },
+    { id: 'rosca', awards: 15, name: { en: 'Kings\' Day', es: 'Día de reyes' } },
+    { id: 'bunuelo', awards: 18, name: { en: 'Christmas', es: 'Navidad' } },
+    { id: 'pan_de_muerto', awards: 21, name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
 ];
 
 function themePath(id, suffix) {
@@ -746,14 +747,23 @@ export default {
     // Rebuilt as a new array, like the shop, so the check moves to the chosen theme.
     // id is the index in THEMES, as with the shop.
     refreshThemes() {
-        this.themeItems = THEMES.map((th, i) => ({
-            id: i,
-            icon: themePath(th.id, '_small'),
-            title: th.name[this.lang],
-            chosen: th.id === this.theme
-        }));
+        const have = this.achieved.filter((a) => a).length;
+        this.themeItems = THEMES.map((th, i) => {
+            const chosen = th.id === this.theme;
+            const locked = !chosen && have < th.awards;
+            return {
+                id: i,
+                icon: themePath(th.id, '_small'),
+                title: locked ? this.t.awards + ' ' + have + ' / ' + th.awards : th.name[this.lang],
+                chosen: chosen,
+                locked: locked
+            };
+        });
     },
     chooseTheme(index) {
+        if (this.achieved.filter((a) => a).length < THEMES[index].awards) {
+            return;
+        }
         this.setTheme(THEMES[index].id);
         this.saveSettings();
         this.openSettings();
@@ -945,6 +955,11 @@ export default {
             }
         }
         if (achieved !== null) {
+            const before = old.filter((a) => a).length;
+            const after = achieved.filter((a) => a).length;
+            if (THEMES.some((th) => th.awards > before && th.awards <= after)) {
+                this.showNotice(this.t.newTheme);
+            }
             this.achieved = achieved;
             this.save();
         }

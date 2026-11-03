@@ -204,6 +204,7 @@
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <text class="theme-name">{{ $item.title }}</text>
                 <image class="status" if="{{ $item.chosen }}" src="/common/awards/check.png"></image>
+                <image class="status" if="{{ $item.locked }}" src="/common/awards/lock.png"></image>
             </list-item>
         </list>
     </div>
