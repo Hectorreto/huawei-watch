@@ -59,10 +59,17 @@ const GEM_FLOOR = 0.35;
 // dead end, is found; it counts as one more gem in the saved bits and in par.
 const MOD_NONE = 0;
 const MOD_KEY = 1;
+const MOD_DARK = 2;
 const FIRST_MOD_LEVEL = 2;
 const KEY_BIT = GEMS;
 const DOOR_LOCKED = [235, 235, 235];
 const DOOR_OPEN = [80, 220, 110];
+// On a dark level walls fade by these shares per distance band, and gems, the key and the
+// guardian cannot be seen beyond this many grid cells. The door is lit, as a goal in the dark.
+const DARK_LIGHT = [1, 0.3, 0.1, 0.1];
+const DARK_SIGHT = 4;
+const DARK_CEILING = '#08080c';
+const DARK_FLOOR = '#0e0c0a';
 // Steps allowed for the third star: this share of the shortest walk that takes every gem
 // and leaves. Blind depth-first walks that take all gems get three stars 43% of the time
 // on level 1 and 9% on level 5, guardian included (in Node); a player also sees dead ends
@@ -191,6 +198,9 @@ function makeMaze() {
     size = 2 * LEVEL_CELLS[Math.min(mazeLevel, LEVEL_CELLS.length - 1)] + 1;
     theme = THEMES[(daily ? today() : level) % THEMES.length];
     mod = pickMod();
+    if (mod === MOD_DARK) {
+        theme = { wall: theme.wall, ceiling: DARK_CEILING, floor: DARK_FLOOR };
+    }
     colours = [];
     grid = [];
     // The cell each cell was carved from, by y * size + x, to measure walks in placeGems.
@@ -368,12 +378,12 @@ function shortestWalk(parent) {
 // Levels are fixed, so resuming finds the same one; the challenge changes with the date.
 function pickMod() {
     if (daily) {
-        return today() % 2 === 1 ? MOD_KEY : MOD_NONE;
+        return today() % 3;
     }
     if (level < FIRST_MOD_LEVEL || level % 2 === 1) {
         return MOD_NONE;
     }
-    return MOD_KEY;
+    return level % 4 === 2 ? MOD_KEY : MOD_DARK;
 }
 
 function dayNumber(date) {
@@ -452,7 +462,7 @@ function project(x, y, view) {
     const oy = y - py;
     const ahead = ox * dx + oy * dy;
     const side = ox * -dy + oy * dx;
-    if (ahead <= 0) {
+    if (ahead <= 0 || (mod === MOD_DARK && ahead > DARK_SIGHT)) {
         return null;
     }
     const cam = side / (ahead * PLANE);
@@ -524,7 +534,8 @@ function wallColour(cell, side, dist) {
     const band = Math.min(3, Math.floor(dist / 2));
     const key = (cell === EXIT ? 8 : 0) + side * 4 + band;
     if (!colours[key]) {
-        const light = (side === 0 ? 1 : 0.75) * (1 - band * 0.2);
+        const fade = mod === MOD_DARK && cell !== EXIT ? DARK_LIGHT[band] : 1 - band * 0.2;
+        const light = (side === 0 ? 1 : 0.75) * fade;
         const door = keyCell !== null ? DOOR_LOCKED : DOOR_OPEN;
         const base = cell === EXIT ? door : theme.wall;
         colours[key] = '#' + base.map((v) => hex2(Math.round(v * light))).join('');
@@ -766,6 +777,9 @@ export default {
     startNote(resumed, record) {
         if (resumed) {
             return 'Sigues donde ibas';
+        }
+        if (mod === MOD_DARK) {
+            return 'A oscuras';
         }
         return mod === MOD_KEY ? 'Busca la llave' : record;
     },
