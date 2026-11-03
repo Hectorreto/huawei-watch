@@ -31,6 +31,8 @@ const FULL = 95;
 const PET_MOOD = 3;
 // Stroking lifts the mood only this far; above it the game is what helps.
 const STROKE_CAP = 60;
+// Above this it does not ask to play, since a game would add little.
+const WANTS_PLAY_BELOW = 90;
 const CLEAN_MOOD = 5;
 export const GAME_LIVES = 3;
 const MOOD_PER_HIT = 6;
@@ -74,7 +76,7 @@ const ADULT_HINTS = {
     flower: 'Pista: cuídalo bien',
     sunflower: 'Pista: más sol que agua',
     lily: 'Pista: doble agua que sol',
-    golden: 'Pista: gran cuidado y antojos',
+    golden: 'Pista: cuidado y antojos',
     cactus: 'Pista: cuidado a medias',
     mushroom: 'Pista: lo justo para vivir'
 };
@@ -191,7 +193,7 @@ function grow(pet, events) {
         pet.form = next;
         events.push(next);
         if (markFound(pet)) {
-            events.push('new');
+            events.push('discovered');
         }
     }
 }
@@ -236,8 +238,8 @@ export function plantSeed(pet, now) {
     return newPet(now, pet);
 }
 
-// Moves the pet to now and returns what happened ('sprout', 'young', an adult form, 'new' when
-// that form is new to the herbarium, 'ripe', 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
+// Moves the pet to now and returns what happened ('sprout', 'young', an adult form, 'discovered'
+// when that form is new to the herbarium, 'ripe', 'reseed'). If its health runs out, it leaves a new seed and is not lost for good:
 // the generation goes up. hourOf(ms) gives the local hour; random() is as Math.random.
 export function advance(pet, now, hourOf, random) {
     const events = [];
@@ -384,14 +386,15 @@ export function clean(pet) {
     return '';
 }
 
-// Returns whether it lifted the mood. It always counts for the wish.
+// It always counts for the wish. Returns what to say if it did nothing at all, as the actions do.
 export function stroke(pet) {
     const gained = pet.mood < STROKE_CAP;
+    const wished = pet.wishKind === WISH_STROKE && wishPending(pet);
     if (gained) {
         pet.mood = Math.min(STROKE_CAP, pet.mood + PET_MOOD);
     }
     progressWish(pet, WISH_STROKE, 1);
-    return gained;
+    return !gained && !wished && pet.mood < WANTS_PLAY_BELOW ? 'Quiere jugar' : '';
 }
 
 // How long a spark stays, shorter with each one caught.

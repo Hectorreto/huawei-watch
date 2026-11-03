@@ -1,8 +1,8 @@
 import storage from '@system.storage';
 import {
-    GAME_LIVES, FACE_ROW, ADULTS, VISITORS, rollVisitor, receiveVisitor, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
-    takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, finishGame, faceFor, hintFor,
-    formName, isFound, foundCount, herbariumHint, ageText, hit
+    GAME_LIVES, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
+    rollVisitor, receiveVisitor, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs,
+    finishGame, faceFor, hintFor, formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
@@ -37,9 +37,9 @@ const EVENT_TEXT = {
     golden: '¡Una flor dorada!',
     cactus: '¡Es un cactus!',
     mushroom: '¡Es un hongo!',
-    new: 'Nueva en el herbario',
+    discovered: 'Nueva en el herbario',
     ripe: '¡Tiene una semilla!',
-    reseed: 'Se marchitó y dejó una semilla'
+    reseed: 'Se marchitó. Nueva semilla'
 };
 
 let pet = null;
@@ -51,6 +51,7 @@ let ticks = 0;
 let happy = false;
 let message = '';
 let queued = [];
+let refusing = false;
 let hits = 0;
 let lives = 0;
 let sparkOn = false;
@@ -200,7 +201,13 @@ export default {
     say(text, more) {
         clearTimeout(messageTimer);
         queued = more || [];
+        refusing = false;
         this.showMessage(text);
+    },
+    // A message that the next action done replaces, so it does not seem to answer that action.
+    refuse(text) {
+        this.say(text);
+        refusing = true;
     },
     // Each queued message follows from the timer of the last, which must not clear itself.
     showMessage(text) {
@@ -217,6 +224,11 @@ export default {
     },
     // The happy face, and over the pet's head the sign of what it just got.
     cheer(fx) {
+        if (refusing) {
+            clearTimeout(messageTimer);
+            message = '';
+            refusing = false;
+        }
         happy = true;
         this.fxSrc = '/common/fx_' + fx + '.png';
         this.fxShown = true;
@@ -230,7 +242,7 @@ export default {
     // The result of an action: a refusal to show, or '' if it was done.
     finishAction(refusal, fx) {
         if (refusal) {
-            this.say(refusal);
+            this.refuse(refusal);
         } else {
             this.cheer(fx);
             this.save();
@@ -250,10 +262,11 @@ export default {
     // A stroke is too small to write to storage each time; the periodic save and closing keep it,
     // unless it grants the wish.
     tapPet() {
-        if (!stroke(pet)) {
-            this.say('Quiere jugar');
-        }
+        const refusal = stroke(pet);
         this.cheer('heart');
+        if (refusal) {
+            this.refuse(refusal);
+        }
         if (pet.wishGranted) {
             this.save();
         }
@@ -299,8 +312,12 @@ export default {
             }
         } else if (action === 'status') {
             this.openStatus();
-        } else if (action === 'pet' && !this.night()) {
-            this.tapPet();
+        } else if (action === 'pet') {
+            if (this.night()) {
+                this.finishAction('Está dormido');
+            } else {
+                this.tapPet();
+            }
         }
     },
     tapVisitor() {
@@ -321,14 +338,14 @@ export default {
             this.say('¡Plantada! Generación ' + pet.generation);
             this.finishAction('', 'star');
         } else {
-            this.say('Toca otra vez para plantar');
+            this.refuse('Toca otra vez para plantar');
             plantArmed = true;
             this.refresh();
         }
     },
     // The images change only here, so a closed herbarium costs no image swaps.
     openHerbarium() {
-        this.herbariumTitle = 'Herbario ' + foundCount(pet) + ' de ' + ADULTS.length;
+        this.herbariumTitle = 'Herbario ' + foundCount(pet) + '/' + ADULTS.length;
         this.herbariumHint = herbariumHint(pet);
         this.herb0 = this.herbSrc(0);
         this.herb1 = this.herbSrc(1);
