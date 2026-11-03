@@ -29,7 +29,7 @@ const TEXTS = {
         perTap: '/tap', tapShare: 'Tap +5% of /s', award: 'Award: ', away: ' away',
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
-        statAwards: 'Awards', statTime: 'Time played',
+        statAwards: 'Awards', statTime: 'Time played', statStreak: 'Daily streak', streak: 'Streak ',
         theme: 'Theme',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
@@ -40,7 +40,7 @@ const TEXTS = {
         perTap: '/toque', tapShare: 'Toque +5% /s', award: 'Logro: ', away: ' al volver',
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
-        statAwards: 'Logros', statTime: 'Tiempo jugado',
+        statAwards: 'Logros', statTime: 'Tiempo jugado', statStreak: 'Racha diaria', streak: 'Racha ',
         theme: 'Tema',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
@@ -107,6 +107,11 @@ const GOLDEN_MAX_S = 120;
 const GOLDEN_STAY_S = 10;
 const FRENZY_MULT = 7;
 const FRENZY_S = 30;
+// Each day in a row after the first adds this % to taps and production, up to STREAK_MAX_PERCENT.
+// A missed day starts the streak again.
+const STREAK_STEP_PERCENT = 5;
+const STREAK_MAX_PERCENT = 50;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // The list only exists once the view has rendered, so its crown focus is requested a bit later.
 const FOCUS_DELAY_MS = 50;
 // The only gesture is a swipe that starts this close to the left edge and goes towards the centre.
@@ -118,11 +123,13 @@ const CATEGORIES = [
     { name: { en: 'Cookies', es: 'Galletas' }, icon: 'awards/cookies' },
     { name: { en: 'Buildings', es: 'Edificios' }, icon: 'awards/buildings' },
     { name: { en: 'Speed', es: 'Velocidad' }, icon: 'awards/production' },
-    { name: { en: 'Golden', es: 'Doradas' }, icon: 'awards/golden' }
+    { name: { en: 'Golden', es: 'Doradas' }, icon: 'awards/golden' },
+    { name: { en: 'Streak', es: 'Racha' }, icon: 'awards/streak' }
 ];
 const GRID_COLUMNS = 3;
 
-// s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps.
+// s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps,
+// streak (the best daily streak).
 // An achievement is done when value(s) reaches goal; goals above 1 show a progress bar.
 // cat is the index in CATEGORIES.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
@@ -148,7 +155,10 @@ const ACHIEVEMENTS = [
     { name: { en: 'Banker', es: 'Banquero' }, detail: { en: 'Buy a Bank', es: 'Compra un banco' }, cat: 2, icon: 'shop/bank', goal: 1, value: (s) => s.owned[6] },
     { name: { en: 'Full steam', es: 'A todo vapor' }, detail: { en: '1K / s', es: '1K / s' }, cat: 3, icon: 'awards/cps', goal: 1e3, value: (s) => s.cps },
     { name: { en: 'Unstoppable', es: 'Imparable' }, detail: { en: '10K / s', es: '10K / s' }, cat: 3, icon: 'awards/cps', goal: 1e4, value: (s) => s.cps },
-    { name: { en: 'Gold rush', es: 'Fiebre de oro' }, detail: { en: '50 golden', es: '50 doradas' }, cat: 4, icon: 'awards/gold', goal: 50, value: (s) => s.golden }
+    { name: { en: 'Gold rush', es: 'Fiebre de oro' }, detail: { en: '50 golden', es: '50 doradas' }, cat: 4, icon: 'awards/gold', goal: 50, value: (s) => s.golden },
+    { name: { en: 'Regular', es: 'Habitual' }, detail: { en: '3 days in a row', es: '3 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 3, value: (s) => s.streak },
+    { name: { en: 'Devoted', es: 'Fiel' }, detail: { en: '7 days in a row', es: '7 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 7, value: (s) => s.streak },
+    { name: { en: 'Hooked', es: 'Sin parar' }, detail: { en: '30 days in a row', es: '30 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 30, value: (s) => s.streak }
 ];
 
 function iconPath(icon) {
@@ -177,6 +187,19 @@ let boost = UPGRADES.map(() => 1);
 // The entries the open shop or upgrades view lists, and what its cards last showed.
 let shownIds = [];
 let itemsKey = '';
+// Saved as "daily": the last day the game was opened, the streak up to it and the best streak.
+let streakDay = 0;
+let streak = 1;
+let bestStreak = 1;
+
+// The days are counted in the watch's local time, so the streak turns over at its midnight.
+function localDay() {
+    return Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / DAY_MS);
+}
+
+function streakPercent() {
+    return Math.min((streak - 1) * STREAK_STEP_PERCENT, STREAK_MAX_PERCENT);
+}
 
 function nextGolden() {
     return GOLDEN_MIN_S + Math.floor(Math.random() * (GOLDEN_MAX_S - GOLDEN_MIN_S + 1));
@@ -353,10 +376,14 @@ export default {
                     this.playSeconds += s[3];
                     load('achieved', '', (achieved) => {
                         this.achieved = ACHIEVEMENTS.map((a, i) => achieved.charAt(i) === '1');
-                        load('savedAt', '0', (savedAt) => {
-                            loaded = true;
-                            this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
-                            this.checkAchievements();
+                        load('daily', '', (daily) => {
+                            load('savedAt', '0', (savedAt) => {
+                                loaded = true;
+                                // Before the offline earnings, which use the production with the streak.
+                                this.updateStreak(daily);
+                                this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
+                                this.checkAchievements();
+                            });
                         });
                     });
                 });
@@ -381,6 +408,28 @@ export default {
         this.bake(earned);
         this.save();
         this.showNotice('+' + format(earned) + this.t.away);
+    },
+    // Runs once per launch, so the streak can only move on the first opening of each day.
+    // A clock set back keeps the saved streak until it catches up.
+    updateStreak(daily) {
+        const d = numbers(daily, 3);
+        const today = localDay();
+        streakDay = d[0];
+        streak = Math.max(d[1], 1);
+        bestStreak = Math.max(d[2], streak);
+        if (today > streakDay) {
+            streak = today === streakDay + 1 ? streak + 1 : 1;
+            bestStreak = Math.max(bestStreak, streak);
+            streakDay = today;
+            this.saveStreak();
+            if (streak > 1) {
+                this.showNotice(this.t.streak + streak + ': +' + streakPercent() + '%');
+            }
+        }
+        this.setOwned(this.owned);
+    },
+    saveStreak() {
+        storage.set({ key: 'daily', value: [streakDay, streak, bestStreak].join(',') });
     },
     showNotice(text) {
         notices.push(text);
@@ -529,7 +578,8 @@ export default {
             [t.statTastier, String(this.owned[0]), 'fingers'],
             [t.statGolden, String(this.goldenClicks), 'golden'],
             [t.statAwards, awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
-            [t.statTime, formatTime(this.playSeconds), 'time']
+            [t.statTime, formatTime(this.playSeconds), 'time'],
+            [t.statStreak, streak + ' (+' + streakPercent() + '%)', 'streak']
         ];
         this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
     },
@@ -646,6 +696,10 @@ export default {
         this.goldenClicks = 0;
         this.playSeconds = 0;
         this.achieved = ACHIEVEMENTS.map(() => false);
+        streakDay = localDay();
+        streak = 1;
+        bestStreak = 1;
+        this.saveStreak();
         this.setOwned(UPGRADES.map(() => 0));
         this.setCount(0);
         this.save();
@@ -710,8 +764,9 @@ export default {
             }
         });
         this.owned = owned;
-        this.tapPower = tap + Math.floor(cps * tapShare);
-        this.cps = cps;
+        const percent = 100 + streakPercent();
+        this.tapPower = Math.floor((tap + Math.floor(cps * tapShare)) * percent / 100);
+        this.cps = Math.floor(cps * percent / 100);
         this.updateRates();
         this.refreshItems();
         this.checkAchievements();
@@ -737,7 +792,7 @@ export default {
         }
     },
     gameState() {
-        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps };
+        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps, streak: bestStreak };
     },
     checkAchievements() {
         if (!loaded) {
