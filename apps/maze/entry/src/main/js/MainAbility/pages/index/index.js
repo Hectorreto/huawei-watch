@@ -44,15 +44,31 @@ const MAP_ZONE = 100;
 const MAP_SIDE = 320;
 const MAP_PATH = '#5a6478';
 const MAP_PLAYER = '#ffe119';
+const MAP_GUARD = '#e6194b';
 // Gems per maze, put in dead ends; picked up by stepping on them.
 const GEMS = 3;
 // Gem size and how far below the horizon it sits, as shares of the wall height there.
 const GEM_SIZE = 0.35;
 const GEM_FLOOR = 0.35;
 // Steps allowed for the third star: this share of the shortest walk that takes every gem
-// and leaves. About a third of blind depth-first walks that take all gems make it at
-// 7 x 7 cells and about a sixth at 15 x 15 (in Node); a player also sees dead ends from afar.
+// and leaves. Blind depth-first walks that take all gems get three stars 43% of the time
+// on level 1 and 9% on level 5, guardian included (in Node); a player also sees dead ends
+// from afar.
 const PAR_SLACK = 1.5;
+// The guardian: from the second level on it wakes at the start after this many steps per
+// cell of the maze's side, then follows the player, one cell every so many steps (fewer
+// from GUARD_FAST_LEVEL on). Turning costs no time; it moves only when the player does.
+const GUARD_FROM_LEVEL = 1;
+const GUARD_FAST_LEVEL = 3;
+const GUARD_WAKE = 3;
+const GUARD_EVERY = 3;
+const GUARD_EVERY_FAST = 2;
+// Its height as a share of the wall height there, and how near it starts the warnings.
+const GUARD_SIZE = 0.85;
+const GUARD_WARN = 6;
+// Grid cells a catch sends the player back along the way, per cell of the maze's side. Not
+// all the way to the start: that is some 180 taps to walk again in the largest mazes.
+const GUARD_SETBACK = 2;
 const STAR_ON = '/common/star.png';
 const STAR_OFF = '/common/star_off.png';
 // Total stars needed for each rank.
@@ -91,6 +107,12 @@ let visited = [];
 // Gems still in the maze, as [x, y] grid cells, and how many were picked up.
 let gems = [];
 let gemsFound = 0;
+// The way from the start to the player, as grid cells by y * size + x. The maze is a tree,
+// so stepping back to the cell before pops it. The guardian only ever walks this way, so it
+// is never ahead of the player and the exit can always be reached.
+let trail = [];
+// Steps since the maze began or the last catch; they say where the guardian is.
+let guardSteps = 0;
 // Height and colour of each column as it is on the canvas now.
 const shownH = [];
 const shownColour = [];
@@ -146,9 +168,7 @@ function makeMaze() {
         stack.push([nx, ny]);
     }
     grid[size - 2][size - 1] = EXIT;
-    px = 1;
-    py = 1;
-    facing = grid[1][2] === 0 ? 1 : 2;
+    toStart();
     steps = 0;
     visited = [];
     for (let i = 0; i < size * size; i++) {
@@ -157,6 +177,44 @@ function makeMaze() {
     visited[py * size + px] = 1;
     placeGems();
     par = Math.round(shortestWalk(parent) * PAR_SLACK);
+}
+
+// Puts the player at the start, with the guardian asleep.
+function toStart() {
+    px = 1;
+    py = 1;
+    facing = grid[1][2] === 0 ? 1 : 2;
+    trail = [py * size + px];
+    guardSteps = 0;
+}
+
+// A catch: the player goes back along the way, facing where it was heading, and the
+// guardian sleeps at the start again.
+function setBack() {
+    const keep = Math.max(1, trail.length - GUARD_SETBACK * (size - 1) / 2);
+    const next = trail[keep];
+    trail.length = keep;
+    px = trail[keep - 1] % size;
+    py = Math.floor(trail[keep - 1] / size);
+    for (let d = 0; d < 4; d++) {
+        if ((py + DIRS[d][1]) * size + px + DIRS[d][0] === next) {
+            facing = d;
+        }
+    }
+    guardSteps = 0;
+}
+
+// Where the guardian is on the trail, or -1 while it sleeps or on the first level. It moves
+// a whole number of cells from its steps alone, so it needs no state of its own.
+function guardIndex() {
+    if (level < GUARD_FROM_LEVEL) {
+        return -1;
+    }
+    const awake = guardSteps - GUARD_WAKE * (size - 1) / 2;
+    if (awake < 0) {
+        return -1;
+    }
+    return Math.floor(awake / (level < GUARD_FAST_LEVEL ? GUARD_EVERY : GUARD_EVERY_FAST));
 }
 
 // Steps of the shortest walk from the start through every gem and out of the door. The maze
@@ -221,33 +279,40 @@ function placeGems() {
     }
 }
 
-// Places each gem the player can see as an image over the view: sized and lowered by its
-// distance, and hidden when the wall in its middle column is nearer than it. Far gems
-// come first so near ones are drawn over them.
-function gemSprites(view) {
+// Where a grid cell falls on screen, or null when it is behind the player, off to a side, or
+// the wall in its middle column is nearer than it (no partial hiding behind corners).
+function project(x, y, view) {
     const dx = DIRS[facing][0];
     const dy = DIRS[facing][1];
+    const ox = x - px;
+    const oy = y - py;
+    const ahead = ox * dx + oy * dy;
+    const side = ox * -dy + oy * dx;
+    if (ahead <= 0) {
+        return null;
+    }
+    const cam = side / (ahead * PLANE);
+    const c = Math.floor((cam + 1) / 2 * COLS);
+    if (c < 0 || c >= COLS || view[c].dist < ahead) {
+        return null;
+    }
+    return { ahead: ahead, wallH: WALL_SCALE / ahead, centreX: (cam + 1) / 2 * COLS * COL_W };
+}
+
+// Places each gem the player can see as an image over the view: sized and lowered by its
+// distance. Far gems come first so near ones are drawn over them.
+function gemSprites(view) {
     const shown = [];
     for (let i = 0; i < gems.length; i++) {
-        const ox = gems[i][0] - px;
-        const oy = gems[i][1] - py;
-        const ahead = ox * dx + oy * dy;
-        const side = ox * -dy + oy * dx;
-        if (ahead <= 0) {
+        const at = project(gems[i][0], gems[i][1], view);
+        if (at === null) {
             continue;
         }
-        const cam = side / (ahead * PLANE);
-        const c = Math.floor((cam + 1) / 2 * COLS);
-        if (c < 0 || c >= COLS || view[c].dist < ahead) {
-            continue;
-        }
-        const wallH = WALL_SCALE / ahead;
-        const s = Math.max(8, Math.round(wallH * GEM_SIZE));
-        const centreX = (cam + 1) / 2 * COLS * COL_W;
+        const s = Math.max(8, Math.round(at.wallH * GEM_SIZE));
         shown.push({
-            ahead: ahead,
-            x: Math.round(centreX - s / 2),
-            y: Math.round(SCREEN / 2 + wallH * GEM_FLOOR - s / 2),
+            ahead: at.ahead,
+            x: Math.round(at.centreX - s / 2),
+            y: Math.round(SCREEN / 2 + at.wallH * GEM_FLOOR - s / 2),
             s: s
         });
     }
@@ -347,6 +412,11 @@ function drawMap() {
             ctx.fillRect(left + start * cell, top + y * cell, (x - start) * cell, cell);
         }
     }
+    const g = guardIndex();
+    if (g >= 0) {
+        ctx.fillStyle = MAP_GUARD;
+        ctx.fillRect(left + (trail[g] % size) * cell, top + Math.floor(trail[g] / size) * cell, cell, cell);
+    }
     ctx.fillStyle = MAP_PLAYER;
     ctx.fillRect(left + px * cell, top + py * cell, cell, cell);
     const mark = Math.max(2, Math.floor(cell / 3));
@@ -362,6 +432,9 @@ export default {
         record: '',
         note: '',
         sprites: [],
+        guardX: SCREEN,
+        guardY: 0,
+        guardS: 64,
         result: false,
         resultTitle: '',
         starGems: STAR_OFF,
@@ -403,6 +476,7 @@ export default {
         ctx = null;
         this.live = false;
         this.sprites = [];
+        this.guardX = SCREEN;
         setTimeout(() => {
             this.live = true;
             setTimeout(() => {
@@ -460,8 +534,32 @@ export default {
             shownColour[c] = view[c].colour;
         }
         this.sprites = gemSprites(view);
+        this.showGuard(view);
         this.hud = COMPASS[facing] + ' ' + steps + '/' + par;
         this.record = 'Nivel ' + (level + 1) + '  gemas ' + gemsFound + '/' + (gems.length + gemsFound);
+    },
+    // Stands the guardian on the floor when the player can see it (one fixed image, moved off
+    // the screen when not), and warns when it woke or comes near, unless a note is showing.
+    showGuard(view) {
+        const g = guardIndex();
+        const at = g < 0 ? null : project(trail[g] % size, Math.floor(trail[g] / size), view);
+        if (at === null) {
+            this.guardX = SCREEN;
+        } else {
+            const s = Math.round(at.wallH * GUARD_SIZE);
+            this.guardS = s;
+            this.guardX = Math.round(at.centreX - s / 2);
+            this.guardY = Math.round(SCREEN / 2 + at.wallH / 2 - s);
+        }
+        if (g < 0 || this.note !== '') {
+            return;
+        }
+        const gap = trail.length - 1 - g;
+        if (gap <= GUARD_WARN) {
+            this.note = 'Guardián a ' + gap + (gap === 1 ? ' paso' : ' pasos');
+        } else if (guardSteps === GUARD_WAKE * (size - 1) / 2) {
+            this.note = 'El guardián despertó';
+        }
     },
     // Left third turns left, right third turns right, the bottom turns around, the compass
     // at the top opens the map, the rest of the middle steps forward; while the map is open
@@ -512,6 +610,13 @@ export default {
             py = ny;
             visited[py * size + px] = 1;
             steps++;
+            guardSteps++;
+            const cell = py * size + px;
+            if (trail.length > 1 && trail[trail.length - 2] === cell) {
+                trail.pop();
+            } else {
+                trail.push(cell);
+            }
             for (let i = 0; i < gems.length; i++) {
                 if (gems[i][0] === px && gems[i][1] === py) {
                     gems.splice(i, 1);
@@ -519,6 +624,12 @@ export default {
                     this.note = 'Gema ' + gemsFound + ' de ' + (gems.length + gemsFound);
                     break;
                 }
+            }
+            const g = guardIndex();
+            if (g >= 0 && g >= trail.length - 1) {
+                // Steps, gems and the map stay; the walk back and the steps are the price.
+                setBack();
+                this.note = 'Te atrapó: retrocedes';
             }
         }
         this.draw();

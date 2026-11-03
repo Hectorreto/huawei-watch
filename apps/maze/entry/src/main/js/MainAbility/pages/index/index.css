@@ -31,7 +31,7 @@
   color: #c8c8c8;
   text-align: center;
 }
-/* "Pared" when walking into a wall, and picking up a gem. */
+/* "Pared" when walking into a wall, picking up a gem, and the guardian's warnings. */
 .note {
   width: 320px;
   height: 36px;

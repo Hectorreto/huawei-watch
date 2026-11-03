@@ -1,6 +1,7 @@
 <stack class="container">
     <canvas class="view" ref="cv" if="{{ live }}"></canvas>
     <image for="{{ sprites }}" src="/common/gem.png" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px;"></image>
+    <image src="/common/guardian.png" style="left: {{ guardX }}px; top: {{ guardY }}px; width: {{ guardS }}px; height: {{ guardS }}px;"></image>
     <text class="hud">{{ hud }}</text>
     <text class="record">{{ record }}</text>
     <text class="note">{{ note }}</text>
