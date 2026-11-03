@@ -2,10 +2,11 @@ import storage from '@system.storage';
 import {
     GAME_LIVES, GOLD_HITS, FACE_ROW, ADULTS, VISITORS, newPet, serialize, deserialize, isNight, advance, dayNumber, rollDay,
     rollVisitor, receiveVisitor, canChangePot, nextPot, potImage, takePotNews, potGoal, takeWishNews, isRipe, plantSeed, water, giveSun, clean, stroke, sparkMs, sparkKind,
-    finishGame, faceFor, hintFor, formName, isFound, foundCount, herbariumHint, ageText, hit
+    finishGame, faceFor, hintFor, greeting, idleLine, skyFor, formName, isFound, foundCount, herbariumHint, ageText, hit
 } from './pet.js';
 
 const SAVE_KEY = 'pet';
+const MS_PER_MIN = 60000;
 const TICK_MS = 1000;
 const ADVANCE_TICKS = 30;
 const SAVE_TICKS = 600;
@@ -26,8 +27,6 @@ const BOB = 6;
 const VISITOR_TOP = 130;
 const BAR_WIDTH = 150;
 const LOCKED_SRC = '/common/mini_locked.png';
-const SKY_DAY = '#12303f';
-const SKY_NIGHT = '#060913';
 const EVENT_TEXT = {
     sprout: '¡Brotó!',
     young: '¡Está creciendo!',
@@ -74,7 +73,7 @@ function barWidth(value) {
 export default {
     data: {
         view: 'main',
-        sky: SKY_DAY,
+        sky: skyFor(12),
         waterW: BAR_WIDTH,
         sunW: BAR_WIDTH,
         moodW: BAR_WIDTH,
@@ -136,7 +135,13 @@ export default {
     },
     start(loaded) {
         pet = loaded;
+        const awayMin = (Date.now() - pet.last) / MS_PER_MIN;
         this.catchUp();
+        const hello = greeting(hourOf(Date.now()), awayMin, this.night());
+        if (hello && !message) {
+            this.say(hello);
+            this.refresh();
+        }
         this.save();
         tickTimer = setInterval(() => this.tick(), TICK_MS);
     },
@@ -173,7 +178,7 @@ export default {
     // Everything that depends on the pet's state, not on the animation.
     refresh() {
         const night = this.night();
-        this.sky = night ? SKY_NIGHT : SKY_DAY;
+        this.sky = skyFor(hourOf(Date.now()));
         this.waterW = barWidth(pet.water);
         this.sunW = barWidth(pet.sun);
         this.moodW = barWidth(pet.mood);
@@ -188,7 +193,7 @@ export default {
             this.visitorSrc = '/common/visitor_' + VISITORS[pet.visitor - 1] + '.png';
         }
         if (this.view !== 'game') {
-            this.note = message || hintFor(pet, night);
+            this.note = message || hintFor(pet, night) || idleLine(pet, Math.floor(ticks / ADVANCE_TICKS));
         }
         this.drawPet();
     },

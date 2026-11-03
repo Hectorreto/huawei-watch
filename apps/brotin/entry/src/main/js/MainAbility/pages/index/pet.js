@@ -80,6 +80,20 @@ const POTS = [
     { image: 'pot_gold', goal: 'Maceta: herbario completo', earned: (pet) => foundCount(pet) === ADULTS.length }
 ];
 
+const GREET_AFTER_MIN = 30;
+const MISSED_AFTER_MIN = 720;
+const FORM_LINES = { seed: 'Sueña con brotar', sprout: 'Estira sus hojitas', young: 'Quiere crecer' };
+const ADULT_LINE = 'Presume su forma';
+
+const DAY_FROM = 9;
+const DUSK_FROM = 17;
+const EVENING_FROM = 20;
+const SKY_DAWN = '#3a3350';
+const SKY_DAY = '#12303f';
+const SKY_DUSK = '#47304a';
+const SKY_EVENING = '#1a2140';
+const SKY_NIGHT = '#060913';
+
 // The row of each form's art where its face goes.
 export const FACE_ROW = {
     seed: 13, sprout: 13, young: 13, flower: 6, sunflower: 6, lily: 6, golden: 6, cactus: 13, mushroom: 12
@@ -515,6 +529,45 @@ export function hintFor(pet, night) {
         return 'Antojo: ' + wish.label + ' ' + pet.wishDone + '/' + wish.goal;
     }
     return isRipe(pet) ? 'Toca la semilla para plantar' : '';
+}
+
+// What it says on opening, after a while away; '' if it is asleep or was just opened.
+export function greeting(hour, awayMin, night) {
+    if (night || awayMin < GREET_AFTER_MIN) {
+        return '';
+    }
+    if (awayMin >= MISSED_AFTER_MIN) {
+        return '¡Te extrañé!';
+    }
+    if (hour < 12) {
+        return 'Buenos días';
+    }
+    return hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+}
+
+// The note when nothing else needs saying; step changes which line it is.
+export function idleLine(pet, step) {
+    const lines = [FORM_LINES[pet.form] || ADULT_LINE, 'Se siente bien', 'Mira el cielo', 'Tararea bajito'];
+    if (pet.streak >= 2) {
+        lines.push('Racha de ' + pet.streak + ' días');
+    }
+    if (pet.found > 0) {
+        lines.push('Herbario ' + foundCount(pet) + '/' + ADULTS.length);
+    }
+    return lines[step % lines.length];
+}
+
+export function skyFor(hour) {
+    if (isNight(hour)) {
+        return SKY_NIGHT;
+    }
+    if (hour < DAY_FROM) {
+        return SKY_DAWN;
+    }
+    if (hour < DUSK_FROM) {
+        return SKY_DAY;
+    }
+    return hour < EVENING_FROM ? SKY_DUSK : SKY_EVENING;
 }
 
 export function formName(form) {
