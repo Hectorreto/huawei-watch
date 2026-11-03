@@ -7,6 +7,7 @@ Each app is its own DevEco project under `apps/`, because an app always starts a
 | `apps/bakery-clicker/` | `com.hectorreto.counter` (kept from the first project; changing it would make a new app on the watch and lose the save) | `counter.p7b` (`CounterDebugProfile`) |
 | `apps/maze/` | `com.hectorreto.maze` | `maze.p7b` (`MazeDebugProfile`) |
 | `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (`DrawingLabDebugProfile`) |
+| `apps/brotin/` | `com.hectorreto.brotin` | `brotin.p7b` (not created yet, see `brotin.md`) |
 
 Confirmed October 2026: the three install side by side on the GT 6 Pro and each works.
 
