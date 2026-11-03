@@ -209,17 +209,8 @@ function step(pet, minutes, night, random) {
     }
     pet.mood = clamp(pet.mood - minutes * (rate * MOOD_PER_MIN + pet.bugs * MOOD_PER_BUG_PER_MIN));
 
-    let troubles = 0;
-    [pet.water, pet.sun, pet.mood].forEach((need) => {
-        if (need <= 0) {
-            troubles++;
-        }
-    });
-    if (pet.bugs >= MAX_BUGS) {
-        troubles++;
-    }
-    if (troubles > 0) {
-        pet.health = clamp(pet.health - minutes * troubles * WITHER_PER_MIN);
+    if (pet.water <= 0 || pet.sun <= 0 || pet.mood <= 0 || pet.bugs >= MAX_BUGS) {
+        pet.health = clamp(pet.health - minutes * WITHER_PER_MIN);
     } else if (pet.water > HEAL_ABOVE && pet.sun > HEAL_ABOVE && pet.mood > HEAL_ABOVE) {
         pet.health = clamp(pet.health + minutes * HEAL_PER_MIN);
     }
