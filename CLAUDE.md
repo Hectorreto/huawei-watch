@@ -39,3 +39,4 @@ How to write them:
 - Choosing how to draw something (canvas, components, images, animations), or running the drawing lab → `docs/compare-drawing-methods.md`
 - Working on the first-person maze prototype (`apps/maze/`) → `docs/maze-prototype.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`
+- Preparing a session on the real watch, or leaving a change untested on it → `docs/watch-test-list.md`
