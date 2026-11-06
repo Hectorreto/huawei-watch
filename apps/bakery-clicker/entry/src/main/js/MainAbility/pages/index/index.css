@@ -7,17 +7,20 @@
   width: 100%;
   height: 100%;
 }
-/* The cookie fills the 466 px screen and the rest of the cookie view is laid over it with
-   left/top. The overlays are kept small because taps on them do not reach the cookie. */
+/* The cookie box fills the 466 px screen, so a tap anywhere counts, and centres the 300 px
+   cookie (its pixel art at 3x, on a transparent square). The rest of the cookie view is laid
+   over it with left/top. The overlays are kept small because taps on them do not reach the cookie. */
 .cookie-box {
   width: 466px;
   height: 466px;
   left: 0px;
   top: 0px;
+  justify-content: center;
+  align-items: center;
 }
 .cookie {
-  width: 466px;
-  height: 466px;
+  width: 300px;
+  height: 300px;
 }
 /* Black radial vignette over the cookie, the same for every theme. It covers the whole
    screen, so it takes the cookie's taps and swipe. */
