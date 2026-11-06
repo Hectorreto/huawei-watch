@@ -4,11 +4,10 @@ Changes built but not yet checked on the GT 6 Pro. Install them together in the 
 
 ## Bakery clicker (`apps/bakery-clicker/`)
 
-The Previewer has shown batch buying, golden cookies, the frenzy and the new batch reset working (November 2026). On the GT 6 Pro (November 2026) the press effect looked fine, but quick taps and buying closed the app: see `known-issues.md`. Once that is fixed:
+Back to the October version, which counted quick taps and bought on the watch; the November improvements closed the app (`known-issues.md`). New since then: the big cookie is 300 px, the art at 3x, instead of filling the screen.
 
-- Quick taps all count: tap 20 times fast and the count goes up by 20 x tap power.
-- Buying in the shop does not close the app.
-- New buildings, one-time upgrades, the daily streak, the golden cookie on return, the buy shortcut on the cookie and the cookie themes from awards look right and fit inside the round edge.
+- The smaller cookie looks sharp and centred, and a tap anywhere on the screen still counts.
+- Quick taps all count and buying does not close the app, as in October; the save from the November version (more entries in `owned`) loads.
 
 ## Maze (`apps/maze/`)
 
