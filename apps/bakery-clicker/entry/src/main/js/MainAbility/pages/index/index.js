@@ -4,10 +4,6 @@ import storage from '@system.storage';
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
-// A tap shrinks the cookie for a moment.
-const COOKIE_PX = 466;
-const COOKIE_PRESSED_PX = 438;
-const PRESS_MS = 120;
 // Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
 // PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
 // the animation in index.css. The area keeps the 144x44 row inside the round screen.
@@ -25,21 +21,15 @@ const SCREEN_CENTRE = 233;
 const COUNT_ARC = { radius: 215, font: 38, boxW: 44, boxH: 50 };
 const SUB_ARC = { radius: 177, font: 30, boxW: 36, boxH: 40 };
 const COUNT_DIGITS = 9;
-// Rebuilding the count's letters is the heaviest thing a tap does, so it happens at most this often.
-const ARC_MIN_MS = 300;
-// The stats list is rebuilt whole, so while it is open it follows the game every few seconds.
-const STATS_EVERY_S = 3;
 
 // Every text the player sees, per language. Names in the tables below have one per language too.
 const TEXTS = {
     en: {
         shop: 'Shop', upgrades: 'Upgrades', stats: 'Stats', awards: 'Awards', settings: 'Settings',
-        newTheme: 'New theme', perTap: '/tap', tapShare: 'Tap +5% of /s', award: 'Award: ', away: ' away',
+        perTap: '/tap', award: 'Award: ', away: ' away',
         statBaked: 'Cookies baked', statCps: 'Cookies per second', statTaps: 'Taps',
         statBuildings: 'Buildings', statTastier: 'Tastier taps', statGolden: 'Golden cookies',
-        statAwards: 'Awards', statTime: 'Time played', statStreak: 'Daily streak', streak: 'Streak ',
-        statRecipes: 'Recipes', batch: 'New batch', batchReady: 'New batch ready', batchTitle: 'New batch?',
-        batchGain: ' forever', batchLose: 'Cookies and buildings restart', batchConfirm: 'Bake',
+        statAwards: 'Awards', statTime: 'Time played',
         theme: 'Theme',
         language: 'Language', languageName: 'English', reset: 'Reset game',
         resetTitle: 'Reset game?', resetDetail: 'All progress will be lost',
@@ -47,12 +37,10 @@ const TEXTS = {
     },
     es: {
         shop: 'Tienda', upgrades: 'Mejoras', stats: 'Estadísticas', awards: 'Logros', settings: 'Ajustes',
-        newTheme: 'Tema nuevo', perTap: '/toque', tapShare: 'Toque +5% /s', award: 'Logro: ', away: ' al volver',
+        perTap: '/toque', award: 'Logro: ', away: ' al volver',
         statBaked: 'Galletas horneadas', statCps: 'Galletas por segundo', statTaps: 'Toques',
         statBuildings: 'Edificios', statTastier: 'Mejor toque', statGolden: 'Galletas doradas',
-        statAwards: 'Logros', statTime: 'Tiempo jugado', statStreak: 'Racha diaria', streak: 'Racha ',
-        statRecipes: 'Recetas', batch: 'Otra hornada', batchReady: 'Nueva hornada lista', batchTitle: '¿Nueva hornada?',
-        batchGain: ' para siempre', batchLose: 'Galletas y edificios de cero', batchConfirm: 'Hornear',
+        statAwards: 'Logros', statTime: 'Tiempo jugado',
         theme: 'Tema',
         language: 'Idioma', languageName: 'Español', reset: 'Resetear partida',
         resetTitle: '¿Resetear partida?', resetDetail: 'Se perderá todo el progreso',
@@ -65,18 +53,17 @@ const LANGUAGES = ['en', 'es'];
 // nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big
 // cookie) and <id>_small.png (170 px, menu centre, theme list and settings row).
 // The id is what the settings save, so ids must not change. The first one is the default.
-// awards: how many achievements unlock it. A saved theme stays in use even if it is locked.
 const THEMES = [
-    { id: 'classic', awards: 0, name: { en: 'A classic', es: 'Un clásico' } },
-    { id: 'cookie', awards: 0, name: { en: 'A cookie', es: 'Una galleta' } },
-    { id: 'donut', awards: 0, name: { en: 'Everyday', es: 'Para diario' } },
-    { id: 'concha', awards: 3, name: { en: 'Concha', es: 'Concha' } },
-    { id: 'gingerbread', awards: 6, name: { en: 'Gingerbread', es: 'Jengibre' } },
-    { id: 'cinnamon', awards: 9, name: { en: 'For the cold', es: 'Para el frío' } },
-    { id: 'skull', awards: 12, name: { en: 'Day of the Dead', es: 'Día de muertos' } },
-    { id: 'rosca', awards: 15, name: { en: 'Kings\' Day', es: 'Día de reyes' } },
-    { id: 'bunuelo', awards: 18, name: { en: 'Christmas', es: 'Navidad' } },
-    { id: 'pan_de_muerto', awards: 21, name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
+    { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
+    { id: 'cookie', name: { en: 'A cookie', es: 'Una galleta' } },
+    { id: 'donut', name: { en: 'Everyday', es: 'Para diario' } },
+    { id: 'concha', name: { en: 'Concha', es: 'Concha' } },
+    { id: 'gingerbread', name: { en: 'Gingerbread', es: 'Jengibre' } },
+    { id: 'cinnamon', name: { en: 'For the cold', es: 'Para el frío' } },
+    { id: 'skull', name: { en: 'Day of the Dead', es: 'Día de muertos' } },
+    { id: 'rosca', name: { en: 'Kings\' Day', es: 'Día de reyes' } },
+    { id: 'bunuelo', name: { en: 'Christmas', es: 'Navidad' } },
+    { id: 'pan_de_muerto', name: { en: 'Pan de muerto', es: 'Pan de muerto' } }
 ];
 
 function themePath(id, suffix) {
@@ -85,34 +72,15 @@ function themePath(id, suffix) {
 
 // tap: cookies added per tap per owned; cps: cookies per second per owned.
 // building ones are sold in the shop, the rest in the upgrades view.
-// needs: shown once that entry is owned. once: bought a single time; doubles: the entry it makes
-// twice as good; tapShare: each tap also gives this share of the cookies per second.
 // The order is the save format ("owned" is a comma-separated count per entry), so only append.
 const UPGRADES = [
     { name: { en: 'Tastier taps', es: 'Mejor toque' }, icon: 'finger', building: false, base: 15, tap: 1, cps: 0 },
     { name: { en: 'Cursor', es: 'Cursor' }, icon: 'cursor', building: true, base: 25, tap: 0, cps: 1 },
     { name: { en: 'Grandma', es: 'Abuela' }, icon: 'grandma', building: true, base: 150, tap: 0, cps: 5 },
     { name: { en: 'Farm', es: 'Granja' }, icon: 'farm', building: true, base: 1500, tap: 0, cps: 40 },
-    { name: { en: 'Mine', es: 'Mina' }, icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 },
-    { name: { en: 'Factory', es: 'Fábrica' }, icon: 'factory', building: true, base: 500000, tap: 0, cps: 2000, needs: 4 },
-    { name: { en: 'Bank', es: 'Banco' }, icon: 'bank', building: true, base: 20000000, tap: 0, cps: 25000, needs: 5 },
-    { name: { en: 'Steel cursor', es: 'Cursor fino' }, icon: 'cursor', building: false, base: 2000, tap: 0, cps: 0, needs: 1, once: true, doubles: 1 },
-    { name: { en: 'Strong thumb', es: 'Dedo fuerte' }, icon: 'finger', building: false, base: 3000, tap: 0, cps: 0, needs: 0, once: true, doubles: 0 },
-    { name: { en: 'Rolling pins', es: 'Rodillos' }, icon: 'grandma', building: false, base: 15000, tap: 0, cps: 0, needs: 2, once: true, doubles: 2 },
-    { name: { en: 'Fertilizer', es: 'Abono' }, icon: 'farm', building: false, base: 150000, tap: 0, cps: 0, needs: 3, once: true, doubles: 3 },
-    { name: { en: 'Sweet touch', es: 'Toque dulce' }, icon: 'finger', building: false, base: 1000000, tap: 0, cps: 0, needs: 4, once: true, tapShare: 0.05 },
-    { name: { en: 'Better picks', es: 'Mejor pico' }, icon: 'mine', building: false, base: 3000000, tap: 0, cps: 0, needs: 4, once: true, doubles: 4 },
-    { name: { en: 'Fast belts', es: 'Banda veloz' }, icon: 'factory', building: false, base: 100000000, tap: 0, cps: 0, needs: 5, once: true, doubles: 5 },
-    { name: { en: 'Interest', es: 'Intereses' }, icon: 'bank', building: false, base: 3000000000, tap: 0, cps: 0, needs: 6, once: true, doubles: 6 }
+    { name: { en: 'Mine', es: 'Mina' }, icon: 'mine', building: true, base: 15000, tap: 0, cps: 250 }
 ];
-// The upgrades view lists at most this many one-time upgrades, the cheapest ones not bought yet,
-// to keep the list as light as the shop.
-const ONCE_SHOWN = 4;
 const PRICE_GROWTH = 1.15;
-// A tap on a card buys one, plus as many more as fit in this share of the cookies, up to BULK_MAX.
-// After a day away it saves dozens of taps, each of which would rebuild the list.
-const BULK_SHARE = 0.25;
-const BULK_MAX = 25;
 // Offline earnings stop after this long away, so an old save does not give a huge jump.
 const OFFLINE_MAX_S = 24 * 60 * 60;
 // Messages in place of the rate (offline earnings, achievements) show one after another.
@@ -124,27 +92,6 @@ const GOLDEN_MAX_S = 120;
 const GOLDEN_STAY_S = 10;
 const FRENZY_MULT = 7;
 const FRENZY_S = 30;
-// One in three is lucky instead: at once, this many seconds of production or tap-worths of cookies,
-// whichever is more, so it pays in a short visit too and before anything produces.
-const LUCKY_CHANCE = 1 / 3;
-const LUCKY_CPS_S = 300;
-const LUCKY_TAPS = 100;
-// The watch closes the app after a few seconds without input, so visits are often too short for
-// that wait. After this long away, a golden cookie comes 5-15 s into the visit instead.
-const GOLDEN_BACK_AWAY_S = 10 * 60;
-const GOLDEN_BACK_MIN_S = 5;
-const GOLDEN_BACK_MAX_S = 15;
-// Each day in a row after the first adds this % to taps and production, up to STREAK_MAX_PERCENT.
-// A missed day starts the streak again.
-const STREAK_STEP_PERCENT = 5;
-const STREAK_MAX_PERCENT = 50;
-const DAY_MS = 24 * 60 * 60 * 1000;
-// A new batch starts cookies and buildings over for recipes, each a permanent +RECIPE_PERCENT.
-// A batch of BATCH_BAKED cookies earns 1, four times that 2, nine times 3, and so on.
-const BATCH_BAKED = 1e9;
-const RECIPE_PERCENT = 10;
-// The card for it in the upgrades list; buy() gets this instead of an index in UPGRADES.
-const BATCH_ID = -1;
 // The list only exists once the view has rendered, so its crown focus is requested a bit later.
 const FOCUS_DELAY_MS = 50;
 // The only gesture is a swipe that starts this close to the left edge and goes towards the centre.
@@ -156,13 +103,11 @@ const CATEGORIES = [
     { name: { en: 'Cookies', es: 'Galletas' }, icon: 'awards/cookies' },
     { name: { en: 'Buildings', es: 'Edificios' }, icon: 'awards/buildings' },
     { name: { en: 'Speed', es: 'Velocidad' }, icon: 'awards/production' },
-    { name: { en: 'Golden', es: 'Doradas' }, icon: 'awards/golden' },
-    { name: { en: 'Streak', es: 'Racha' }, icon: 'awards/streak' }
+    { name: { en: 'Golden', es: 'Doradas' }, icon: 'awards/golden' }
 ];
 const GRID_COLUMNS = 3;
 
-// s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps,
-// streak (the best daily streak), recipes.
+// s is the game: baked (cookies ever made), taps, golden (golden cookies tapped), owned, cps.
 // An achievement is done when value(s) reaches goal; goals above 1 show a progress bar.
 // cat is the index in CATEGORIES.
 // The order is the save format ("achieved" is one 0/1 per entry), so only append.
@@ -180,20 +125,7 @@ const ACHIEVEMENTS = [
     { name: { en: 'Rolling', es: 'En marcha' }, detail: { en: '10 / s', es: '10 / s' }, cat: 3, icon: 'awards/production', goal: 10, value: (s) => s.cps },
     { name: { en: 'Production', es: 'Producción' }, detail: { en: '100 / s', es: '100 / s' }, cat: 3, icon: 'awards/cps', goal: 100, value: (s) => s.cps },
     { name: { en: 'Lucky', es: 'Suertudo' }, detail: { en: '1 golden cookie', es: '1 galleta dorada' }, cat: 4, icon: 'awards/golden', goal: 1, value: (s) => s.golden },
-    { name: { en: 'Gold digger', es: 'Buscaoro' }, detail: { en: '10 golden', es: '10 doradas' }, cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden },
-    { name: { en: 'Tycoon', es: 'Magnate' }, detail: { en: 'Bake 1B', es: 'Hornea 1B' }, cat: 1, icon: 'awards/empire', goal: 1e9, value: (s) => s.baked },
-    { name: { en: 'Legend', es: 'Leyenda' }, detail: { en: 'Bake 1T', es: 'Hornea 1T' }, cat: 1, icon: 'awards/empire', goal: 1e12, value: (s) => s.baked },
-    { name: { en: 'Tireless', es: 'Incansable' }, detail: { en: '10K taps', es: '10K toques' }, cat: 0, icon: 'awards/clicks', goal: 1e4, value: (s) => s.taps },
-    { name: { en: 'Industrial', es: 'Industrial' }, detail: { en: 'Buy a Factory', es: 'Compra una fábrica' }, cat: 2, icon: 'shop/factory', goal: 1, value: (s) => s.owned[5] },
-    { name: { en: 'Banker', es: 'Banquero' }, detail: { en: 'Buy a Bank', es: 'Compra un banco' }, cat: 2, icon: 'shop/bank', goal: 1, value: (s) => s.owned[6] },
-    { name: { en: 'Full steam', es: 'A todo vapor' }, detail: { en: '1K / s', es: '1K / s' }, cat: 3, icon: 'awards/cps', goal: 1e3, value: (s) => s.cps },
-    { name: { en: 'Unstoppable', es: 'Imparable' }, detail: { en: '10K / s', es: '10K / s' }, cat: 3, icon: 'awards/cps', goal: 1e4, value: (s) => s.cps },
-    { name: { en: 'Gold rush', es: 'Fiebre de oro' }, detail: { en: '50 golden', es: '50 doradas' }, cat: 4, icon: 'awards/gold', goal: 50, value: (s) => s.golden },
-    { name: { en: 'Regular', es: 'Habitual' }, detail: { en: '3 days in a row', es: '3 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 3, value: (s) => s.streak },
-    { name: { en: 'Devoted', es: 'Fiel' }, detail: { en: '7 days in a row', es: '7 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 7, value: (s) => s.streak },
-    { name: { en: 'Hooked', es: 'Sin parar' }, detail: { en: '30 days in a row', es: '30 días seguidos' }, cat: 5, icon: 'awards/streak', goal: 30, value: (s) => s.streak },
-    { name: { en: 'Fresh batch', es: 'Recién hecho' }, detail: { en: 'Earn a recipe', es: 'Gana una receta' }, cat: 1, icon: 'shop/batch', goal: 1, value: (s) => s.recipes },
-    { name: { en: 'Master baker', es: 'Gran maestro' }, detail: { en: '25 recipes', es: '25 recetas' }, cat: 1, icon: 'shop/batch', goal: 25, value: (s) => s.recipes }
+    { name: { en: 'Gold digger', es: 'Buscaoro' }, detail: { en: '10 golden', es: '10 doradas' }, cat: 4, icon: 'awards/gold', goal: 10, value: (s) => s.golden }
 ];
 
 function iconPath(icon) {
@@ -201,7 +133,6 @@ function iconPath(icon) {
 }
 
 let saveTimer = null;
-let pressTimer = null;
 let plusSlot = 0;
 // Where the last touch started, for the edge swipe; -1 when the event gave no position.
 let touchX = -1;
@@ -212,42 +143,12 @@ let notices = [];
 let arcCount = '';
 let arcSub = '';
 let arcSubGold = false;
-let arcTimer = null;
 let ticks = 0;
 let goldenIn = 0;
 let goldenLeft = 0;
 // Achievements are only checked once the save is loaded, so old ones are not announced again,
 // and nothing is saved before that.
 let loaded = false;
-// How many times better each entry is thanks to the one-time upgrades (setOwned).
-let boost = UPGRADES.map(() => 1);
-// The entries the open shop or upgrades view lists, and what its cards last showed.
-let shownIds = [];
-let itemsKey = '';
-// The cheapest entry never bought and its price, so each new cookie only needs one comparison.
-let newId = 0;
-let newPrice = Infinity;
-// Saved as "daily": the last day the game was opened, the streak up to it and the best streak.
-let streakDay = 0;
-let streak = 1;
-let bestStreak = 1;
-// Saved as "legacy": the recipes, and how many cookies had been baked when this batch began.
-let recipes = 0;
-let batchStart = 0;
-let batchReady = false;
-
-// The days are counted in the watch's local time, so the streak turns over at its midnight.
-function localDay() {
-    return Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / DAY_MS);
-}
-
-function recipesToEarn(baked) {
-    return Math.floor(Math.sqrt((baked - batchStart) / BATCH_BAKED));
-}
-
-function streakPercent() {
-    return Math.min((streak - 1) * STREAK_STEP_PERCENT, STREAK_MAX_PERCENT);
-}
 
 function nextGolden() {
     return GOLDEN_MIN_S + Math.floor(Math.random() * (GOLDEN_MAX_S - GOLDEN_MIN_S + 1));
@@ -261,9 +162,7 @@ function format(n) {
     const units = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
     for (let i = 0; i < units.length; i++) {
         if (n >= units[i][0]) {
-            // No decimal from 100 up, so a price like 229K still fits its 50 px in the pill.
-            const v = n / units[i][0];
-            return (v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10) + units[i][1];
+            return (Math.floor(n / units[i][0] * 10) / 10) + units[i][1];
         }
     }
     return String(n);
@@ -377,7 +276,7 @@ export default {
         categoryTitle: '',
         categoryCount: '',
         categoryItems: [],
-        owned: UPGRADES.map(() => 0),
+        owned: [0, 0, 0, 0, 0],
         tapPower: 1,
         cps: 0,
         rateText: '0 / s',
@@ -385,12 +284,10 @@ export default {
         frenzyLeft: 0,
         frenzyText: '',
         golden: '',
-        canBuy: false,
-        batchText: '',
         plusText: '+1',
         items: [],
+        upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
-        cookieSize: COOKIE_PX,
         cookieSmall: themePath(THEMES[0].id, '_small'),
         plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
         plusX0: 0, plusX1: 0, plusX2: 0, plusX3: 0, plusX4: 0,
@@ -429,20 +326,10 @@ export default {
                     this.playSeconds += s[3];
                     load('achieved', '', (achieved) => {
                         this.achieved = ACHIEVEMENTS.map((a, i) => achieved.charAt(i) === '1');
-                        load('daily', '', (daily) => {
-                            load('legacy', '', (legacy) => {
-                                load('savedAt', '0', (savedAt) => {
-                                    loaded = true;
-                                    const l = numbers(legacy, 2);
-                                    recipes = l[0];
-                                    batchStart = l[1];
-                                    // Before the offline earnings, which use the production with the bonuses.
-                                    this.updateStreak(daily);
-                                    this.welcomeGolden(parseInt(savedAt, 10) || 0);
-                                    this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
-                                    this.checkAchievements();
-                                });
-                            });
+                        load('savedAt', '0', (savedAt) => {
+                            loaded = true;
+                            this.addOfflineEarnings(parseInt(savedAt, 10) || 0);
+                            this.checkAchievements();
                         });
                     });
                 });
@@ -454,16 +341,7 @@ export default {
     },
     onDestroy() {
         clearInterval(tickTimer);
-        clearTimeout(pressTimer);
-        pressTimer = null;
-        clearTimeout(arcTimer);
-        arcTimer = null;
         this.save();
-    },
-    welcomeGolden(savedAt) {
-        if (savedAt > 0 && Date.now() - savedAt >= GOLDEN_BACK_AWAY_S * 1000) {
-            goldenIn = randomBetween(GOLDEN_BACK_MIN_S, GOLDEN_BACK_MAX_S);
-        }
     },
     // savedAt is when count was last saved, so the time since then is exactly what was not produced.
     addOfflineEarnings(savedAt) {
@@ -476,28 +354,6 @@ export default {
         this.bake(earned);
         this.save();
         this.showNotice('+' + format(earned) + this.t.away);
-    },
-    // Runs once per launch, so the streak can only move on the first opening of each day.
-    // A clock set back keeps the saved streak until it catches up.
-    updateStreak(daily) {
-        const d = numbers(daily, 3);
-        const today = localDay();
-        streakDay = d[0];
-        streak = Math.max(d[1], 1);
-        bestStreak = Math.max(d[2], streak);
-        if (today > streakDay) {
-            streak = today === streakDay + 1 ? streak + 1 : 1;
-            bestStreak = Math.max(bestStreak, streak);
-            streakDay = today;
-            this.saveStreak();
-            if (streak > 1) {
-                this.showNotice(this.t.streak + streak + ': +' + streakPercent() + '%');
-            }
-        }
-        this.setOwned(this.owned);
-    },
-    saveStreak() {
-        storage.set({ key: 'daily', value: [streakDay, streak, bestStreak].join(',') });
     },
     showNotice(text) {
         notices.push(text);
@@ -525,13 +381,7 @@ export default {
             }
         }
         this.tickGolden();
-        // Here and not on each new cookie, so a tap does not walk the whole list of achievements.
-        this.checkAchievements();
-        if (!batchReady && recipesToEarn(this.baked) > 0) {
-            batchReady = true;
-            this.showNotice(this.t.batchReady);
-        }
-        if (this.view === 'stats' && this.playSeconds % STATS_EVERY_S === 0) {
+        if (this.view === 'stats') {
             this.refreshStats();
         }
     },
@@ -564,15 +414,9 @@ export default {
         this.golden = '';
         goldenIn = nextGolden();
         this.goldenClicks++;
-        if (Math.random() < LUCKY_CHANCE) {
-            const lucky = Math.max(this.cps * LUCKY_CPS_S, this.tapPower * LUCKY_TAPS);
-            this.bake(lucky);
-            this.showNotice('+' + format(lucky));
-        } else {
-            this.frenzyLeft = FRENZY_S;
-            this.frenzyText = 'x' + FRENZY_MULT + '  ' + FRENZY_S + ' s';
-            this.updateRates();
-        }
+        this.frenzyLeft = FRENZY_S;
+        this.frenzyText = 'x' + FRENZY_MULT + '  ' + FRENZY_S + ' s';
+        this.updateRates();
         this.checkAchievements();
     },
     multiplier() {
@@ -582,28 +426,12 @@ export default {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
 
-        this.pressCookie();
         this.showPlus();
-        this.saveSoon();
-    },
-    saveSoon() {
+
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             this.save();
         }, SAVE_DELAY_MS);
-    },
-    // Shrinks the cookie for a moment by changing the size of the same image, never making a new
-    // one: making it again on each tap lost quick taps on the watch. A tap during a press changes
-    // nothing, so tapping faster does not redraw the screen more often.
-    pressCookie() {
-        if (pressTimer !== null) {
-            return;
-        }
-        this.cookieSize = COOKIE_PRESSED_PX;
-        pressTimer = setTimeout(() => {
-            pressTimer = null;
-            this.cookieSize = COOKIE_PX;
-        }, PRESS_MS);
     },
     // Moves the next slot to a random spot and swaps which of its two "if" texts exists, so a
     // new text is created and its animation starts again (lite cannot bind class). The slot is
@@ -644,8 +472,6 @@ export default {
             this.openAchievements();
         } else if (this.view === 'themes' || this.view === 'confirmReset') {
             this.openSettings();
-        } else if (this.view === 'confirmBatch') {
-            this.openUpgrades();
         } else {
             this.closeView();
         }
@@ -676,26 +502,21 @@ export default {
             [t.statTastier, String(this.owned[0]), 'fingers'],
             [t.statGolden, String(this.goldenClicks), 'golden'],
             [t.statAwards, awards + ' / ' + ACHIEVEMENTS.length, 'awards'],
-            [t.statTime, formatTime(this.playSeconds), 'time'],
-            [t.statStreak, streak + ' (+' + streakPercent() + '%)', 'streak']
+            [t.statTime, formatTime(this.playSeconds), 'time']
         ];
-        const items = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
-        if (recipes > 0) {
-            items.push({ label: t.statRecipes, value: recipes + ' (+' + recipes * RECIPE_PERCENT + '%)', icon: iconPath('shop/batch') });
-        }
-        this.statItems = items;
+        this.statItems = rows.map((r) => ({ label: r[0], value: r[1], icon: iconPath('stats/' + r[2]) }));
     },
     openUpgrades() {
         this.menu = false;
-        this.chooseItems(false);
+        this.refreshItems();
         this.view = 'upgrades';
-        this.focusCrown('itemList');
+        this.focusCrown('upgradeList');
     },
     openShop() {
         this.menu = false;
-        this.chooseItems(true);
+        this.refreshItems();
         this.view = 'shop';
-        this.focusCrown('itemList');
+        this.focusCrown('shopList');
     },
     openAchievements() {
         this.menu = false;
@@ -740,10 +561,14 @@ export default {
         this.setLanguage(LANGUAGES[(LANGUAGES.indexOf(this.lang) + 1) % LANGUAGES.length]);
         this.saveSettings();
     },
-    // Lists with translated names need nothing here: each view builds its own when it opens.
+    // Lists that hold translated names are rebuilt, so they show the new language right away.
     setLanguage(lang) {
         this.lang = lang;
         this.t = TEXTS[lang];
+        this.refreshItems();
+        this.refreshStats();
+        this.refreshAchievements();
+        this.refreshThemes();
     },
     openThemes() {
         this.refreshThemes();
@@ -753,23 +578,14 @@ export default {
     // Rebuilt as a new array, like the shop, so the check moves to the chosen theme.
     // id is the index in THEMES, as with the shop.
     refreshThemes() {
-        const have = this.achieved.filter((a) => a).length;
-        this.themeItems = THEMES.map((th, i) => {
-            const chosen = th.id === this.theme;
-            const locked = !chosen && have < th.awards;
-            return {
-                id: i,
-                icon: themePath(th.id, '_small'),
-                title: locked ? this.t.awards + ' ' + have + ' / ' + th.awards : th.name[this.lang],
-                chosen: chosen,
-                locked: locked
-            };
-        });
+        this.themeItems = THEMES.map((th, i) => ({
+            id: i,
+            icon: themePath(th.id, '_small'),
+            title: th.name[this.lang],
+            chosen: th.id === this.theme
+        }));
     },
     chooseTheme(index) {
-        if (THEMES[index].id !== this.theme && this.achieved.filter((a) => a).length < THEMES[index].awards) {
-            return;
-        }
         this.setTheme(THEMES[index].id);
         this.saveSettings();
         this.openSettings();
@@ -780,6 +596,7 @@ export default {
         this.theme = theme;
         this.cookieSrc = themePath(theme);
         this.cookieSmall = themePath(theme, '_small');
+        this.refreshThemes();
     },
     saveSettings() {
         storage.set({ key: 'settings', value: [this.lang, this.theme].join(',') });
@@ -803,38 +620,10 @@ export default {
         this.goldenClicks = 0;
         this.playSeconds = 0;
         this.achieved = ACHIEVEMENTS.map(() => false);
-        streakDay = localDay();
-        streak = 1;
-        bestStreak = 1;
-        this.saveStreak();
-        recipes = 0;
-        batchStart = 0;
-        batchReady = false;
-        this.saveLegacy();
         this.setOwned(UPGRADES.map(() => 0));
         this.setCount(0);
         this.save();
         this.view = 'cookie';
-    },
-    openBatchConfirm() {
-        this.batchText = '+' + recipesToEarn(this.baked) * RECIPE_PERCENT + '%' + this.t.batchGain;
-        this.view = 'confirmBatch';
-    },
-    // Cookies, buildings and upgrades start over. Stats, achievements, the streak and recipes stay.
-    confirmBatch() {
-        recipes += recipesToEarn(this.baked);
-        batchStart = this.baked;
-        batchReady = false;
-        this.saveLegacy();
-        this.frenzyLeft = 0;
-        this.frenzyText = '';
-        this.setOwned(UPGRADES.map(() => 0));
-        this.setCount(0);
-        this.save();
-        this.view = 'cookie';
-    },
-    saveLegacy() {
-        storage.set({ key: 'legacy', value: [recipes, batchStart].join(',') });
     },
     // Turning the crown scrolls the list that has the crown focus.
     focusCrown(ref) {
@@ -849,33 +638,19 @@ export default {
         this.view = 'cookie';
     },
     buy(index) {
-        if (index === BATCH_ID) {
-            this.openBatchConfirm();
-            return;
-        }
-        const once = UPGRADES[index].once;
-        let spent = this.price(index);
-        if (this.count < spent || (once && this.owned[index] > 0)) {
+        const price = this.price(index);
+        if (this.count < price) {
             return;
         }
         const owned = this.owned.slice();
         owned[index]++;
-        const budget = this.count * BULK_SHARE;
-        let next = this.price(index, owned[index]);
-        while (!once && owned[index] - this.owned[index] < BULK_MAX && spent + next <= budget) {
-            spent += next;
-            owned[index]++;
-            next = this.price(index, owned[index]);
-        }
-        this.count -= spent;
+        this.count -= price;
         this.setOwned(owned);
         this.setCount(this.count);
-        // Once purchases pause, as with taps, since a save is five writes to flash.
-        this.saveSoon();
+        this.save();
     },
-    price(index, owned) {
-        const n = owned === undefined ? this.owned[index] : owned;
-        return Math.floor(UPGRADES[index].base * Math.pow(PRICE_GROWTH, n));
+    price(index) {
+        return Math.floor(UPGRADES[index].base * Math.pow(PRICE_GROWTH, this.owned[index]));
     },
     // New cookies, as opposed to setCount, which also spends them.
     bake(n) {
@@ -885,48 +660,22 @@ export default {
     setCount(count) {
         this.count = count;
         this.countText = formatCount(count);
-        this.updateCanBuy();
-        this.throttledArc();
+        this.updateArc();
         if (this.view === 'shop' || this.view === 'upgrades') {
             this.refreshItems();
         }
-    },
-    // The first change shows at once; the timer then catches up with whatever came during the wait.
-    throttledArc() {
-        if (arcTimer !== null) {
-            return;
-        }
-        this.updateArc();
-        arcTimer = setTimeout(() => {
-            arcTimer = null;
-            if (this.countText !== arcCount) {
-                this.throttledArc();
-            }
-        }, ARC_MIN_MS);
+        this.checkAchievements();
     },
     setOwned(owned) {
-        boost = UPGRADES.map(() => 1);
-        UPGRADES.forEach((u, i) => {
-            if (u.doubles !== undefined && owned[i] > 0) {
-                boost[u.doubles] *= 2;
-            }
-        });
         let tap = 1;
         let cps = 0;
-        let tapShare = 0;
         UPGRADES.forEach((u, i) => {
-            tap += u.tap * owned[i] * boost[i];
-            cps += u.cps * owned[i] * boost[i];
-            if (u.tapShare && owned[i] > 0) {
-                tapShare += u.tapShare;
-            }
+            tap += u.tap * owned[i];
+            cps += u.cps * owned[i];
         });
         this.owned = owned;
-        const percent = 100 + streakPercent() + recipes * RECIPE_PERCENT;
-        this.tapPower = Math.floor((tap + Math.floor(cps * tapShare)) * percent / 100);
-        this.cps = Math.floor(cps * percent / 100);
-        this.updateNew();
-        this.updateCanBuy();
+        this.tapPower = tap;
+        this.cps = cps;
         this.updateRates();
         this.refreshItems();
         this.checkAchievements();
@@ -952,133 +701,46 @@ export default {
         }
     },
     gameState() {
-        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps, streak: bestStreak, recipes: recipes };
+        return { baked: this.baked, taps: this.taps, golden: this.goldenClicks, owned: this.owned, cps: this.cps };
     },
     checkAchievements() {
         if (!loaded) {
             return;
         }
-        // A plain loop and no copy until one is new: this runs every second.
         const state = this.gameState();
-        const old = this.achieved;
-        let achieved = null;
-        for (let i = 0; i < ACHIEVEMENTS.length; i++) {
-            const a = ACHIEVEMENTS[i];
-            if (!old[i] && a.value(state) >= a.goal) {
-                achieved = achieved || old.slice();
+        const achieved = this.achieved.slice();
+        let changed = false;
+        ACHIEVEMENTS.forEach((a, i) => {
+            if (!achieved[i] && a.value(state) >= a.goal) {
                 achieved[i] = true;
+                changed = true;
                 this.showNotice(this.t.award + a.name[this.lang]);
             }
-        }
-        if (achieved !== null) {
-            const before = old.filter((a) => a).length;
-            const after = achieved.filter((a) => a).length;
-            if (THEMES.some((th) => th.awards > before && th.awards <= after)) {
-                this.showNotice(this.t.newTheme);
-            }
+        });
+        if (changed) {
             this.achieved = achieved;
             this.save();
         }
     },
-    // On sale: its "needs" is met, and a one-time upgrade is not bought yet.
-    onSale(u, i) {
-        return (u.needs === undefined || this.owned[u.needs] > 0) && !(u.once && this.owned[i] > 0);
-    },
-    // Only what was never bought: mid-game there is nearly always enough for one more of something,
-    // and a button that never leaves says nothing and hides the cookie.
-    updateNew() {
-        newPrice = Infinity;
-        UPGRADES.forEach((u, i) => {
-            if (this.owned[i] === 0 && this.onSale(u, i) && u.base < newPrice) {
-                newPrice = u.base;
-                newId = i;
-            }
-        });
-    },
-    updateCanBuy() {
-        const canBuy = this.count >= newPrice;
-        if (canBuy !== this.canBuy) {
-            this.canBuy = canBuy;
-        }
-    },
-    openNew() {
-        if (UPGRADES[newId].building) {
-            this.openShop();
-        } else {
-            this.openUpgrades();
-        }
-    },
-    // Chosen only when a view opens: a list keeps its length while it is alive, since swapping a
-    // "for" array under a living list closed the drawing lab on the watch. So what a purchase
-    // unlocks shows the next time, and a one-time upgrade just bought keeps its card until then.
-    chooseItems(buildings) {
-        let once = 0;
-        shownIds = [];
-        UPGRADES.forEach((u, i) => {
-            if (u.building !== buildings || !this.onSale(u, i)) {
-                return;
-            }
-            if (u.once) {
-                if (once === ONCE_SHOWN) {
-                    return;
-                }
-                once++;
-            }
-            shownIds.push(i);
-        });
-        if (!buildings && recipesToEarn(this.baked) > 0) {
-            shownIds.unshift(BATCH_ID);
-        }
-        itemsKey = '';
-        this.refreshItems();
-    },
-    // The line under a card's name: what a one-time upgrade does, else the gain and number owned.
-    itemDetail(u, i) {
-        if (u.tapShare) {
-            return this.t.tapShare;
-        }
-        if (u.once) {
-            return UPGRADES[u.doubles].name[this.lang] + ' x2';
-        }
-        const gain = u.tap > 0 ? '+' + format(u.tap * boost[i]) + this.t.perTap : '+' + format(u.cps * boost[i]) + '/s';
-        return gain + ' (' + this.owned[i] + ')';
-    },
     // Rebuilt as a new array: lite does not reliably notice changes inside array items.
-    // Only when a card would change, not on every new cookie, to spare the watch the redraw.
     // id is the index in UPGRADES, which buy() needs because each view lists only some of them.
     refreshItems() {
-        let key = this.owned.join(',') + ',' + recipesToEarn(this.baked);
-        shownIds.forEach((i) => {
-            key += i === BATCH_ID || this.count >= this.price(i) ? '1' : '0';
-        });
-        if (key === itemsKey) {
-            return;
-        }
-        itemsKey = key;
-        this.items = shownIds.map((i) => {
-            if (i === BATCH_ID) {
-                return {
-                    id: i,
-                    icon: '/common/shop/batch.png',
-                    title: this.t.batch,
-                    detail: this.t.statRecipes + ' +' + recipesToEarn(this.baked),
-                    price: '+' + recipesToEarn(this.baked) * RECIPE_PERCENT + '%',
-                    affordable: true,
-                    bought: false
-                };
-            }
-            const u = UPGRADES[i];
+        const items = [];
+        const upgradeItems = [];
+        UPGRADES.forEach((u, i) => {
             const price = this.price(i);
-            return {
+            const gain = u.tap > 0 ? '+' + u.tap + this.t.perTap : '+' + u.cps + '/s';
+            (u.building ? items : upgradeItems).push({
                 id: i,
                 icon: '/common/shop/' + u.icon + '.png',
                 title: u.name[this.lang],
-                detail: this.itemDetail(u, i),
+                detail: gain + ' (' + this.owned[i] + ')',
                 price: format(price),
-                affordable: this.count >= price,
-                bought: u.once === true && this.owned[i] > 0
-            };
+                affordable: this.count >= price
+            });
         });
+        this.items = items;
+        this.upgradeItems = upgradeItems;
     },
     // The grid is a list of rows of GRID_COLUMNS tiles, so it scrolls if categories are added.
     refreshAchievements() {

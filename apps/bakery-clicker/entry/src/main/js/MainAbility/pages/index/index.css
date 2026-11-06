@@ -9,14 +9,15 @@
 }
 /* The cookie fills the 466 px screen and the rest of the cookie view is laid over it with
    left/top. The overlays are kept small because taps on them do not reach the cookie. */
-/* Centres the cookie, whose size is bound so a press can shrink it. */
 .cookie-box {
   width: 466px;
   height: 466px;
   left: 0px;
   top: 0px;
-  justify-content: center;
-  align-items: center;
+}
+.cookie {
+  width: 466px;
+  height: 466px;
 }
 /* Black radial vignette over the cookie, the same for every theme. It covers the whole
    screen, so it takes the cookie's taps and swipe. */
@@ -152,14 +153,6 @@
   height: 90px;
   left: 346px;
   top: 188px;
-}
-/* Shows on the big cookie when something never bought before can be bought; a tap goes there.
-   At the bottom, away from where the thumb usually taps, and only as big as a tap needs. */
-.buy-hint {
-  width: 64px;
-  height: 64px;
-  left: 201px;
-  top: 390px;
 }
 .count {
   width: 100%;
@@ -577,13 +570,6 @@
   color: #9a9a9a;
   text-align: center;
 }
-.confirm-gain {
-  width: 340px;
-  height: 34px;
-  font-size: 24px;
-  color: #f5c16c;
-  text-align: center;
-}
 .confirm-buttons {
   width: 300px;
   height: 56px;
@@ -597,15 +583,6 @@
   font-size: 24px;
   color: #ffffff;
   background-color: #5a5a5a;
-  border-radius: 28px;
-  text-align: center;
-}
-.confirm-batch {
-  width: 140px;
-  height: 56px;
-  font-size: 24px;
-  color: #000000;
-  background-color: #f5c16c;
   border-radius: 28px;
   text-align: center;
 }
