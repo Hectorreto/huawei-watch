@@ -9,11 +9,11 @@
   left: 0px;
   top: 0px;
 }
-/* Compass and steps, at the top of the round screen. */
+/* Compass, steps and par, at the top of the round screen. */
 .hud {
-  width: 120px;
+  width: 170px;
   height: 40px;
-  left: 173px;
+  left: 148px;
   top: 20px;
   font-size: 30px;
   color: #ffffff;
@@ -21,17 +21,17 @@
   background-color: #000000;
   border-radius: 20px;
 }
-/* Level and gems picked up, under the compass. */
+/* Level (or the daily challenge), gems picked up and the key, under the compass. */
 .record {
-  width: 240px;
+  width: 300px;
   height: 28px;
-  left: 113px;
+  left: 83px;
   top: 64px;
   font-size: 20px;
   color: #c8c8c8;
   text-align: center;
 }
-/* "Pared" when walking into a wall, and the win message. */
+/* "Pared" when walking into a wall, picking up a gem, and the guardian's warnings. */
 .note {
   width: 320px;
   height: 36px;
@@ -39,6 +39,211 @@
   top: 400px;
   font-size: 24px;
   color: #ffe119;
+  text-align: center;
+}
+/* The menu and the result of a maze; the result stays over the view until a tap. */
+.panel {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+  background-color: #000000;
+}
+/* Each word sits on the zone it names (see TURN_ZONE, BACK_ZONE and MAP_ZONE in index.js). */
+.help-map {
+  width: 156px;
+  height: 34px;
+  left: 155px;
+  top: 50px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-left {
+  width: 125px;
+  height: 34px;
+  left: 20px;
+  top: 200px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-step {
+  width: 156px;
+  height: 40px;
+  left: 155px;
+  top: 196px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.help-right {
+  width: 125px;
+  height: 34px;
+  left: 321px;
+  top: 200px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-back {
+  width: 300px;
+  height: 34px;
+  left: 83px;
+  top: 350px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.help-start {
+  width: 260px;
+  height: 28px;
+  left: 103px;
+  top: 396px;
+  font-size: 20px;
+  color: #ffe119;
+  text-align: center;
+}
+.menu-title {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 58px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-levels {
+  width: 380px;
+  height: 110px;
+  left: 43px;
+  top: 108px;
+  background-color: #2a3350;
+  border-radius: 20px;
+}
+.menu-levels-name {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 122px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-levels-line {
+  width: 340px;
+  height: 34px;
+  left: 63px;
+  top: 168px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.menu-daily {
+  width: 380px;
+  height: 110px;
+  left: 43px;
+  top: 232px;
+  background-color: #4a3a18;
+  border-radius: 20px;
+}
+.menu-daily-name {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 246px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.menu-daily-line {
+  width: 340px;
+  height: 34px;
+  left: 63px;
+  top: 292px;
+  font-size: 24px;
+  color: #ffe119;
+  text-align: center;
+}
+.menu-rank {
+  width: 340px;
+  height: 28px;
+  left: 63px;
+  top: 358px;
+  font-size: 20px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.result-title {
+  width: 340px;
+  height: 40px;
+  left: 63px;
+  top: 58px;
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.star-exit {
+  width: 64px;
+  height: 64px;
+  left: 121px;
+  top: 112px;
+}
+.star-gems {
+  width: 64px;
+  height: 64px;
+  left: 201px;
+  top: 112px;
+}
+.star-par {
+  width: 64px;
+  height: 64px;
+  left: 281px;
+  top: 112px;
+}
+.result-gems {
+  width: 360px;
+  height: 34px;
+  left: 53px;
+  top: 190px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.result-steps {
+  width: 400px;
+  height: 34px;
+  left: 33px;
+  top: 226px;
+  font-size: 24px;
+  color: #c8c8c8;
+  text-align: center;
+}
+.result-record {
+  width: 400px;
+  height: 34px;
+  left: 33px;
+  top: 262px;
+  font-size: 24px;
+  color: #ffe119;
+  text-align: center;
+}
+.result-rank {
+  width: 400px;
+  height: 34px;
+  left: 33px;
+  top: 316px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
+.result-next {
+  width: 340px;
+  height: 28px;
+  left: 63px;
+  top: 354px;
+  font-size: 20px;
+  color: #c8c8c8;
   text-align: center;
 }
 /* Covers the screen and takes every tap. */

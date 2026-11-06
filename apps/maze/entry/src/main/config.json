@@ -17,6 +17,18 @@
       "moduleName": "entry",
       "moduleType": "entry"
     },
+    "reqPermissions": [
+      {
+        "name": "ohos.permission.VIBRATE",
+        "reason": "Vibrate on rare game events",
+        "usedScene": {
+          "ability": [
+            ".MainAbility"
+          ],
+          "when": "inuse"
+        }
+      }
+    ],
     "abilities": [
       {
         "name": ".MainAbility",

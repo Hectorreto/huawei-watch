@@ -1,8 +1,39 @@
 <stack class="container">
     <canvas class="view" ref="cv" if="{{ live }}"></canvas>
     <image for="{{ sprites }}" src="/common/gem.png" style="left: {{ $item.x }}px; top: {{ $item.y }}px; width: {{ $item.s }}px; height: {{ $item.s }}px;"></image>
+    <image src="/common/key.png" style="left: {{ keyX }}px; top: {{ keyY }}px; width: {{ keyS }}px; height: {{ keyS }}px;"></image>
+    <image src="/common/guardian.png" style="left: {{ guardX }}px; top: {{ guardY }}px; width: {{ guardS }}px; height: {{ guardS }}px;"></image>
     <text class="hud">{{ hud }}</text>
     <text class="record">{{ record }}</text>
     <text class="note">{{ note }}</text>
+    <stack class="panel" if="{{ help }}">
+        <text class="help-map">Mapa</text>
+        <text class="help-left">Girar</text>
+        <text class="help-step">Avanzar</text>
+        <text class="help-right">Girar</text>
+        <text class="help-back">Media vuelta</text>
+        <text class="help-start">Toca para empezar</text>
+    </stack>
+    <stack class="panel" if="{{ menu }}">
+        <text class="menu-title">Laberinto</text>
+        <div class="menu-levels"></div>
+        <text class="menu-levels-name">Seguir</text>
+        <text class="menu-levels-line">{{ menuLevel }}</text>
+        <div class="menu-daily"></div>
+        <text class="menu-daily-name">Reto del día</text>
+        <text class="menu-daily-line">{{ menuDaily }}</text>
+        <text class="menu-rank">{{ menuRank }}</text>
+    </stack>
+    <stack class="panel" if="{{ result }}">
+        <text class="result-title">{{ resultTitle }}</text>
+        <image class="star-exit" src="/common/star.png"></image>
+        <image class="star-gems" src="{{ starGems }}"></image>
+        <image class="star-par" src="{{ starPar }}"></image>
+        <text class="result-gems">{{ resultGems }}</text>
+        <text class="result-steps">{{ resultSteps }}</text>
+        <text class="result-record">{{ resultRecord }}</text>
+        <text class="result-rank">{{ resultRank }}</text>
+        <text class="result-next">{{ resultNext }}</text>
+    </stack>
     <div class="touch" onclick="tap"></div>
 </stack>
