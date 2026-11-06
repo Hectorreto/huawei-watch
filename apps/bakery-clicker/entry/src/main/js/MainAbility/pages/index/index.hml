@@ -1,7 +1,7 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
         <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <image class="cookie" src="{{ cookieSrc }}"></image>
+            <image src="{{ cookieSrc }}" style="width: {{ cookieSize }}px; height: {{ cookieSize }}px;"></image>
         </div>
         <image class="vignette" if="{{ !menu }}" src="/common/vignette.png" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <stack class="arc" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
@@ -105,48 +105,28 @@
         <image class="menu-upgrades" if="{{ menu }}" src="/common/menu/upgrades.png" onclick="openUpgrades"></image>
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
+        <image class="buy-hint" if="{{ canBuy && !menu }}" src="/common/menu/shop.png" onclick="openNew"></image>
     </stack>
-    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
+    <div class="shop-view" if="{{ view === 'shop' || view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
-        <text class="title">{{ t.shop }}</text>
-        <list class="shop-list" ref="shopList">
+        <text class="title">{{ view === 'shop' ? t.shop : t.upgrades }}</text>
+        <list class="shop-list" ref="itemList">
             <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <div class="shop-text">
                     <text class="shop-name">{{ $item.title }}</text>
                     <text class="shop-detail">{{ $item.detail }}</text>
                 </div>
-                <div class="price" if="{{ $item.affordable }}">
+                <div class="price" if="{{ $item.affordable && !$item.bought }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
-                <div class="price-off" if="{{ !$item.affordable }}">
+                <div class="price-off" if="{{ !$item.affordable && !$item.bought }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
-            </list-item>
-        </list>
-    </div>
-    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
-        <text class="count">{{ countText }}</text>
-        <text class="rate">{{ rateText }}</text>
-        <text class="title">{{ t.upgrades }}</text>
-        <list class="shop-list" ref="upgradeList">
-            <list-item class="shop-item" for="{{ upgradeItems }}" onclick="buy($item.id)">
-                <image class="shop-icon" src="{{ $item.icon }}"></image>
-                <div class="shop-text">
-                    <text class="shop-name">{{ $item.title }}</text>
-                    <text class="shop-detail">{{ $item.detail }}</text>
-                </div>
-                <div class="price" if="{{ $item.affordable }}">
-                    <image class="coin" src="/common/shop/coin.png"></image>
-                    <text class="price-text">{{ $item.price }}</text>
-                </div>
-                <div class="price-off" if="{{ !$item.affordable }}">
-                    <image class="coin" src="/common/shop/coin.png"></image>
-                    <text class="price-text">{{ $item.price }}</text>
-                </div>
+                <image class="status" if="{{ $item.bought }}" src="/common/awards/check.png"></image>
             </list-item>
         </list>
     </div>
@@ -224,8 +204,19 @@
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <text class="theme-name">{{ $item.title }}</text>
                 <image class="status" if="{{ $item.chosen }}" src="/common/awards/check.png"></image>
+                <image class="status" if="{{ $item.locked }}" src="/common/awards/lock.png"></image>
             </list-item>
         </list>
+    </div>
+    <div class="confirm-view" if="{{ view === 'confirmBatch' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
+        <image class="settings-icon" src="/common/shop/batch.png"></image>
+        <text class="confirm-title">{{ t.batchTitle }}</text>
+        <text class="confirm-gain">{{ batchText }}</text>
+        <text class="confirm-detail">{{ t.batchLose }}</text>
+        <div class="confirm-buttons">
+            <text class="confirm-cancel" onclick="openUpgrades">{{ t.cancel }}</text>
+            <text class="confirm-batch" onclick="confirmBatch">{{ t.batchConfirm }}</text>
+        </div>
     </div>
     <div class="confirm-view" if="{{ view === 'confirmReset' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <image class="settings-icon" src="/common/settings/reset.png"></image>
