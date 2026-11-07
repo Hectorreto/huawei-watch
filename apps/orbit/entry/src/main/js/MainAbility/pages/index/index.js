@@ -1,0 +1,399 @@
+import brightness from '@system.brightness';
+import storage from '@system.storage';
+import vibrator from '@system.vibrator';
+
+// Órbita: a ball crosses a round arena; holding the left or right half of the screen turns
+// the arena (its spikes and its diamond) around the centre, but not the ball. Diamonds score,
+// spikes end the game. Positions are in px from the screen centre, angles in radians with
+// screen axes (x right, y down), so a growing angle turns clockwise.
+
+const MID = 233;
+const WALL = 224;              // inner edge of the ring
+const BALL_R = 10;
+const SPIKES = 10;
+const SPIKE_DIRS = 24;         // spike_00.png ... spike_23.png, one per 15 degrees
+const SPIKE_RADIUS = 213;      // centre of a spike image, so its base lies on the wall
+const SPIKE_HALF = 16;         // half the spike image
+const SPIKE_GAP = 0.112;       // angle between two spikes of a group (about 25 px)
+const SPIKE_HIT = BALL_R + 8;  // the ball touches a spike within this distance of its centre
+const DIAMOND_HALF = 15;
+const DIAMOND_HIT = BALL_R + 13;
+const TURN_SPEED = 2.8;        // rad/s while a half of the screen is held
+const BASE_SPEED = 150;        // px/s, plus SPEED_STEP per point up to MAX_SPEED
+const SPEED_STEP = 2;
+const MAX_SPEED = 260;
+const FRAME_MS = 33;
+const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
+const SUBSTEP_PX = 6;          // collisions are checked at least every 6 px of travel
+const OVER_PAUSE_MS = 700;     // touches right after losing are ignored
+const THREE_GROUPS_FROM = 3;   // below this score the spikes come in two groups
+const OFF = -100;              // where hidden sprites go
+const SAVE_KEY = 'orbita';
+const SAVE_FIELDS = 21;
+const GROUPINGS_2 = [[4, 6], [5, 5], [6, 4]];
+const GROUPINGS_3 = [[3, 3, 4], [3, 4, 3], [4, 3, 3]];
+const BALL_COLOUR = '#ffffff';
+const BALL_LOST = '#ff5040';
+const TWO_PI = Math.PI * 2;
+
+const SPIKE_SRC = [];
+for (let i = 0; i < SPIKE_DIRS; i++) {
+    SPIKE_SRC.push('/common/spike_' + (i < 10 ? '0' : '') + i + '.png');
+}
+
+// Game state lives in module variables: plain properties of the page object did not reach
+// `this` in the drawing lab.
+let page = null;
+let loaded = false;
+let phase = 'ready';           // 'ready' (waiting for the first touch), 'play' or 'over'
+let score = 0;
+let best = 0;
+let ballX = 0;
+let ballY = 0;
+let heading = 0;
+let curve = 0;                 // rad/s the heading turns, a slight curve
+let spin = 0;                  // how far the arena has turned
+let hold = 0;                  // -1 left half held, 1 right half, 0 none
+let spikesShown = false;
+let spikeAngles = [];          // in the arena's own frame
+let diamondR = 0;
+let diamondA = 0;              // in the arena's own frame
+let timer = null;
+let lastTime = 0;
+let overUntil = 0;
+let drawnSpin = null;          // spin when the arena was last placed, null to force it
+
+function rand(lo, hi) {
+    return lo + Math.random() * (hi - lo);
+}
+
+function randSign() {
+    return Math.random() < 0.5 ? -1 : 1;
+}
+
+function buzz(mode) {
+    try {
+        vibrator.vibrate({ mode: mode });
+    } catch (e) {
+        // The game goes on without it.
+    }
+}
+
+function keepScreen(on) {
+    try {
+        brightness.setKeepScreenOn({ keepScreenOn: on });
+    } catch (e) {
+        // The screen just behaves as usual.
+    }
+}
+
+function round3(v) {
+    return Math.round(v * 1000) / 1000;
+}
+
+function save() {
+    const parts = [score, best, round3(ballX), round3(ballY), round3(heading), round3(curve),
+        round3(spin % TWO_PI), spikesShown ? 1 : 0, round3(diamondR), round3(diamondA)];
+    for (let i = 0; i < SPIKES; i++) {
+        parts.push(round3(spikeAngles[i]));
+    }
+    parts.push(1); // format version
+    storage.set({ key: SAVE_KEY, value: parts.join(',') });
+}
+
+function freshRound() {
+    ballX = 0;
+    ballY = 0;
+    heading = rand(0, TWO_PI);
+    curve = randSign() * rand(0.1, 0.3);
+    spikesShown = false;
+    spikeAngles = [];
+    for (let i = 0; i < SPIKES; i++) {
+        spikeAngles.push(0);
+    }
+    placeDiamond();
+}
+
+// A new diamond somewhere inside the arena, not right next to the ball.
+function placeDiamond() {
+    for (let tries = 0; tries < 12; tries++) {
+        diamondR = rand(40, 170);
+        diamondA = rand(0, TWO_PI);
+        const a = diamondA + spin;
+        const dx = Math.cos(a) * diamondR - ballX;
+        const dy = Math.sin(a) * diamondR - ballY;
+        if (dx * dx + dy * dy > 90 * 90) {
+            break;
+        }
+    }
+    drawnSpin = null;
+}
+
+// After a bounce at screen angle `hit`, the spikes move away from it: two groups about a
+// quarter turn to each side, or (from THREE_GROUPS_FROM points) three groups a little more
+// than a fifth of a turn to each side and one opposite. The nearest spike always stays more
+// than 0.9 rad (about 50 degrees) from the hit, so it can never kill the ball where it is.
+function moveSpikes(hit) {
+    const three = score >= THREE_GROUPS_FROM && Math.random() < 0.5;
+    const options = three ? GROUPINGS_3 : GROUPINGS_2;
+    const sizes = options[Math.floor(Math.random() * options.length)];
+    const centres = three
+        ? [hit + 1.25 + rand(-0.15, 0.15), hit + Math.PI + rand(-0.3, 0.3), hit - 1.25 + rand(-0.15, 0.15)]
+        : [hit + Math.PI / 2 + rand(-0.35, 0.35), hit - Math.PI / 2 + rand(-0.35, 0.35)];
+    let n = 0;
+    for (let g = 0; g < sizes.length; g++) {
+        const first = centres[g] - (sizes[g] - 1) * SPIKE_GAP / 2;
+        for (let j = 0; j < sizes[g]; j++) {
+            spikeAngles[n++] = first + j * SPIKE_GAP - spin;
+        }
+    }
+    spikesShown = true;
+    drawnSpin = null;
+}
+
+function touchesSpike() {
+    if (!spikesShown) {
+        return false;
+    }
+    for (let i = 0; i < SPIKES; i++) {
+        const a = spikeAngles[i] + spin;
+        const dx = Math.cos(a) * SPIKE_RADIUS - ballX;
+        const dy = Math.sin(a) * SPIKE_RADIUS - ballY;
+        if (dx * dx + dy * dy < SPIKE_HIT * SPIKE_HIT) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function touchesDiamond() {
+    const a = diamondA + spin;
+    const dx = Math.cos(a) * diamondR - ballX;
+    const dy = Math.sin(a) * diamondR - ballY;
+    return dx * dx + dy * dy < DIAMOND_HIT * DIAMOND_HIT;
+}
+
+// The ball goes back the way it came, a little off: 5 to 20 degrees to either side, and
+// with a new slight curve. Returns the screen angle where it hit.
+function bounce() {
+    const hit = Math.atan2(ballY, ballX);
+    const r = WALL - BALL_R - 0.5;
+    ballX = Math.cos(hit) * r;
+    ballY = Math.sin(hit) * r;
+    heading += Math.PI + randSign() * rand(0.09, 0.35);
+    // Never along the wall: keep it within about 60 degrees of straight in.
+    const inward = hit + Math.PI;
+    if (Math.cos(heading - inward) < 0.5) {
+        heading = inward + rand(-0.5, 0.5);
+    }
+    heading %= TWO_PI;
+    curve = randSign() * rand(0.1, 0.3);
+    return hit;
+}
+
+export default {
+    data: {
+        score: '0',
+        line: '',
+        ballColour: BALL_COLOUR,
+        bx: MID - BALL_R,
+        by: MID - BALL_R,
+        gx: OFF,
+        gy: OFF,
+        s0: SPIKE_SRC[0], s1: SPIKE_SRC[0], s2: SPIKE_SRC[0], s3: SPIKE_SRC[0], s4: SPIKE_SRC[0],
+        s5: SPIKE_SRC[0], s6: SPIKE_SRC[0], s7: SPIKE_SRC[0], s8: SPIKE_SRC[0], s9: SPIKE_SRC[0],
+        x0: OFF, x1: OFF, x2: OFF, x3: OFF, x4: OFF, x5: OFF, x6: OFF, x7: OFF, x8: OFF, x9: OFF,
+        y0: OFF, y1: OFF, y2: OFF, y3: OFF, y4: OFF, y5: OFF, y6: OFF, y7: OFF, y8: OFF, y9: OFF
+    },
+    onInit() {
+        page = this;
+        freshRound();
+        storage.get({
+            key: SAVE_KEY,
+            default: '',
+            success: (value) => this.load(String(value)),
+            fail: () => this.load('')
+        });
+    },
+    load(value) {
+        const p = value.split(',').map((v) => parseFloat(v));
+        if (p.length === SAVE_FIELDS && p.every((v) => !isNaN(v))) {
+            score = Math.max(0, Math.floor(p[0]));
+            best = Math.max(score, Math.floor(p[1]));
+            ballX = p[2];
+            ballY = p[3];
+            heading = p[4];
+            curve = p[5];
+            spin = p[6];
+            spikesShown = p[7] === 1;
+            diamondR = p[8];
+            diamondA = p[9];
+            spikeAngles = p.slice(10, 10 + SPIKES);
+            if (ballX * ballX + ballY * ballY > WALL * WALL) {
+                freshRound();
+            }
+        }
+        loaded = true;
+        this.showReady();
+        this.draw();
+    },
+    onDestroy() {
+        this.stop();
+        if (loaded) {
+            save();
+        }
+        keepScreen(false);
+        page = null;
+    },
+    showReady() {
+        phase = 'ready';
+        this.score = String(score);
+        this.line = best > 0 ? 'Récord ' + best : 'Toca para jugar';
+        this.ballColour = BALL_COLOUR;
+    },
+    start() {
+        phase = 'play';
+        this.line = '';
+        this.ballColour = BALL_COLOUR;
+        lastTime = Date.now();
+        keepScreen(true);
+        if (timer === null) {
+            timer = setInterval(() => {
+                if (page) {
+                    page.frame();
+                }
+            }, FRAME_MS);
+        }
+    },
+    stop() {
+        if (timer !== null) {
+            clearInterval(timer);
+            timer = null;
+        }
+    },
+    frame() {
+        const now = Date.now();
+        const dt = Math.min(MAX_DT, Math.max(0, (now - lastTime) / 1000));
+        lastTime = now;
+        spin += hold * TURN_SPEED * dt;
+        const speed = Math.min(MAX_SPEED, BASE_SPEED + score * SPEED_STEP);
+        const travel = speed * dt;
+        const steps = Math.max(1, Math.ceil(travel / SUBSTEP_PX));
+        const stepLen = travel / steps;
+        const limit = (WALL - BALL_R) * (WALL - BALL_R);
+        for (let i = 0; i < steps; i++) {
+            heading += curve * dt / steps;
+            ballX += Math.cos(heading) * stepLen;
+            ballY += Math.sin(heading) * stepLen;
+            if (touchesSpike()) {
+                this.lose();
+                return;
+            }
+            if (ballX * ballX + ballY * ballY >= limit) {
+                const hit = bounce();
+                if (touchesSpike()) {
+                    this.lose();
+                    return;
+                }
+                moveSpikes(hit);
+            }
+            if (touchesDiamond()) {
+                this.point();
+            }
+        }
+        this.draw();
+    },
+    point() {
+        score++;
+        if (score > best) {
+            best = score;
+        }
+        this.score = String(score);
+        buzz('short');
+        placeDiamond();
+        save();
+    },
+    lose() {
+        this.stop();
+        phase = 'over';
+        hold = 0;
+        overUntil = Date.now() + OVER_PAUSE_MS;
+        keepScreen(false);
+        buzz('long');
+        this.draw();
+        this.ballColour = BALL_LOST;
+        this.line = score > 0 && score === best ? '¡Récord!' : 'Récord ' + best;
+        // The next game starts from 0 and is saved now, in case the app closes. The lost ball
+        // stays drawn where it hit until the next touch draws the new round.
+        score = 0;
+        spin %= TWO_PI;
+        freshRound();
+        save();
+    },
+    // Places the ball every frame, and the spikes and the diamond only when the arena moved.
+    draw() {
+        const bx = Math.round(MID + ballX - BALL_R);
+        const by = Math.round(MID + ballY - BALL_R);
+        if (this.bx !== bx) {
+            this.bx = bx;
+        }
+        if (this.by !== by) {
+            this.by = by;
+        }
+        if (drawnSpin === spin) {
+            return;
+        }
+        drawnSpin = spin;
+        const ga = diamondA + spin;
+        this.gx = Math.round(MID + Math.cos(ga) * diamondR - DIAMOND_HALF);
+        this.gy = Math.round(MID + Math.sin(ga) * diamondR - DIAMOND_HALF);
+        for (let i = 0; i < SPIKES; i++) {
+            let x = OFF;
+            let y = OFF;
+            if (spikesShown) {
+                const a = spikeAngles[i] + spin;
+                x = Math.round(MID + Math.cos(a) * SPIKE_RADIUS - SPIKE_HALF);
+                y = Math.round(MID + Math.sin(a) * SPIKE_RADIUS - SPIKE_HALF);
+                let dir = Math.round(a / TWO_PI * SPIKE_DIRS) % SPIKE_DIRS;
+                if (dir < 0) {
+                    dir += SPIKE_DIRS;
+                }
+                if (this['s' + i] !== SPIKE_SRC[dir]) {
+                    this['s' + i] = SPIKE_SRC[dir];
+                }
+            }
+            if (this['x' + i] !== x) {
+                this['x' + i] = x;
+            }
+            if (this['y' + i] !== y) {
+                this['y' + i] = y;
+            }
+        }
+    },
+    touchStart(e) {
+        if (!loaded) {
+            return;
+        }
+        const x = e && typeof e.globalX === 'number' ? e.globalX : MID;
+        if (phase === 'over') {
+            if (Date.now() < overUntil) {
+                return;
+            }
+            this.score = '0';
+            drawnSpin = null;
+            this.draw();
+        }
+        hold = x < MID ? -1 : 1;
+        if (phase !== 'play') {
+            this.start();
+        }
+    },
+    touchMove(e) {
+        if (hold !== 0 && e && typeof e.globalX === 'number') {
+            hold = e.globalX < MID ? -1 : 1;
+        }
+    },
+    touchEnd() {
+        hold = 0;
+    }
+};

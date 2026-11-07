@@ -1,0 +1,18 @@
+<stack class="container">
+    <div class="ring"></div>
+    <text class="score">{{ score }}</text>
+    <text class="line">{{ line }}</text>
+    <image class="diamond" src="/common/diamond.png" style="left: {{ gx }}px; top: {{ gy }}px;"></image>
+    <image class="spike" src="{{ s0 }}" style="left: {{ x0 }}px; top: {{ y0 }}px;"></image>
+    <image class="spike" src="{{ s1 }}" style="left: {{ x1 }}px; top: {{ y1 }}px;"></image>
+    <image class="spike" src="{{ s2 }}" style="left: {{ x2 }}px; top: {{ y2 }}px;"></image>
+    <image class="spike" src="{{ s3 }}" style="left: {{ x3 }}px; top: {{ y3 }}px;"></image>
+    <image class="spike" src="{{ s4 }}" style="left: {{ x4 }}px; top: {{ y4 }}px;"></image>
+    <image class="spike" src="{{ s5 }}" style="left: {{ x5 }}px; top: {{ y5 }}px;"></image>
+    <image class="spike" src="{{ s6 }}" style="left: {{ x6 }}px; top: {{ y6 }}px;"></image>
+    <image class="spike" src="{{ s7 }}" style="left: {{ x7 }}px; top: {{ y7 }}px;"></image>
+    <image class="spike" src="{{ s8 }}" style="left: {{ x8 }}px; top: {{ y8 }}px;"></image>
+    <image class="spike" src="{{ s9 }}" style="left: {{ x9 }}px; top: {{ y9 }}px;"></image>
+    <div class="ball" style="left: {{ bx }}px; top: {{ by }}px; background-color: {{ ballColour }};"></div>
+    <div class="touch" ontouchstart="touchStart" ontouchmove="touchMove" ontouchend="touchEnd"></div>
+</stack>

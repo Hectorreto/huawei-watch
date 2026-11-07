@@ -1,4 +1,4 @@
-# Draws the launcher icons of the maze and the drawing lab as pixel art: each design is
+# Draws the launcher icons of the maze, the drawing lab and Órbita as pixel art: each design is
 # sampled on a small grid (26 cells for icon.png, 23 for icon_small.png) and every cell is
 # scaled 4x with no smoothing, giving 104 and 92 px RGBA PNGs. Needs ffmpeg on PATH.
 # Usage: python tools/make_app_icons.py
@@ -32,6 +32,24 @@ def lab(u, v):
         return (250, 200, 60)
     return (34, 38, 52)
 
+def orbit(u, v):
+    # Órbita: the arena's ring with spikes on its wall, a diamond and the ball.
+    import math
+    r = (u * u + v * v) ** 0.5
+    a = math.atan2(v, u)
+    if r > 0.86:
+        return (52, 64, 106)
+    for c in (-2.3, -0.5):  # two groups of spikes pointing in
+        for k in range(3):
+            d = abs((a - (c + k * 0.36) + math.pi) % (2 * math.pi) - math.pi)
+            if r > 0.6 and d * 0.86 < (r - 0.6) * 0.62:
+                return (240, 90, 75)
+    if abs(u + 0.12) / 0.8 + abs(v - 0.28) < 0.2:
+        return (255, 205, 70)
+    if (u - 0.25) ** 2 + (v + 0.05) ** 2 < 0.13 ** 2:
+        return (255, 255, 255)
+    return (18, 23, 41)
+
 def render(design, n, path):
     out = bytearray()
     for y in range(n):
@@ -52,7 +70,7 @@ def render(design, n, path):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{s}x{s}",
                     "-i", "-", path], input=bytes(out), check=True)
 
-for app, design in (("maze", maze), ("drawing-lab", lab)):
+for app, design in (("maze", maze), ("drawing-lab", lab), ("orbit", orbit)):
     media = f"apps/{app}/entry/src/main/resources/base/media/"
     render(design, 26, media + "icon.png")
     render(design, 23, media + "icon_small.png")
