@@ -14,7 +14,8 @@ Back to the October version, which counted quick taps and bought on the watch; t
 
 New, needs its debug profile first (`add-a-new-app.md`). See `orbit-game.md`, **Status**.
 
-- Holding the left half turns the arena anticlockwise, the right half clockwise, smoothly, and releasing stops it.
+- Holding the left half turns the arena anticlockwise, the right half clockwise, smoothly, and releasing stops it; and whether a finger held still does this too or only turns one step (lite only reports a hold once the finger moves, `orbit-game.md`, **Controls**).
+- A short tap turns the arena about 23 degrees.
 - The spikes point inwards wherever they are, and the frame rate while turning feels smooth.
 - Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score and the ball.
 

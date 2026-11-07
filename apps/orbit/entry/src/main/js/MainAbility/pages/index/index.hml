@@ -14,5 +14,5 @@
     <image class="spike" src="{{ s8 }}" style="left: {{ x8 }}px; top: {{ y8 }}px;"></image>
     <image class="spike" src="{{ s9 }}" style="left: {{ x9 }}px; top: {{ y9 }}px;"></image>
     <div class="ball" style="left: {{ bx }}px; top: {{ by }}px; background-color: {{ ballColour }};"></div>
-    <div class="touch" ontouchstart="touchStart" ontouchmove="touchMove" ontouchend="touchEnd"></div>
+    <div class="touch" ontouchstart="touchStart" ontouchmove="touchMove" ontouchend="touchEnd" onlongpress="step" onclick="step"></div>
 </stack>

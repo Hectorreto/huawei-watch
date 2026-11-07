@@ -19,6 +19,8 @@ const SPIKE_HIT = BALL_R + 8;  // the ball touches a spike within this distance 
 const DIAMOND_HALF = 15;
 const DIAMOND_HIT = BALL_R + 13;
 const TURN_SPEED = 2.8;        // rad/s while a half of the screen is held
+const TAP_TURN = 0.4;          // one tap turns the arena this far (about 23 degrees)...
+const TAP_TURN_SPEED = 4;      // ...at this many rad/s
 const BASE_SPEED = 150;        // px/s, plus SPEED_STEP per point up to MAX_SPEED
 const SPEED_STEP = 2;
 const MAX_SPEED = 260;
@@ -54,6 +56,7 @@ let heading = 0;
 let curve = 0;                 // rad/s the heading turns, a slight curve
 let spin = 0;                  // how far the arena has turned
 let hold = 0;                  // -1 left half held, 1 right half, 0 none
+let pendingTurn = 0;           // what taps still have to turn
 let spikesShown = false;
 let spikeAngles = [];          // in the arena's own frame
 let diamondR = 0;
@@ -275,7 +278,15 @@ export default {
         const now = Date.now();
         const dt = Math.min(MAX_DT, Math.max(0, (now - lastTime) / 1000));
         lastTime = now;
-        spin += hold * TURN_SPEED * dt;
+        if (hold !== 0) {
+            spin += hold * TURN_SPEED * dt;
+            pendingTurn = 0;
+        } else if (pendingTurn !== 0) {
+            const turn = Math.min(Math.abs(pendingTurn), TAP_TURN_SPEED * dt);
+            const sign = pendingTurn < 0 ? -1 : 1;
+            spin += sign * turn;
+            pendingTurn -= sign * turn;
+        }
         const speed = Math.min(MAX_SPEED, BASE_SPEED + score * SPEED_STEP);
         const travel = speed * dt;
         const steps = Math.max(1, Math.ceil(travel / SUBSTEP_PX));
@@ -317,6 +328,7 @@ export default {
         this.stop();
         phase = 'over';
         hold = 0;
+        pendingTurn = 0;
         overUntil = Date.now() + OVER_PAUSE_MS;
         keepScreen(false);
         buzz('long');
@@ -370,20 +382,34 @@ export default {
             }
         }
     },
-    touchStart(e) {
+    // A touch that starts the game, or null when it should do nothing more: the game is still
+    // loading, or it was just lost and the player is probably still holding.
+    pressAt(e) {
         if (!loaded) {
-            return;
+            return null;
         }
-        const x = e && typeof e.globalX === 'number' ? e.globalX : MID;
         if (phase === 'over') {
             if (Date.now() < overUntil) {
-                return;
+                return null;
             }
             this.score = '0';
             drawnSpin = null;
             this.draw();
         }
-        hold = x < MID ? -1 : 1;
+        const x = e && typeof e.globalX === 'number' ? e.globalX : MID;
+        return x < MID ? -1 : 1;
+    },
+    // Lite has no press or release event for a finger that stays still: touchstart, touchmove
+    // and touchend only come once the finger has moved a little (a drag), longpress comes while
+    // a still finger is held but nothing comes when it lifts, and click comes on lifting a
+    // short still touch. So a held finger that moves turns the arena until it lifts, and a
+    // still tap or long press turns it one step (TAP_TURN).
+    touchStart(e) {
+        const side = this.pressAt(e);
+        if (side === null) {
+            return;
+        }
+        hold = side;
         if (phase !== 'play') {
             this.start();
         }
@@ -395,5 +421,16 @@ export default {
     },
     touchEnd() {
         hold = 0;
+    },
+    step(e) {
+        const side = this.pressAt(e);
+        if (side === null) {
+            return;
+        }
+        if (phase === 'play') {
+            pendingTurn += side * TAP_TURN;
+        } else {
+            this.start();
+        }
     }
 };
