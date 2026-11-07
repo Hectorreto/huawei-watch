@@ -14,7 +14,11 @@ Back to the October version, which counted quick taps and bought on the watch; t
 
 Installed in November 2026: it looks very good and the crown turns the arena continuously at a good speed. See `orbit-game.md`, **Status**.
 
-- Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score and the ball.
+- Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score, the ball and its speed.
+- After a bounce the new spikes appear 3 a frame without a visible hitch, and they look right while turning.
+- The ruby (from 20 s of play, 8 s on the screen) adds half the score, at least 1.
+- The shield wheel (from 15 s, 9 s on the screen) turns the ball green, and the next spike hit only takes the shield.
+- The ball speeds up a little with each diamond (225 to 380 px/s) and the speed feels right.
 
 ## Maze (`apps/maze/`)
 
