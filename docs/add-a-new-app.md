@@ -9,7 +9,7 @@ Each app is its own DevEco project under `apps/`, because an app always starts a
 | `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (`DrawingLabDebugProfile`) |
 | `apps/brotin/` | `com.hectorreto.brotin` | `brotin.p7b` (`BrotinDebugProfile`) |
 
-Confirmed October 2026: the three install side by side on the GT 6 Pro and each works.
+Confirmed October 2026: the first three install side by side on the GT 6 Pro and each works; Brotín joined them in November 2026.
 
 ## Steps
 

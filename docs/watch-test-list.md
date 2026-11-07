@@ -4,9 +4,8 @@ Changes built but not yet checked on the GT 6 Pro. Install them together in the 
 
 ## Brotín (`apps/brotin/`, branch `brotin`)
 
-The signed HAP builds with its own profile (November 2026); install it with DevEco Assistant. `brotin.md` says what the Previewer has already shown.
+It installs and opens on the watch (November 2026), and its main screen looks right. `brotin.md` says what the Previewer has already shown.
 
-- The screen matches the design: bars, note, pet in its pot, four buttons within the round edge.
 - The four buttons respond at their spots, and tapping the bars opens and closes the status view.
 - `show` hides the buttons during the game and the status view covers everything.
 - Bound `top` and face `src` every second: leave it open 10 minutes and check it does not close or slow down. The lab only swapped an `image` src 60 times.
