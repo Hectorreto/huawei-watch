@@ -12,11 +12,9 @@ Back to the October version, which counted quick taps and bought on the watch; t
 
 ## Órbita (`apps/orbit/`)
 
-New; the signed HAP builds. See `orbit-game.md`, **Status**.
+Installed in November 2026: it looks very good and the crown turns the arena continuously. See `orbit-game.md`, **Status**.
 
-- Holding the left half turns the arena anticlockwise, the right half clockwise, smoothly, and releasing stops it; and whether a finger held still does this too or only turns one step (lite only reports a hold once the finger moves, `orbit-game.md`, **Controls**).
-- A short tap turns the arena about 23 degrees.
-- The spikes point inwards wherever they are, and the frame rate while turning feels smooth.
+- The crown turns the arena fast enough now (3 times the first gain).
 - Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score and the ball.
 
 ## Maze (`apps/maze/`)

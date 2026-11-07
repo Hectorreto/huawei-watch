@@ -27,6 +27,13 @@ const MAX_SPEED = 260;
 const FRAME_MS = 33;
 const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
 const SUBSTEP_PX = 6;          // collisions are checked at least every 6 px of travel
+const CROWN_MAX = 1000;        // the hidden slider the crown turns runs 0..CROWN_MAX...
+const CROWN_MID = 500;         // ...and is put back near the middle after each change
+const CROWN_GAIN = 0.06;       // rad per unit of slider change: the GT 6 Pro's crown moves it
+                               // by about 2 per event, so about 7 degrees (the Previewer: 10)
+const CROWN_MAX_STEP = 0.15;   // at most this many rad per event, less than a spike's width
+                               // at the wall, so a spike cannot jump over the ball
+const FOCUS_DELAY_MS = 50;     // the slider exists only once the page has rendered
 const OVER_PAUSE_MS = 700;     // touches right after losing are ignored
 const THREE_GROUPS_FROM = 3;   // below this score the spikes come in two groups
 const OFF = -100;              // where hidden sprites go
@@ -57,6 +64,8 @@ let curve = 0;                 // rad/s the heading turns, a slight curve
 let spin = 0;                  // how far the arena has turned
 let hold = 0;                  // -1 left half held, 1 right half, 0 none
 let pendingTurn = 0;           // what taps still have to turn
+let crownLast = CROWN_MID;     // the slider's value after the last change
+let crownFlip = 0;             // alternates the reset value so the binding always changes
 let spikesShown = false;
 let spikeAngles = [];          // in the arena's own frame
 let diamondR = 0;
@@ -206,6 +215,8 @@ export default {
         s0: SPIKE_SRC[0], s1: SPIKE_SRC[0], s2: SPIKE_SRC[0], s3: SPIKE_SRC[0], s4: SPIKE_SRC[0],
         s5: SPIKE_SRC[0], s6: SPIKE_SRC[0], s7: SPIKE_SRC[0], s8: SPIKE_SRC[0], s9: SPIKE_SRC[0],
         x0: OFF, x1: OFF, x2: OFF, x3: OFF, x4: OFF, x5: OFF, x6: OFF, x7: OFF, x8: OFF, x9: OFF,
+        crownMax: CROWN_MAX,
+        crownValue: CROWN_MID,
         y0: OFF, y1: OFF, y2: OFF, y3: OFF, y4: OFF, y5: OFF, y6: OFF, y7: OFF, y8: OFF, y9: OFF
     },
     onInit() {
@@ -239,6 +250,7 @@ export default {
         loaded = true;
         this.showReady();
         this.draw();
+        this.focusCrown();
     },
     onDestroy() {
         this.stop();
@@ -253,6 +265,31 @@ export default {
         this.score = String(score);
         this.line = best > 0 ? 'Récord ' + best : 'Toca para jugar';
         this.ballColour = BALL_COLOUR;
+    },
+    // Turning the crown changes the hidden slider that has the crown focus (as the clicker's
+    // lists scroll with it); lite gives a page no crown event of its own before API 24.
+    focusCrown() {
+        setTimeout(() => {
+            const crown = this.$refs.crown;
+            if (crown && crown.rotation) {
+                crown.rotation({ focus: true });
+            }
+        }, FOCUS_DELAY_MS);
+    },
+    crownTurn(e) {
+        const value = e && typeof e.value === 'number' ? e.value : crownLast;
+        const delta = value - crownLast;
+        crownLast = value;
+        if (value < CROWN_MAX * 0.2 || value > CROWN_MAX * 0.8) {
+            crownFlip = 1 - crownFlip;
+            crownLast = CROWN_MID + crownFlip;
+            this.crownValue = crownLast;
+        }
+        if (delta === 0 || phase !== 'play') {
+            return;
+        }
+        // Straight onto the arena: the crown's events already come many times a second.
+        spin += Math.max(-CROWN_MAX_STEP, Math.min(CROWN_MAX_STEP, delta * CROWN_GAIN));
     },
     start() {
         phase = 'play';

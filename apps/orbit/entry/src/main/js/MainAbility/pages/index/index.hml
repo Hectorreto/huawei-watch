@@ -1,4 +1,5 @@
 <stack class="container">
+    <slider class="crown" ref="crown" min="0" max="{{ crownMax }}" value="{{ crownValue }}" onchange="crownTurn"></slider>
     <div class="ring"></div>
     <text class="score">{{ score }}</text>
     <text class="line">{{ line }}</text>

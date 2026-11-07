@@ -34,6 +34,13 @@
   color: #8f9bc4;
   text-align: center;
 }
+/* Only takes the crown: hidden under the ring, which is drawn over it. */
+.crown {
+  width: 100px;
+  height: 20px;
+  left: 183px;
+  top: 223px;
+}
 .diamond {
   width: 30px;
   height: 30px;
