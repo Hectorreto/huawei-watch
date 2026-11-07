@@ -16,87 +16,27 @@
             </stack>
         </stack>
         <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus0 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus0 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus0 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus0 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus1 !== '' && !menu }}" style="left: {{ plusX1 }}px; top: {{ plusY1 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus1 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus1 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus1 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus1 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus2 !== '' && !menu }}" style="left: {{ plusX2 }}px; top: {{ plusY2 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus2 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus2 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus2 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus2 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus3 !== '' && !menu }}" style="left: {{ plusX3 }}px; top: {{ plusY3 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus3 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus3 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus3 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus3 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus4 !== '' && !menu }}" style="left: {{ plusX4 }}px; top: {{ plusY4 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus4 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus4 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus4 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus4 === 'b' }}">{{ plusText }}</text>
         </stack>
         <div class="menu-bg" if="{{ menu }}" onswipe="edgeSwipe" ontouchstart="touchStart"></div>
-        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
+        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSrc }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
         <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png" onclick="openSettings"></image>
@@ -105,28 +45,48 @@
         <image class="menu-upgrades" if="{{ menu }}" src="/common/menu/upgrades.png" onclick="openUpgrades"></image>
         <image class="golden-left" if="{{ golden === 'left' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
         <image class="golden-right" if="{{ golden === 'right' && !menu }}" src="/common/golden.png" onclick="clickGolden"></image>
-        <image class="buy-hint" if="{{ canBuy && !menu }}" src="/common/menu/shop.png" onclick="openNew"></image>
     </stack>
-    <div class="shop-view" if="{{ view === 'shop' || view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
+    <div class="shop-view" if="{{ view === 'shop' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <text class="count">{{ countText }}</text>
         <text class="rate">{{ rateText }}</text>
-        <text class="title">{{ view === 'shop' ? t.shop : t.upgrades }}</text>
-        <list class="shop-list" ref="itemList">
+        <text class="title">{{ t.shop }}</text>
+        <list class="shop-list" ref="shopList">
             <list-item class="shop-item" for="{{ items }}" onclick="buy($item.id)">
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <div class="shop-text">
                     <text class="shop-name">{{ $item.title }}</text>
                     <text class="shop-detail">{{ $item.detail }}</text>
                 </div>
-                <div class="price" if="{{ $item.affordable && !$item.bought }}">
+                <div class="price" if="{{ $item.affordable }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
-                <div class="price-off" if="{{ !$item.affordable && !$item.bought }}">
+                <div class="price-off" if="{{ !$item.affordable }}">
                     <image class="coin" src="/common/shop/coin.png"></image>
                     <text class="price-text">{{ $item.price }}</text>
                 </div>
-                <image class="status" if="{{ $item.bought }}" src="/common/awards/check.png"></image>
+            </list-item>
+        </list>
+    </div>
+    <div class="shop-view" if="{{ view === 'upgrades' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
+        <text class="count">{{ countText }}</text>
+        <text class="rate">{{ rateText }}</text>
+        <text class="title">{{ t.upgrades }}</text>
+        <list class="shop-list" ref="upgradeList">
+            <list-item class="shop-item" for="{{ upgradeItems }}" onclick="buy($item.id)">
+                <image class="shop-icon" src="{{ $item.icon }}"></image>
+                <div class="shop-text">
+                    <text class="shop-name">{{ $item.title }}</text>
+                    <text class="shop-detail">{{ $item.detail }}</text>
+                </div>
+                <div class="price" if="{{ $item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
+                <div class="price-off" if="{{ !$item.affordable }}">
+                    <image class="coin" src="/common/shop/coin.png"></image>
+                    <text class="price-text">{{ $item.price }}</text>
+                </div>
             </list-item>
         </list>
     </div>
@@ -183,7 +143,7 @@
                 <image class="settings-icon" src="/common/settings/theme.png"></image>
                 <text class="settings-label">{{ t.theme }}</text>
                 <div class="settings-right">
-                    <image class="theme-thumb" src="{{ cookieSmall }}"></image>
+                    <image class="theme-thumb" src="{{ cookieSrc }}"></image>
                 </div>
             </list-item>
             <list-item class="settings-item" onclick="toggleLanguage">
@@ -204,19 +164,8 @@
                 <image class="shop-icon" src="{{ $item.icon }}"></image>
                 <text class="theme-name">{{ $item.title }}</text>
                 <image class="status" if="{{ $item.chosen }}" src="/common/awards/check.png"></image>
-                <image class="status" if="{{ $item.locked }}" src="/common/awards/lock.png"></image>
             </list-item>
         </list>
-    </div>
-    <div class="confirm-view" if="{{ view === 'confirmBatch' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
-        <image class="settings-icon" src="/common/shop/batch.png"></image>
-        <text class="confirm-title">{{ t.batchTitle }}</text>
-        <text class="confirm-gain">{{ batchText }}</text>
-        <text class="confirm-detail">{{ t.batchLose }}</text>
-        <div class="confirm-buttons">
-            <text class="confirm-cancel" onclick="openUpgrades">{{ t.cancel }}</text>
-            <text class="confirm-batch" onclick="confirmBatch">{{ t.batchConfirm }}</text>
-        </div>
     </div>
     <div class="confirm-view" if="{{ view === 'confirmReset' }}" onswipe="edgeSwipe" ontouchstart="touchStart">
         <image class="settings-icon" src="/common/settings/reset.png"></image>
