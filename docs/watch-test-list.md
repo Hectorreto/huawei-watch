@@ -4,7 +4,7 @@ Changes built but not yet checked on the GT 6 Pro. Install them together in the 
 
 ## Brotín (`apps/brotin/`, branch `brotin`)
 
-Needs the debug profile first (`add-a-new-app.md`). `brotin.md` says what the Previewer has already shown.
+The signed HAP builds with its own profile (November 2026); install it with DevEco Assistant. `brotin.md` says what the Previewer has already shown.
 
 - The screen matches the design: bars, note, pet in its pot, four buttons within the round edge.
 - The four buttons respond at their spots, and tapping the bars opens and closes the status view.
