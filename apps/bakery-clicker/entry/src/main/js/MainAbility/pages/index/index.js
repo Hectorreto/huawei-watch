@@ -49,9 +49,9 @@ const TEXTS = {
 };
 const LANGUAGES = ['en', 'es'];
 
-// The cookie the player taps. Each id has two pixel-art images in /common/themes/, scaled up with
-// nearest neighbour because the watch blurs what it scales up: <id>.png (466 px, big
-// cookie) and <id>_small.png (170 px, menu centre, theme list and settings row).
+// The cookie the player taps. Each id has one pixel-art image, /common/themes/<id>.png, at its
+// own pixel size (86-99 px) centred on a 100 px transparent square. It is shown at 100 px (big
+// cookie, menu centre), since the watch blurs what it scales up, and scaled down in the lists.
 // The id is what the settings save, so ids must not change. The first one is the default.
 const THEMES = [
     { id: 'classic', name: { en: 'A classic', es: 'Un clásico' } },
@@ -288,7 +288,6 @@ export default {
         items: [],
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
-        cookieSmall: themePath(THEMES[0].id, '_small'),
         plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
         plusX0: 0, plusX1: 0, plusX2: 0, plusX3: 0, plusX4: 0,
         plusY0: 0, plusY1: 0, plusY2: 0, plusY3: 0, plusY4: 0
@@ -580,7 +579,7 @@ export default {
     refreshThemes() {
         this.themeItems = THEMES.map((th, i) => ({
             id: i,
-            icon: themePath(th.id, '_small'),
+            icon: themePath(th.id),
             title: th.name[this.lang],
             chosen: th.id === this.theme
         }));
@@ -595,7 +594,6 @@ export default {
         const theme = THEMES.some((th) => th.id === id) ? id : THEMES[0].id;
         this.theme = theme;
         this.cookieSrc = themePath(theme);
-        this.cookieSmall = themePath(theme, '_small');
         this.refreshThemes();
     },
     saveSettings() {

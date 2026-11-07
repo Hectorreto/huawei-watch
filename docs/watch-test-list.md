@@ -4,9 +4,9 @@ Changes built but not yet checked on the GT 6 Pro. Install them together in the 
 
 ## Bakery clicker (`apps/bakery-clicker/`)
 
-Back to the October version, which counted quick taps and bought on the watch; the November improvements closed the app (`known-issues.md`). New since then: the big cookie is 300 px, the art at 3x, instead of filling the screen.
+Back to the October version, which counted quick taps and bought on the watch; the November improvements closed the app (`known-issues.md`). New since then: each theme is one 100 px image with the art at 1x (no `_small` images), shown at 100 px for the big cookie and the menu centre.
 
-- The smaller cookie looks sharp and centred, and a tap anywhere on the screen still counts.
+- The small cookie looks sharp and centred on the cookie view and in the menu, the theme list and settings row show it, and a tap anywhere on the screen still counts.
 - Quick taps all count and buying does not close the app, as in October; the save from the November version (more entries in `owned`) loads.
 
 ## Maze (`apps/maze/`)

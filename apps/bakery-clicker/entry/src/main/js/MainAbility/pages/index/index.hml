@@ -96,7 +96,7 @@
             </stack>
         </stack>
         <div class="menu-bg" if="{{ menu }}" onswipe="edgeSwipe" ontouchstart="touchStart"></div>
-        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSmall }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
+        <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSrc }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <image class="menu-shop" if="{{ menu }}" src="/common/menu/shop.png" onclick="openShop"></image>
         <image class="menu-stats" if="{{ menu }}" src="/common/menu/stats.png" onclick="openStats"></image>
         <image class="menu-settings" if="{{ menu }}" src="/common/menu/settings.png" onclick="openSettings"></image>
@@ -203,7 +203,7 @@
                 <image class="settings-icon" src="/common/settings/theme.png"></image>
                 <text class="settings-label">{{ t.theme }}</text>
                 <div class="settings-right">
-                    <image class="theme-thumb" src="{{ cookieSmall }}"></image>
+                    <image class="theme-thumb" src="{{ cookieSrc }}"></image>
                 </div>
             </list-item>
             <list-item class="settings-item" onclick="toggleLanguage">
