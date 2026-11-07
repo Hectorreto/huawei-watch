@@ -11,8 +11,9 @@ const MID = 233;
 const WALL = 224;              // inner edge of the ring
 const BALL_R = 10;
 const SPIKES = 10;
-const SPIKE_DIRS = 24;         // group_<n>_00.png ... group_<n>_23.png, one per 15 degrees
-const SPIKE_RADIUS = 213;      // centre of a spike, so its base lies on the wall
+const SPIKE_DIRS = 24;         // spike_00.png ... spike_23.png, one per 15 degrees
+const SPIKE_RADIUS = 213;      // centre of a spike image, so its base lies on the wall
+const SPIKE_HALF = 16;         // half the spike image
 const SPIKE_GAP = 0.112;       // angle between two spikes of a group (about 25 px)
 const SPIKE_HIT = BALL_R + 8;  // the ball touches a spike within this distance of its centre
 const DIAMOND_HALF = 15;
@@ -28,8 +29,8 @@ const BOUNCE_OFF_MIN = 0.02;   // after a bounce the ball heads 1 to 5 degrees o
 const BOUNCE_OFF_MAX = 0.09;
 const CURVE_MIN = 0.04;        // rad/s its heading turns, to a random side: about 5 degrees
 const CURVE_MAX = 0.1;         // over a crossing
-const SRC_SWAPS_PER_FRAME = 2; // group images whose direction may change in one frame
-const REVEALS_PER_FRAME = 2;   // new groups shown per frame after a bounce
+const SRC_SWAPS_PER_FRAME = 2; // spike images whose direction may change in one frame
+const REVEALS_PER_FRAME = 3;   // new spikes shown per frame after a bounce
 const SHOW_FRAME_MS = true;    // while playing, the line shows the average and the slowest ms
                                // per frame of the last second (a measuring aid for the watch)
 const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
@@ -42,13 +43,13 @@ const CROWN_MAX_STEP = 0.15;   // at most this many rad per event, less than a s
                                // at the wall, so a spike cannot jump over the ball
 const FOCUS_DELAY_MS = 50;     // the slider exists only once the page has rendered
 const OVER_PAUSE_MS = 700;     // touches right after losing are ignored
-const OFF = -200;              // where hidden sprites go (a 132 px group image is then off)
+const OFF = -100;              // where hidden sprites go
 const SAVE_KEY = 'orbita';
 const SAVE_FIELDS = 21;
 const SAVE_VERSION = 2;        // 1 kept 10 spike angles; it still gives the score and record
 const MIN_GROUPS = 2;          // the 10 spikes come in 2 to 5 groups...
 const MAX_GROUPS = 5;
-const MAX_GROUP_SIZE = 5;      // ...of 1 to 5 spikes each (one image per group)...
+const MAX_GROUP_SIZE = 5;      // ...of 1 to 5 spikes each...
 const GROUP_SPACE = 0.3;       // ...with at least this much wall (rad) between two groups
 const IMMUNE_TIME = 0.35;      // s after a bounce when spikes cannot kill, since they may
                                // reappear right on top of the ball
@@ -57,17 +58,9 @@ const BALL_COLOUR = '#ffffff';
 const BALL_LOST = '#ff5040';
 const TWO_PI = Math.PI * 2;
 
-// GROUP_SRC[n][dir] is the image of a group of n spikes; GROUP_HALF[n] half its side (as
-// groupHalf() in tools/make_orbit_sprites.js).
-const GROUP_SRC = [[]];
-const GROUP_HALF = [0];
-for (let n = 1; n <= MAX_GROUP_SIZE; n++) {
-    const list = [];
-    for (let i = 0; i < SPIKE_DIRS; i++) {
-        list.push('/common/group_' + n + '_' + (i < 10 ? '0' : '') + i + '.png');
-    }
-    GROUP_SRC.push(list);
-    GROUP_HALF.push(Math.ceil(SPIKE_RADIUS * Math.sin((n - 1) / 2 * SPIKE_GAP)) + 18);
+const SPIKE_SRC = [];
+for (let i = 0; i < SPIKE_DIRS; i++) {
+    SPIKE_SRC.push('/common/spike_' + (i < 10 ? '0' : '') + i + '.png');
 }
 
 // Game state lives in module variables: plain properties of the page object did not reach
@@ -89,7 +82,13 @@ let crownFlip = 0;             // alternates the reset value so the binding alwa
 let groupCount = 0;            // 0 before the first bounce: no spikes yet
 const groupSize = [0, 0, 0, 0, 0];
 const groupAngle = [0, 0, 0, 0, 0]; // centre of each group, in the arena's own frame
-const revealed = [false, false, false, false, false];
+let spikeCount = 0;            // 0 or SPIKES: the spikes laid out from the groups
+const spikeAngle = [];         // each spike's angle, in the arena's own frame
+const revealed = [];           // whether each spike is on the screen yet
+for (let i = 0; i < SPIKES; i++) {
+    spikeAngle.push(0);
+    revealed.push(false);
+}
 let diamondR = 0;
 let diamondA = 0;              // in the arena's own frame
 let timer = null;
@@ -98,11 +97,14 @@ let overUntil = 0;
 let drawnSpin = null;          // spin when the arena was last placed, null to force it
 let immune = 0;                // s of immunity left
 const shownBall = [MID - BALL_R, MID - BALL_R];
-const shownX = [OFF, OFF, OFF, OFF, OFF]; // what each group's bindings hold
-const shownY = [OFF, OFF, OFF, OFF, OFF];
-const shownSrc = ['', '', '', '', ''];
-const shownSide = [2, 2, 2, 2, 2]; // each group image's side, which depends on its size
-const wantSrc = ['', '', '', '', ''];
+const shownX = [];             // what each spike's bindings hold
+const shownY = [];
+const shownDir = [];
+for (let i = 0; i < SPIKES; i++) {
+    shownX.push(OFF);
+    shownY.push(OFF);
+    shownDir.push(0);
+}
 let nextSwap = 0;
 let perfStart = 0;
 let perfFrames = 0;
@@ -160,6 +162,7 @@ function freshRound() {
     heading = rand(0, TWO_PI);
     curve = randCurve();
     groupCount = 0;
+    layOutSpikes();
     placeDiamond();
 }
 
@@ -182,15 +185,30 @@ function angleApart(a, b) {
     return Math.abs((((a - b) % TWO_PI) + TWO_PI + Math.PI) % TWO_PI - Math.PI);
 }
 
+// The spikes of the groups, side by side SPIKE_GAP apart, all hidden until draw() shows them
+// a few a frame (REVEALS_PER_FRAME), so a bounce does not change every image at once.
+function layOutSpikes() {
+    spikeCount = groupCount > 0 ? SPIKES : 0;
+    let n = 0;
+    for (let g = 0; g < groupCount; g++) {
+        const first = groupAngle[g] - (groupSize[g] - 1) * SPIKE_GAP / 2;
+        for (let j = 0; j < groupSize[g] && n < SPIKES; j++) {
+            spikeAngle[n++] = first + j * SPIKE_GAP;
+        }
+    }
+    for (let i = 0; i < SPIKES; i++) {
+        revealed[i] = false;
+    }
+    drawnSpin = null;
+}
+
 // After each bounce the 10 spikes move to 2-5 groups of 1-5 at random places on the wall,
 // anywhere, even where the ball is (the ball is immune for a moment, IMMUNE_TIME). Groups
-// keep GROUP_SPACE between them when a few tries find room. They are hidden and then shown a
-// few a frame (REVEALS_PER_FRAME), so a bounce does not change every image at once.
+// keep GROUP_SPACE between them when a few tries find room.
 function moveSpikes() {
     groupCount = MIN_GROUPS + Math.floor(Math.random() * (MAX_GROUPS - MIN_GROUPS + 1));
     for (let g = 0; g < MAX_GROUPS; g++) {
         groupSize[g] = g < groupCount ? 1 : 0;
-        revealed[g] = false;
     }
     for (let left = SPIKES - groupCount; left > 0;) {
         const g = Math.floor(Math.random() * groupCount);
@@ -218,23 +236,21 @@ function moveSpikes() {
         }
         groupAngle[g] = centre - spin;
     }
-    drawnSpin = null;
+    layOutSpikes();
 }
 
-// Only shown groups count: one not yet revealed is not on the screen.
+// The images are only for show: a hit is worked out from each spike's exact angle. Only
+// spikes already on the screen count.
 function touchesSpike() {
-    for (let g = 0; g < groupCount; g++) {
-        if (!revealed[g]) {
+    for (let i = 0; i < spikeCount; i++) {
+        if (!revealed[i]) {
             continue;
         }
-        const first = groupAngle[g] + spin - (groupSize[g] - 1) * SPIKE_GAP / 2;
-        for (let j = 0; j < groupSize[g]; j++) {
-            const a = first + j * SPIKE_GAP;
-            const dx = Math.cos(a) * SPIKE_RADIUS - ballX;
-            const dy = Math.sin(a) * SPIKE_RADIUS - ballY;
-            if (dx * dx + dy * dy < SPIKE_HIT * SPIKE_HIT) {
-                return true;
-            }
+        const a = spikeAngle[i] + spin;
+        const dx = Math.cos(a) * SPIKE_RADIUS - ballX;
+        const dy = Math.sin(a) * SPIKE_RADIUS - ballY;
+        if (dx * dx + dy * dy < SPIKE_HIT * SPIKE_HIT) {
+            return true;
         }
     }
     return false;
@@ -266,11 +282,10 @@ export default {
         by: MID - BALL_R,
         gx: OFF,
         gy: OFF,
-        s0: GROUP_SRC[1][0], s1: GROUP_SRC[1][0], s2: GROUP_SRC[1][0], s3: GROUP_SRC[1][0],
-        s4: GROUP_SRC[1][0],
-        x0: OFF, x1: OFF, x2: OFF, x3: OFF, x4: OFF,
-        y0: OFF, y1: OFF, y2: OFF, y3: OFF, y4: OFF,
-        w0: 2, w1: 2, w2: 2, w3: 2, w4: 2,
+        s0: SPIKE_SRC[0], s1: SPIKE_SRC[0], s2: SPIKE_SRC[0], s3: SPIKE_SRC[0], s4: SPIKE_SRC[0],
+        s5: SPIKE_SRC[0], s6: SPIKE_SRC[0], s7: SPIKE_SRC[0], s8: SPIKE_SRC[0], s9: SPIKE_SRC[0],
+        x0: OFF, x1: OFF, x2: OFF, x3: OFF, x4: OFF, x5: OFF, x6: OFF, x7: OFF, x8: OFF, x9: OFF,
+        y0: OFF, y1: OFF, y2: OFF, y3: OFF, y4: OFF, y5: OFF, y6: OFF, y7: OFF, y8: OFF, y9: OFF,
         crownMax: CROWN_MAX,
         crownValue: CROWN_MID
     },
@@ -303,8 +318,8 @@ export default {
             for (let g = 0; g < MAX_GROUPS; g++) {
                 groupSize[g] = Math.max(1, Math.min(MAX_GROUP_SIZE, Math.floor(p[10 + g])));
                 groupAngle[g] = p[15 + g];
-                revealed[g] = false;
             }
+            layOutSpikes();
             if (ballX * ballX + ballY * ballY > WALL * WALL) {
                 freshRound();
             }
@@ -466,12 +481,11 @@ export default {
         freshRound();
         save();
     },
-    // Places the ball every frame, the diamond when the arena moved, and the spike groups.
+    // Places the ball every frame, the diamond when the arena moved, and the spikes.
     // What each binding holds is kept in module arrays, so nothing is read back from the page.
     // Changing an image's src is slow on the watch (the lab: 51 ms a frame against 34 for a
-    // move), so each group is one image (group_<n>_<dir>), new groups are shown at most
-    // REVEALS_PER_FRAME a frame, and while the arena turns at most SRC_SWAPS_PER_FRAME groups
-    // take their new direction each frame, in turn.
+    // move), so new spikes are shown at most REVEALS_PER_FRAME a frame, and while the arena
+    // turns at most SRC_SWAPS_PER_FRAME spikes take their new direction each frame, in turn.
     draw() {
         const bx = Math.round(MID + ballX - BALL_R);
         const by = Math.round(MID + ballY - BALL_R);
@@ -492,46 +506,41 @@ export default {
         let reveals = REVEALS_PER_FRAME;
         let swaps = SRC_SWAPS_PER_FRAME;
         const start = nextSwap;
-        for (let k = 0; k < MAX_GROUPS; k++) {
-            const g = (start + k) % MAX_GROUPS;
+        for (let k = 0; k < SPIKES; k++) {
+            const i = (start + k) % SPIKES;
             let x = OFF;
             let y = OFF;
-            if (g < groupCount) {
-                const a = groupAngle[g] + spin;
+            if (i < spikeCount) {
+                const a = spikeAngle[i] + spin;
                 let dir = Math.round(a / TWO_PI * SPIKE_DIRS) % SPIKE_DIRS;
                 if (dir < 0) {
                     dir += SPIKE_DIRS;
                 }
-                wantSrc[g] = GROUP_SRC[groupSize[g]][dir];
-                if (!revealed[g] && reveals > 0) {
-                    revealed[g] = true;
+                if (!revealed[i] && reveals > 0) {
+                    revealed[i] = true;
                     reveals--;
-                    shownSrc[g] = wantSrc[g];
-                    this['s' + g] = wantSrc[g];
-                    const side = GROUP_HALF[groupSize[g]] * 2;
-                    if (shownSide[g] !== side) {
-                        shownSide[g] = side;
-                        this['w' + g] = side;
+                    if (shownDir[i] !== dir) {
+                        shownDir[i] = dir;
+                        this['s' + i] = SPIKE_SRC[dir];
                     }
-                } else if (revealed[g] && shownSrc[g] !== wantSrc[g] && swaps > 0) {
+                } else if (revealed[i] && shownDir[i] !== dir && swaps > 0) {
                     swaps--;
-                    shownSrc[g] = wantSrc[g];
-                    this['s' + g] = wantSrc[g];
-                    nextSwap = (g + 1) % MAX_GROUPS;
+                    shownDir[i] = dir;
+                    this['s' + i] = SPIKE_SRC[dir];
+                    nextSwap = (i + 1) % SPIKES;
                 }
-                if (revealed[g]) {
-                    const half = GROUP_HALF[groupSize[g]];
-                    x = Math.round(MID + Math.cos(a) * SPIKE_RADIUS - half);
-                    y = Math.round(MID + Math.sin(a) * SPIKE_RADIUS - half);
+                if (revealed[i]) {
+                    x = Math.round(MID + Math.cos(a) * SPIKE_RADIUS - SPIKE_HALF);
+                    y = Math.round(MID + Math.sin(a) * SPIKE_RADIUS - SPIKE_HALF);
                 }
             }
-            if (shownX[g] !== x) {
-                shownX[g] = x;
-                this['x' + g] = x;
+            if (shownX[i] !== x) {
+                shownX[i] = x;
+                this['x' + i] = x;
             }
-            if (shownY[g] !== y) {
-                shownY[g] = y;
-                this['y' + g] = y;
+            if (shownY[i] !== y) {
+                shownY[i] = y;
+                this['y' + i] = y;
             }
         }
     },

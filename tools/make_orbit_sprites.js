@@ -1,16 +1,13 @@
-// Writes the sprites of apps/orbit: each group of 1 to 5 spikes along the wall, pointing
-// inwards, in each of SPIKE_DIRS directions (group_<n>_<dd>.png), and the diamond
-// (diamond.png), all small RGBA PNGs with 4x4 supersampled edges. Run with DevEco's Node (no
-// packages): node tools/make_orbit_sprites.js apps/orbit/entry/src/main/js/MainAbility/common
-// The geometry must match index.js: SPIKE_RADIUS, SPIKE_GAP and groupHalf().
+// Writes the sprites of apps/orbit: a spike pointing inwards for each of SPIKE_DIRS
+// directions (spike_00.png ... spike_23.png) and the diamond (diamond.png), all small
+// RGBA PNGs with 4x4 supersampled edges. Run with DevEco's Node (no packages):
+// node tools/make_orbit_sprites.js apps/orbit/entry/src/main/js/MainAbility/common
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
 const SPIKE_DIRS = 24;
-const MAX_GROUP = 5;
-const SPIKE_RADIUS = 213;
-const SPIKE_GAP = 0.112;
+const SPIKE_SIZE = 32;
 const DIAMOND_SIZE = 30;
 const out = process.argv[2];
 if (!out) {
@@ -84,56 +81,27 @@ function writePng(file, size, shade) {
     fs.writeFileSync(path.join(out, file), png);
 }
 
-// Half the side of a group image: the farthest spike centre from the group's centre, plus
-// room for a spike (12 px half base, 11 px half height, and the inward shift of the ends).
-function groupHalf(n) {
-    return Math.ceil(SPIKE_RADIUS * Math.sin((n - 1) / 2 * SPIKE_GAP)) + 18;
-}
-
-// One spike: a triangle with its base on the wall and its tip towards the centre, base 24 px
-// wide, 22 px tall, centred at (cx, cy) with outward normal angle a.
-function spikeShade(x, y, cx, cy, a) {
+// A spike: a triangle with its base on the wall and its tip towards the centre. Direction k
+// is the outward normal at angle k * 360 / SPIKE_DIRS, screen axes (x right, y down), so the
+// page shows spike_k where the wall is at that angle. Base 24 px wide, 22 px tall.
+for (let k = 0; k < SPIKE_DIRS; k++) {
+    const a = k * 2 * Math.PI / SPIKE_DIRS;
     const nx = Math.cos(a);
     const ny = Math.sin(a);
-    const out = (x - cx) * nx + (y - cy) * ny;   // along the normal, + towards the wall
-    const side = -(x - cx) * ny + (y - cy) * nx; // along the wall
-    if (out > 11 || out < -11) {
-        return null;
-    }
-    const half = 12 * (out + 11) / 22;
-    if (Math.abs(side) > half) {
-        return null;
-    }
-    // Lit on one face, darker on the other, so it reads as a spike.
-    return side < 0 ? [255, 110, 90] : [205, 55, 50];
-}
-
-// A group of n spikes centred on the wall at angle k * 360 / SPIKE_DIRS (screen axes, x right,
-// y down). The image's centre is the middle of the group on the spikes' circle, so the page
-// places it at SPIKE_RADIUS along the group's angle.
-for (let n = 1; n <= MAX_GROUP; n++) {
-    const half = groupHalf(n);
-    for (let k = 0; k < SPIKE_DIRS; k++) {
-        const a = k * 2 * Math.PI / SPIKE_DIRS;
-        const spikes = [];
-        for (let j = 0; j < n; j++) {
-            const sa = a + (j - (n - 1) / 2) * SPIKE_GAP;
-            spikes.push([
-                half + SPIKE_RADIUS * (Math.cos(sa) - Math.cos(a)),
-                half + SPIKE_RADIUS * (Math.sin(sa) - Math.sin(a)),
-                sa
-            ]);
-        }
-        writePng('group_' + n + '_' + String(k).padStart(2, '0') + '.png', half * 2, (x, y) => {
-            for (const sp of spikes) {
-                const c = spikeShade(x, y, sp[0], sp[1], sp[2]);
-                if (c) {
-                    return c;
-                }
-            }
+    const c = SPIKE_SIZE / 2;
+    writePng('spike_' + String(k).padStart(2, '0') + '.png', SPIKE_SIZE, (x, y) => {
+        const out = (x - c) * nx + (y - c) * ny;   // along the normal, + towards the wall
+        const side = -(x - c) * ny + (y - c) * nx; // along the wall
+        if (out > 11 || out < -11) {
             return null;
-        });
-    }
+        }
+        const half = 12 * (out + 11) / 22;
+        if (Math.abs(side) > half) {
+            return null;
+        }
+        // Lit on one face, darker on the other, so it reads as a spike.
+        return side < 0 ? [255, 110, 90] : [205, 55, 50];
+    });
 }
 
 // The diamond: a gold rhombus with a light upper-left facet.
