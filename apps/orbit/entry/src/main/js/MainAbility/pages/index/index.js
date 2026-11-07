@@ -21,7 +21,9 @@ const DIAMOND_HIT = BALL_R + 13;
 const TURN_SPEED = 3.2;        // rad/s while a half of the screen is held
 const TAP_TURN = 0.4;          // one tap turns the arena this far (about 23 degrees)...
 const TAP_TURN_SPEED = 4;      // ...at this many rad/s
-const BALL_SPEED = 225;        // px/s, the same whatever the score
+const BALL_SPEED = 225;        // px/s at the start of a game...
+const SPEED_STEP = 3;          // ...plus this per diamond or ruby taken...
+const MAX_SPEED = 380;         // ...up to this
 const FRAME_MS = 33;
 const BOUNCE_OFF_MIN = 0.02;   // after a bounce the ball heads 1 to 5 degrees off the centre
 const BOUNCE_OFF_MAX = 0.09;
@@ -43,8 +45,9 @@ const FOCUS_DELAY_MS = 50;     // the slider exists only once the page has rende
 const OVER_PAUSE_MS = 700;     // touches right after losing are ignored
 const OFF = -100;              // where hidden sprites go
 const SAVE_KEY = 'orbita';
-const SAVE_FIELDS = 21;
-const SAVE_VERSION = 2;        // 1 kept 10 spike angles; it still gives the score and record
+const SAVE_FIELDS = 22;
+const SAVE_VERSION = 3;        // 3 adds the diamonds taken; a 2 (21 fields) still loads, with
+                               // none, and a 1 (10 spike angles) gives the score and record
 const MIN_GROUPS = 2;          // the 10 spikes come in 2 to 5 groups...
 const MAX_GROUPS = 5;
 const MAX_GROUP_SIZE = 5;      // ...of 1 to 5 spikes each...
@@ -110,6 +113,7 @@ let drawnSpin = null;          // spin when the arena was last placed, null to f
 let immune = 0;                // s of immunity left
 let shielded = false;          // the shield wheel was taken and no spike has hit yet
 let playTime = 0;              // s played since this game started
+let diamonds = 0;              // diamonds and rubies taken this game, for the speed
 const extraOn = [false, false];
 const extraR = [0, 0];         // where each extra is, in the arena's own frame
 const extraA = [0, 0];
@@ -172,6 +176,7 @@ function save() {
     for (let g = 0; g < MAX_GROUPS; g++) {
         parts.push(round3(groupAngle[g]));
     }
+    parts.push(diamonds);
     parts.push(SAVE_VERSION);
     storage.set({ key: SAVE_KEY, value: parts.join(',') });
 }
@@ -181,6 +186,7 @@ function freshRound() {
     ballY = 0;
     shielded = false;
     playTime = 0;
+    diamonds = 0;
     for (let k = 0; k < EXTRAS; k++) {
         extraOn[k] = false;
         extraNext[k] = EXTRA_FIRST[k];
@@ -369,12 +375,15 @@ export default {
     },
     load(value) {
         const p = value.split(',').map((v) => parseFloat(v));
-        if (p.length === SAVE_FIELDS && p.every((v) => !isNaN(v))) {
+        const fine = p.every((v) => !isNaN(v));
+        if (fine && (p.length === SAVE_FIELDS || p.length === SAVE_FIELDS - 1)) {
             score = Math.max(0, Math.floor(p[0]));
             best = Math.max(score, Math.floor(p[1]));
         }
-        if (p.length === SAVE_FIELDS && p[SAVE_FIELDS - 1] === SAVE_VERSION
-            && p.every((v) => !isNaN(v))) {
+        const v3 = p.length === SAVE_FIELDS && p[SAVE_FIELDS - 1] === SAVE_VERSION;
+        const v2 = p.length === SAVE_FIELDS - 1 && p[SAVE_FIELDS - 2] === 2;
+        if (fine && (v3 || v2)) {
+            diamonds = v3 ? Math.max(0, Math.floor(p[20])) : 0;
             ballX = p[2];
             ballY = p[3];
             heading = p[4];
@@ -484,7 +493,7 @@ export default {
             spin += sign * turn;
             pendingTurn -= sign * turn;
         }
-        const travel = BALL_SPEED * dt;
+        const travel = Math.min(MAX_SPEED, BALL_SPEED + diamonds * SPEED_STEP) * dt;
         const steps = Math.max(1, Math.ceil(travel / SUBSTEP_PX));
         const stepLen = travel / steps;
         const limit = (WALL - BALL_R) * (WALL - BALL_R);
@@ -524,12 +533,14 @@ export default {
                 this.ballColour = BALL_IMMUNE;
             }
             if (touchesDiamond()) {
+                diamonds++;
                 this.point();
                 placeDiamond();
             }
             if (extraOn[RUBY] && touchesExtra(RUBY)) {
                 extraOn[RUBY] = false;
                 drawnSpin = null;
+                diamonds++;
                 this.point(Math.max(1, Math.floor(score * RUBY_SHARE)));
             }
             if (extraOn[SHIELD] && touchesExtra(SHIELD)) {
