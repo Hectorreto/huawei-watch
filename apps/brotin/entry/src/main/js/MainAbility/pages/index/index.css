@@ -1,0 +1,177 @@
+.container {
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+}
+.sky {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
+/* The three needs at the top of the round screen: water, sun, mood. A tap here opens the status. */
+.bar-back {
+  width: 150px;
+  height: 10px;
+  left: 158px;
+  border-radius: 5px;
+  background-color: #2a3a44;
+}
+.bar {
+  height: 10px;
+  left: 158px;
+  border-radius: 5px;
+}
+.bar-1 {
+  top: 46px;
+}
+.bar-2 {
+  top: 62px;
+}
+.bar-3 {
+  top: 78px;
+}
+.bar-water {
+  background-color: #5ab6f4;
+}
+.bar-sun {
+  background-color: #ffd64a;
+}
+.bar-mood {
+  background-color: #f48eb2;
+}
+.note {
+  width: 360px;
+  height: 34px;
+  left: 53px;
+  top: 94px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
+.pet {
+  width: 180px;
+  height: 180px;
+  left: 143px;
+}
+.face {
+  width: 90px;
+  height: 36px;
+}
+/* Over the bottom of the pet, which bobs behind its rim. */
+.pot {
+  width: 126px;
+  height: 63px;
+  left: 170px;
+  top: 296px;
+}
+.pest {
+  width: 40px;
+  height: 40px;
+}
+.pest-0 {
+  left: 108px;
+  top: 226px;
+}
+.pest-1 {
+  left: 318px;
+  top: 186px;
+}
+.pest-2 {
+  left: 312px;
+  top: 262px;
+}
+/* Up and to the right of the pet, above the pests. */
+.visitor {
+  width: 54px;
+  height: 54px;
+  left: 346px;
+}
+/* Over the pet's head, clear of the row where any form has its face. */
+.fx {
+  width: 54px;
+  height: 54px;
+  left: 206px;
+  top: 128px;
+}
+/* The ripe adult's seed, up and to the left of the pot, clear of the pet and the pests. */
+.seed-icon {
+  width: 54px;
+  height: 54px;
+  left: 77px;
+  top: 163px;
+}
+.button {
+  width: 88px;
+  height: 88px;
+}
+.button-water {
+  left: 36px;
+  top: 284px;
+}
+.button-sun {
+  left: 127px;
+  top: 358px;
+}
+.button-play {
+  left: 251px;
+  top: 358px;
+}
+.button-clean {
+  left: 342px;
+  top: 284px;
+}
+.spark {
+  width: 72px;
+  height: 72px;
+}
+.status {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #000000;
+}
+.status-title {
+  width: 300px;
+  height: 48px;
+  font-size: 38px;
+  color: #84d670;
+  text-align: center;
+}
+.status-row {
+  width: 300px;
+  height: 38px;
+  font-size: 28px;
+  color: #ffffff;
+  text-align: center;
+}
+.status-small {
+  width: 340px;
+  height: 34px;
+  margin-top: 8px;
+  font-size: 22px;
+  color: #aaaaaa;
+  text-align: center;
+}
+.herb-row {
+  width: 300px;
+  height: 72px;
+  justify-content: center;
+  align-items: center;
+}
+.herb {
+  width: 60px;
+  height: 60px;
+  margin-left: 8px;
+  margin-right: 8px;
+}
+.touch {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}
