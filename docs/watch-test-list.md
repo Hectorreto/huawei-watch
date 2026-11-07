@@ -12,7 +12,7 @@ Back to the October version, which counted quick taps and bought on the watch; t
 
 ## Órbita (`apps/orbit/`)
 
-New, needs its debug profile first (`add-a-new-app.md`). See `orbit-game.md`, **Status**.
+New; the signed HAP builds. See `orbit-game.md`, **Status**.
 
 - Holding the left half turns the arena anticlockwise, the right half clockwise, smoothly, and releasing stops it; and whether a finger held still does this too or only turns one step (lite only reports a hold once the finger moves, `orbit-game.md`, **Controls**).
 - A short tap turns the arena about 23 degrees.
