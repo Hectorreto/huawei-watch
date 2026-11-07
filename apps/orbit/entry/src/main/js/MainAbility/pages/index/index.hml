@@ -4,6 +4,8 @@
     <text class="score">{{ score }}</text>
     <text class="line">{{ line }}</text>
     <image class="diamond" src="/common/diamond.png" style="left: {{ gx }}px; top: {{ gy }}px;"></image>
+    <image class="ruby" src="/common/ruby.png" style="left: {{ rx }}px; top: {{ ry }}px;"></image>
+    <image class="shield" src="/common/shield.png" style="left: {{ hx }}px; top: {{ hy }}px;"></image>
     <image class="spike" src="{{ s0 }}" style="left: {{ x0 }}px; top: {{ y0 }}px;"></image>
     <image class="spike" src="{{ s1 }}" style="left: {{ x1 }}px; top: {{ y1 }}px;"></image>
     <image class="spike" src="{{ s2 }}" style="left: {{ x2 }}px; top: {{ y2 }}px;"></image>

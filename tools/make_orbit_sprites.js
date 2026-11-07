@@ -1,5 +1,6 @@
 // Writes the sprites of apps/orbit: a spike pointing inwards for each of SPIKE_DIRS
-// directions (spike_00.png ... spike_23.png) and the diamond (diamond.png), all small
+// directions (spike_00.png ... spike_23.png), the diamond (diamond.png), the ruby (ruby.png)
+// and the shield wheel (shield.png), all small
 // RGBA PNGs with 4x4 supersampled edges. Run with DevEco's Node (no packages):
 // node tools/make_orbit_sprites.js apps/orbit/entry/src/main/js/MainAbility/common
 const fs = require('fs');
@@ -120,4 +121,47 @@ writePng('diamond.png', DIAMOND_SIZE, (x, y) => {
         return dx < 0 ? [255, 245, 170] : [255, 215, 80];
     }
     return dx < 0 ? [235, 170, 40] : [200, 135, 30];
+});
+
+// The ruby: a small red rhombus, a rarer diamond (20 px).
+writePng('ruby.png', 20, (x, y) => {
+    const c = 10;
+    const dx = (x - c) / (c - 1);
+    const dy = (y - c) / (c - 1);
+    const edge = Math.abs(dx) / 0.8 + Math.abs(dy);
+    if (edge > 1) {
+        return null;
+    }
+    if (edge > 0.78) {
+        return [110, 10, 25];
+    }
+    if (dy < 0) {
+        return dx < 0 ? [255, 170, 180] : [255, 70, 90];
+    }
+    return dx < 0 ? [225, 35, 60] : [170, 20, 45];
+});
+
+// The shield: a green wheel with 8 teeth and a hub (28 px).
+writePng('shield.png', 28, (x, y) => {
+    const dx = x - 14;
+    const dy = y - 14;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    const a = Math.atan2(dy, dx);
+    if (r <= 3) {
+        return [210, 255, 215];
+    }
+    if (r >= 6.5 && r <= 9.5) {
+        return [110, 232, 122];
+    }
+    // Spokes between the hub and the rim.
+    const spoke = Math.abs(((a / (Math.PI / 2)) % 1 + 1) % 1 - 0.5);
+    if (r > 3 && r < 6.5 && spoke > 0.42) {
+        return [80, 190, 95];
+    }
+    // Teeth: triangles from the rim out to 13.5 px.
+    const tooth = Math.abs(((a / (Math.PI / 4)) % 1 + 1) % 1 - 0.5) * 2;
+    if (r > 9.5 && r <= 13.5 && tooth > 0.45 + 0.55 * (r - 9.5) / 4) {
+        return [60, 175, 80];
+    }
+    return null;
 });

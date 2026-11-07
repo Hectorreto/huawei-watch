@@ -54,7 +54,20 @@ const GROUP_SPACE = 0.3;       // ...with at least this much wall (rad) between 
 const IMMUNE_TIME = 0.35;      // s after a bounce when spikes cannot kill, since they may
                                // reappear right on top of the ball
 const BALL_IMMUNE = '#9fdcff';
+const BALL_SHIELD = '#7cf08a'; // the shield wheel's green
 const BALL_COLOUR = '#ffffff';
+// Extras that show up for a few seconds once the game has gone on a while, turning with the
+// arena like the diamond: 0 is the ruby (a rarer diamond, +1 for now), 1 the shield wheel
+// (the next spike hit only takes the shield, with a moment of immunity as after a bounce).
+const RUBY = 0;
+const SHIELD = 1;
+const EXTRAS = 2;
+const EXTRA_HALF = [10, 14];             // half the image (ruby.png 20 px, shield.png 28 px)
+const EXTRA_HIT = [BALL_R + 9, BALL_R + 12];
+const EXTRA_LIFE = [5, 6];               // s on the screen
+const EXTRA_FIRST = [20, 30];            // s of play before the first one can show up
+const EXTRA_GAP_MIN = [15, 25];          // s from one going away to the next showing up...
+const EXTRA_GAP_MAX = [30, 45];          // ...at random between these
 const BALL_LOST = '#ff5040';
 const TWO_PI = Math.PI * 2;
 
@@ -96,6 +109,14 @@ let lastTime = 0;
 let overUntil = 0;
 let drawnSpin = null;          // spin when the arena was last placed, null to force it
 let immune = 0;                // s of immunity left
+let shielded = false;          // the shield wheel was taken and no spike has hit yet
+let playTime = 0;              // s played since this game started
+const extraOn = [false, false];
+const extraR = [0, 0];         // where each extra is, in the arena's own frame
+const extraA = [0, 0];
+const extraLeft = [0, 0];      // s it stays on the screen
+const extraNext = [0, 0];      // playTime when it may show up next
+const shownExtra = [OFF, OFF, OFF, OFF]; // x, y of each extra as bound
 const shownBall = [MID - BALL_R, MID - BALL_R];
 const shownX = [];             // what each spike's bindings hold
 const shownY = [];
@@ -159,6 +180,12 @@ function save() {
 function freshRound() {
     ballX = 0;
     ballY = 0;
+    shielded = false;
+    playTime = 0;
+    for (let k = 0; k < EXTRAS; k++) {
+        extraOn[k] = false;
+        extraNext[k] = EXTRA_FIRST[k];
+    }
     heading = rand(0, TWO_PI);
     curve = randCurve();
     groupCount = 0;
@@ -179,6 +206,44 @@ function placeDiamond() {
         }
     }
     drawnSpin = null;
+}
+
+// The ball's colour: light blue while immune, green while shielded, else white.
+function ballColourNow() {
+    if (immune > 0) {
+        return BALL_IMMUNE;
+    }
+    return shielded ? BALL_SHIELD : BALL_COLOUR;
+}
+
+// Shows extra k somewhere inside the arena, away from the ball and the diamond.
+function placeExtra(k) {
+    const da = diamondA + spin;
+    for (let tries = 0; tries < 12; tries++) {
+        extraR[k] = rand(40, 170);
+        extraA[k] = rand(0, TWO_PI);
+        const a = extraA[k] + spin;
+        const x = Math.cos(a) * extraR[k];
+        const y = Math.sin(a) * extraR[k];
+        const bx = x - ballX;
+        const by = y - ballY;
+        const gx = x - Math.cos(da) * diamondR;
+        const gy = y - Math.sin(da) * diamondR;
+        if (bx * bx + by * by > 90 * 90 && gx * gx + gy * gy > 50 * 50) {
+            break;
+        }
+    }
+    extraOn[k] = true;
+    extraLeft[k] = EXTRA_LIFE[k];
+    extraNext[k] = playTime + EXTRA_LIFE[k] + rand(EXTRA_GAP_MIN[k], EXTRA_GAP_MAX[k]);
+    drawnSpin = null;
+}
+
+function touchesExtra(k) {
+    const a = extraA[k] + spin;
+    const dx = Math.cos(a) * extraR[k] - ballX;
+    const dy = Math.sin(a) * extraR[k] - ballY;
+    return dx * dx + dy * dy < EXTRA_HIT[k] * EXTRA_HIT[k];
 }
 
 function angleApart(a, b) {
@@ -282,6 +347,10 @@ export default {
         by: MID - BALL_R,
         gx: OFF,
         gy: OFF,
+        rx: OFF,
+        ry: OFF,
+        hx: OFF,
+        hy: OFF,
         s0: SPIKE_SRC[0], s1: SPIKE_SRC[0], s2: SPIKE_SRC[0], s3: SPIKE_SRC[0], s4: SPIKE_SRC[0],
         s5: SPIKE_SRC[0], s6: SPIKE_SRC[0], s7: SPIKE_SRC[0], s8: SPIKE_SRC[0], s9: SPIKE_SRC[0],
         x0: OFF, x1: OFF, x2: OFF, x3: OFF, x4: OFF, x5: OFF, x6: OFF, x7: OFF, x8: OFF, x9: OFF,
@@ -424,22 +493,32 @@ export default {
         if (immune > 0) {
             immune -= dt;
             if (immune <= 0) {
-                this.ballColour = BALL_COLOUR;
+                this.ballColour = ballColourNow();
+            }
+        }
+        playTime += dt;
+        for (let k = 0; k < EXTRAS; k++) {
+            if (extraOn[k]) {
+                extraLeft[k] -= dt;
+                if (extraLeft[k] <= 0) {
+                    extraOn[k] = false;
+                    drawnSpin = null;
+                }
+            } else if (playTime >= extraNext[k] && !(k === SHIELD && shielded)) {
+                placeExtra(k);
             }
         }
         for (let i = 0; i < steps; i++) {
             heading += curve * dt / steps;
             ballX += Math.cos(heading) * stepLen;
             ballY += Math.sin(heading) * stepLen;
-            if (immune <= 0 && touchesSpike()) {
-                this.lose();
+            if (immune <= 0 && touchesSpike() && this.spikeHit()) {
                 return;
             }
             if (ballX * ballX + ballY * ballY >= limit) {
                 bounce();
-                // Hitting the spikes that were there is still a loss; the new ones are not.
-                if (immune <= 0 && touchesSpike()) {
-                    this.lose();
+                // Hitting the spikes that were there counts; the new ones do not.
+                if (immune <= 0 && touchesSpike() && this.spikeHit()) {
                     return;
                 }
                 moveSpikes();
@@ -448,9 +527,35 @@ export default {
             }
             if (touchesDiamond()) {
                 this.point();
+                placeDiamond();
+            }
+            if (extraOn[RUBY] && touchesExtra(RUBY)) {
+                extraOn[RUBY] = false;
+                drawnSpin = null;
+                this.point();
+            }
+            if (extraOn[SHIELD] && touchesExtra(SHIELD)) {
+                extraOn[SHIELD] = false;
+                drawnSpin = null;
+                shielded = true;
+                this.ballColour = ballColourNow();
+                buzz('short');
             }
         }
         this.draw();
+    },
+    // A spike touched the ball: the shield takes the hit (with a moment of immunity, as after
+    // a bounce) or the game is lost. True when the game is over.
+    spikeHit() {
+        if (shielded) {
+            shielded = false;
+            immune = IMMUNE_TIME;
+            this.ballColour = ballColourNow();
+            buzz('short');
+            return false;
+        }
+        this.lose();
+        return true;
     },
     point() {
         score++;
@@ -459,7 +564,6 @@ export default {
         }
         this.score = String(score);
         buzz('short');
-        placeDiamond();
         save();
     },
     lose() {
@@ -502,6 +606,26 @@ export default {
             const ga = diamondA + spin;
             this.gx = Math.round(MID + Math.cos(ga) * diamondR - DIAMOND_HALF);
             this.gy = Math.round(MID + Math.sin(ga) * diamondR - DIAMOND_HALF);
+            for (let k = 0; k < EXTRAS; k++) {
+                let x = OFF;
+                let y = OFF;
+                if (extraOn[k]) {
+                    const a = extraA[k] + spin;
+                    x = Math.round(MID + Math.cos(a) * extraR[k] - EXTRA_HALF[k]);
+                    y = Math.round(MID + Math.sin(a) * extraR[k] - EXTRA_HALF[k]);
+                }
+                if (shownExtra[k * 2] !== x || shownExtra[k * 2 + 1] !== y) {
+                    shownExtra[k * 2] = x;
+                    shownExtra[k * 2 + 1] = y;
+                    if (k === RUBY) {
+                        this.rx = x;
+                        this.ry = y;
+                    } else {
+                        this.hx = x;
+                        this.hy = y;
+                    }
+                }
+            }
         }
         let reveals = REVEALS_PER_FRAME;
         let swaps = SRC_SWAPS_PER_FRAME;
