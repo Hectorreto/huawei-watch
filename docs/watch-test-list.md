@@ -10,6 +10,14 @@ Back to the October version, which counted quick taps and bought on the watch; t
 - The cookie shows at 120 px and shrinks to 100 px for a moment per tap; the plain white "+N" reads.
 - Quick taps all count and buying does not close the app, as in October; the save from the November version (more entries in `owned`) loads.
 
+## Órbita (`apps/orbit/`)
+
+New, needs its debug profile first (`add-a-new-app.md`). See `orbit-game.md`, **Status**.
+
+- Holding the left half turns the arena anticlockwise, the right half clockwise, smoothly, and releasing stops it.
+- The spikes point inwards wherever they are, and the frame rate while turning feels smooth.
+- Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score and the ball.
+
 ## Maze (`apps/maze/`)
 
 The Previewer has shown the menu, help, controls, map, result screen, levels, dark levels, gems, being caught, the guardian and the key and door working (November 2026).

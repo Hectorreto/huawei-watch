@@ -7,12 +7,13 @@ Each app is its own DevEco project under `apps/`, because an app always starts a
 | `apps/bakery-clicker/` | `com.hectorreto.counter` (kept from the first project; changing it would make a new app on the watch and lose the save) | `counter.p7b` (`CounterDebugProfile`) |
 | `apps/maze/` | `com.hectorreto.maze` | `maze.p7b` (`MazeDebugProfile`) |
 | `apps/drawing-lab/` | `com.hectorreto.drawinglab` | `drawinglab.p7b` (`DrawingLabDebugProfile`) |
+| `apps/orbit/` | `com.hectorreto.orbita` | `orbita.p7b` (`OrbitaDebugProfile`), not created yet |
 
 Confirmed October 2026: the three install side by side on the GT 6 Pro and each works.
 
 ## Steps
 
-1. **Copy a project.** Copy the tracked files of `apps/bakery-clicker/` to `apps/<name>/`, without `entry/src/main/js/MainAbility/common/` (the game's images) and `pages/`, then write `pages/index/index.{hml,css,js}`. Copy only the images the new page uses. Do not copy `entry/build`, `oh_modules` or `.hvigor`. The copy brings the clicker's launcher icon (`entry/src/main/resources/base/media/icon.png`, 104 px, and `icon_small.png`, 92 px, RGBA): replace both, or every app shows the cookie on the watch. `tools/make_app_icons.py` draws the maze and drawing lab icons as pixel art (a design sampled on a 26 or 23 cell grid, each cell 4x4 px); add a design there for a new app. (The DevEco wizard, `create-and-preview-the-app.md`, also works, but then the SDK settings and `.gitignore` have to be matched by hand.)
+1. **Copy a project.** Copy the tracked files of `apps/bakery-clicker/` to `apps/<name>/`, without `entry/src/main/js/MainAbility/common/` (the game's images) and `pages/`, then write `pages/index/index.{hml,css,js}`. Copy only the images the new page uses. Do not copy `entry/build`, `oh_modules` or `.hvigor`. The copy brings the clicker's launcher icon (`entry/src/main/resources/base/media/icon.png`, 104 px, and `icon_small.png`, 92 px, RGBA): replace both, or every app shows the cookie on the watch. `tools/make_app_icons.py` draws the maze, drawing lab and Órbita icons as pixel art (a design sampled on a 26 or 23 cell grid, each cell 4x4 px); add a design there for a new app. (The DevEco wizard, `create-and-preview-the-app.md`, also works, but then the SDK settings and `.gitignore` have to be matched by hand.)
 2. **Set the names.** `bundleName` in `entry/src/main/config.json` (`com.hectorreto.<name>`, lowercase letters and dots) and the name on the watch, `MainAbility_label` in `entry/src/main/resources/base/element/string.json`.
 3. **AppGallery Connect** (the user does this; details and gotchas in `sign-the-app.md`): under **Certificates, app IDs, and profiles**:
    - **App IDs > New**: HarmonyOS app, package = the new `bundleName`, project `huawei-watch`, no capabilities.
@@ -24,4 +25,4 @@ Confirmed October 2026: the three install side by side on the GT 6 Pro and each 
 
 ## Without the profile
 
-Until the `.p7b` exists, the build still compiles (`LegacyCompileLiteJS`, `LegacyGenerateLiteCode`) and writes `outputs/default/bin/entry-default-unsigned.bin`, then fails at `LegacySignLiteBin` with `00303107 Configuration Error ... Invalid profile value` (checked October 2026 for maze and drawing-lab). No HAP is written, so there is nothing to install. The Previewer does not need signing. Do not sign a new app with `counter.p7b`: the profile names `com.hectorreto.counter`, so the bundle name would not match.
+Until the `.p7b` exists, the build still compiles (`LegacyCompileLiteJS`, `LegacyGenerateLiteCode`) and writes `outputs/default/bin/entry-default-unsigned.bin`, then fails at `LegacySignLiteBin` with `00303107 Configuration Error ... Invalid profile value` (checked October 2026 for maze and drawing-lab, November 2026 for orbit). No HAP is written, so there is nothing to install. The Previewer does not need signing. Do not sign a new app with `counter.p7b`: the profile names `com.hectorreto.counter`, so the bundle name would not match.
