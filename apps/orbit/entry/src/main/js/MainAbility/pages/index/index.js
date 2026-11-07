@@ -2,8 +2,8 @@ import brightness from '@system.brightness';
 import storage from '@system.storage';
 import vibrator from '@system.vibrator';
 
-// Órbita: a ball crosses a round arena; holding the left or right half of the screen turns
-// the arena (its spikes and its diamond) around the centre, but not the ball. Diamonds score,
+// Órbita: a ball crosses a round arena; the crown (or a tap or drag on either half of the
+// screen) turns the arena (its spikes and its diamond) around the centre, but not the ball. Diamonds score,
 // spikes end the game. Positions are in px from the screen centre, angles in radians with
 // screen axes (x right, y down), so a growing angle turns clockwise.
 
@@ -18,29 +18,33 @@ const SPIKE_GAP = 0.112;       // angle between two spikes of a group (about 25 
 const SPIKE_HIT = BALL_R + 8;  // the ball touches a spike within this distance of its centre
 const DIAMOND_HALF = 15;
 const DIAMOND_HIT = BALL_R + 13;
-const TURN_SPEED = 2.8;        // rad/s while a half of the screen is held
+const TURN_SPEED = 3.2;        // rad/s while a half of the screen is held
 const TAP_TURN = 0.4;          // one tap turns the arena this far (about 23 degrees)...
 const TAP_TURN_SPEED = 4;      // ...at this many rad/s
-const BASE_SPEED = 150;        // px/s, plus SPEED_STEP per point up to MAX_SPEED
+const BASE_SPEED = 185;        // px/s, plus SPEED_STEP per point up to MAX_SPEED
 const SPEED_STEP = 2;
-const MAX_SPEED = 260;
+const MAX_SPEED = 300;
 const FRAME_MS = 33;
 const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
 const SUBSTEP_PX = 6;          // collisions are checked at least every 6 px of travel
 const CROWN_MAX = 1000;        // the hidden slider the crown turns runs 0..CROWN_MAX...
 const CROWN_MID = 500;         // ...and is put back near the middle after each change
-const CROWN_GAIN = 0.06;       // rad per unit of slider change: the GT 6 Pro's crown moves it
-                               // by about 2 per event, so about 7 degrees (the Previewer: 10)
+const CROWN_GAIN = 0.07;       // rad per unit of slider change: the GT 6 Pro's crown moves it
+                               // by about 2 per event, so about 8 degrees (the Previewer: 10)
 const CROWN_MAX_STEP = 0.15;   // at most this many rad per event, less than a spike's width
                                // at the wall, so a spike cannot jump over the ball
 const FOCUS_DELAY_MS = 50;     // the slider exists only once the page has rendered
 const OVER_PAUSE_MS = 700;     // touches right after losing are ignored
-const THREE_GROUPS_FROM = 3;   // below this score the spikes come in two groups
 const OFF = -100;              // where hidden sprites go
 const SAVE_KEY = 'orbita';
 const SAVE_FIELDS = 21;
-const GROUPINGS_2 = [[4, 6], [5, 5], [6, 4]];
-const GROUPINGS_3 = [[3, 3, 4], [3, 4, 3], [4, 3, 3]];
+const MIN_GROUPS = 2;          // the 10 spikes come in 2 to 5 groups...
+const MAX_GROUPS = 5;
+const MIN_GROUP_SIZE = 2;      // ...of at least 2 spikes each...
+const GROUP_SPACE = 0.3;       // ...with at least this much wall (rad) between two groups
+const IMMUNE_TIME = 0.35;      // s after a bounce when spikes cannot kill, since they may
+                               // reappear right on top of the ball
+const BALL_IMMUNE = '#9fdcff';
 const BALL_COLOUR = '#ffffff';
 const BALL_LOST = '#ff5040';
 const TWO_PI = Math.PI * 2;
@@ -74,6 +78,7 @@ let timer = null;
 let lastTime = 0;
 let overUntil = 0;
 let drawnSpin = null;          // spin when the arena was last placed, null to force it
+let immune = 0;                // s of immunity left
 
 function rand(lo, hi) {
     return lo + Math.random() * (hi - lo);
@@ -141,22 +146,45 @@ function placeDiamond() {
     drawnSpin = null;
 }
 
-// After a bounce at screen angle `hit`, the spikes move away from it: two groups about a
-// quarter turn to each side, or (from THREE_GROUPS_FROM points) three groups a little more
-// than a fifth of a turn to each side and one opposite. The nearest spike always stays more
-// than 0.9 rad (about 50 degrees) from the hit, so it can never kill the ball where it is.
-function moveSpikes(hit) {
-    const three = score >= THREE_GROUPS_FROM && Math.random() < 0.5;
-    const options = three ? GROUPINGS_3 : GROUPINGS_2;
-    const sizes = options[Math.floor(Math.random() * options.length)];
-    const centres = three
-        ? [hit + 1.25 + rand(-0.15, 0.15), hit + Math.PI + rand(-0.3, 0.3), hit - 1.25 + rand(-0.15, 0.15)]
-        : [hit + Math.PI / 2 + rand(-0.35, 0.35), hit - Math.PI / 2 + rand(-0.35, 0.35)];
+function angleApart(a, b) {
+    return Math.abs((((a - b) % TWO_PI) + TWO_PI + Math.PI) % TWO_PI - Math.PI);
+}
+
+// After each bounce the 10 spikes move to 2-5 groups of at least 2 at random places on the
+// wall, anywhere, even where the ball is (the ball is immune for a moment, IMMUNE_TIME).
+// Groups keep GROUP_SPACE between them when a few tries find room.
+function moveSpikes() {
+    const groups = MIN_GROUPS + Math.floor(Math.random() * (MAX_GROUPS - MIN_GROUPS + 1));
+    const sizes = [];
+    for (let g = 0; g < groups; g++) {
+        sizes.push(MIN_GROUP_SIZE);
+    }
+    for (let left = SPIKES - groups * MIN_GROUP_SIZE; left > 0; left--) {
+        sizes[Math.floor(Math.random() * groups)]++;
+    }
+    const centres = [];
+    const halves = [];
     let n = 0;
-    for (let g = 0; g < sizes.length; g++) {
-        const first = centres[g] - (sizes[g] - 1) * SPIKE_GAP / 2;
+    for (let g = 0; g < groups; g++) {
+        const half = (sizes[g] - 1) * SPIKE_GAP / 2;
+        let centre = 0;
+        for (let tries = 0; tries < 20; tries++) {
+            centre = rand(0, TWO_PI);
+            let fits = true;
+            for (let k = 0; k < centres.length; k++) {
+                if (angleApart(centre, centres[k]) < half + halves[k] + GROUP_SPACE) {
+                    fits = false;
+                    break;
+                }
+            }
+            if (fits) {
+                break;
+            }
+        }
+        centres.push(centre);
+        halves.push(half);
         for (let j = 0; j < sizes[g]; j++) {
-            spikeAngles[n++] = first + j * SPIKE_GAP - spin;
+            spikeAngles[n++] = centre - half + j * SPIKE_GAP - spin;
         }
     }
     spikesShown = true;
@@ -185,14 +213,14 @@ function touchesDiamond() {
     return dx * dx + dy * dy < DIAMOND_HIT * DIAMOND_HIT;
 }
 
-// The ball goes back the way it came, a little off: 5 to 20 degrees to either side, and
-// with a new slight curve. Returns the screen angle where it hit.
+// The ball goes back the way it came, a little off: 3 to 11 degrees to either side, and
+// with a new slight curve.
 function bounce() {
     const hit = Math.atan2(ballY, ballX);
     const r = WALL - BALL_R - 0.5;
     ballX = Math.cos(hit) * r;
     ballY = Math.sin(hit) * r;
-    heading += Math.PI + randSign() * rand(0.09, 0.35);
+    heading += Math.PI + randSign() * rand(0.05, 0.2);
     // Never along the wall: keep it within about 60 degrees of straight in.
     const inward = hit + Math.PI;
     if (Math.cos(heading - inward) < 0.5) {
@@ -200,7 +228,6 @@ function bounce() {
     }
     heading %= TWO_PI;
     curve = randSign() * rand(0.1, 0.3);
-    return hit;
 }
 
 export default {
@@ -329,21 +356,30 @@ export default {
         const steps = Math.max(1, Math.ceil(travel / SUBSTEP_PX));
         const stepLen = travel / steps;
         const limit = (WALL - BALL_R) * (WALL - BALL_R);
+        if (immune > 0) {
+            immune -= dt;
+            if (immune <= 0) {
+                this.ballColour = BALL_COLOUR;
+            }
+        }
         for (let i = 0; i < steps; i++) {
             heading += curve * dt / steps;
             ballX += Math.cos(heading) * stepLen;
             ballY += Math.sin(heading) * stepLen;
-            if (touchesSpike()) {
+            if (immune <= 0 && touchesSpike()) {
                 this.lose();
                 return;
             }
             if (ballX * ballX + ballY * ballY >= limit) {
-                const hit = bounce();
-                if (touchesSpike()) {
+                bounce();
+                // Hitting the spikes that were there is still a loss; the new ones are not.
+                if (immune <= 0 && touchesSpike()) {
                     this.lose();
                     return;
                 }
-                moveSpikes(hit);
+                moveSpikes();
+                immune = IMMUNE_TIME;
+                this.ballColour = BALL_IMMUNE;
             }
             if (touchesDiamond()) {
                 this.point();
@@ -366,6 +402,7 @@ export default {
         phase = 'over';
         hold = 0;
         pendingTurn = 0;
+        immune = 0;
         overUntil = Date.now() + OVER_PAUSE_MS;
         keepScreen(false);
         buzz('long');
