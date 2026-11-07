@@ -57,9 +57,10 @@ const BALL_IMMUNE = '#9fdcff';
 const BALL_SHIELD = '#7cf08a'; // the shield wheel's green
 const BALL_COLOUR = '#ffffff';
 // Extras that show up for a few seconds once the game has gone on a while, turning with the
-// arena like the diamond: 0 is the ruby (a rarer diamond, +1 for now), 1 the shield wheel
+// arena like the diamond: 0 is the ruby (adds half the score), 1 the shield wheel
 // (the next spike hit only takes the shield, with a moment of immunity as after a bounce).
 const RUBY = 0;
+const RUBY_SHARE = 0.5;        // the ruby adds half the score (rounded down), at least 1
 const SHIELD = 1;
 const EXTRAS = 2;
 const EXTRA_HALF = [10, 14];             // half the image (ruby.png 20 px, shield.png 28 px)
@@ -532,7 +533,7 @@ export default {
             if (extraOn[RUBY] && touchesExtra(RUBY)) {
                 extraOn[RUBY] = false;
                 drawnSpin = null;
-                this.point();
+                this.point(Math.max(1, Math.floor(score * RUBY_SHARE)));
             }
             if (extraOn[SHIELD] && touchesExtra(SHIELD)) {
                 extraOn[SHIELD] = false;
@@ -557,8 +558,8 @@ export default {
         this.lose();
         return true;
     },
-    point() {
-        score++;
+    point(gain) {
+        score += gain || 1;
         if (score > best) {
             best = score;
         }
