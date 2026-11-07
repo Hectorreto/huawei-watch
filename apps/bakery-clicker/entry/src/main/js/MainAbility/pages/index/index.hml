@@ -1,7 +1,7 @@
 <div class="container">
     <stack class="stage" if="{{ view === 'cookie' }}">
         <div class="cookie-box" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <image class="cookie" src="{{ cookieSrc }}"></image>
+            <image src="{{ cookieSrc }}" style="width: {{ cookieSize }}px; height: {{ cookieSize }}px;"></image>
         </div>
         <image class="vignette" if="{{ !menu }}" src="/common/vignette.png" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart"></image>
         <stack class="arc" if="{{ !menu }}" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
@@ -16,84 +16,24 @@
             </stack>
         </stack>
         <stack class="plus-row" if="{{ plus0 !== '' && !menu }}" style="left: {{ plusX0 }}px; top: {{ plusY0 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus0 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus0 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus0 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus0 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus1 !== '' && !menu }}" style="left: {{ plusX1 }}px; top: {{ plusY1 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus1 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus1 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus1 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus1 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus2 !== '' && !menu }}" style="left: {{ plusX2 }}px; top: {{ plusY2 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus2 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus2 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus2 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus2 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus3 !== '' && !menu }}" style="left: {{ plusX3 }}px; top: {{ plusY3 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus3 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus3 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus3 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus3 === 'b' }}">{{ plusText }}</text>
         </stack>
         <stack class="plus-row" if="{{ plus4 !== '' && !menu }}" style="left: {{ plusX4 }}px; top: {{ plusY4 }}px;" onclick="increment" onswipe="edgeSwipe" ontouchstart="touchStart">
-            <stack class="plus-row" if="{{ plus4 === 'a' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
-            <stack class="plus-row" if="{{ plus4 === 'b' }}">
-                <text class="plus-outline-1">{{ plusText }}</text>
-                <text class="plus-outline-2">{{ plusText }}</text>
-                <text class="plus-outline-3">{{ plusText }}</text>
-                <text class="plus-outline-4">{{ plusText }}</text>
-                <text class="plus">{{ plusText }}</text>
-            </stack>
+            <text class="plus" if="{{ plus4 === 'a' }}">{{ plusText }}</text>
+            <text class="plus" if="{{ plus4 === 'b' }}">{{ plusText }}</text>
         </stack>
         <div class="menu-bg" if="{{ menu }}" onswipe="edgeSwipe" ontouchstart="touchStart"></div>
         <image class="menu-cookie" if="{{ menu }}" src="{{ cookieSrc }}" onclick="closeMenu" onswipe="edgeSwipe" ontouchstart="touchStart"></image>

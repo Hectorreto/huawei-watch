@@ -4,6 +4,12 @@ import storage from '@system.storage';
 // and every few seconds while cookies are produced on their own.
 const SAVE_DELAY_MS = 1000;
 const SAVE_EVERY_TICKS = 10;
+// The 100 px theme image is shown a little bigger, and a tap takes it back to its own size for
+// PRESS_MS, as if pressed. The watch scales it with smoothing, so the bigger size is a bit soft.
+// Only the bound size of the same image changes: making a new image per tap lost quick taps.
+const COOKIE_PX = 120;
+const COOKIE_PRESSED_PX = 100;
+const PRESS_MS = 120;
 // Each tap shows its "+N" at a random spot on the cookie, below the curved count. The page has
 // PLUS_SLOTS of them, reused in turn, so a few can fade at the same time. PLUS_MS matches
 // the animation in index.css. The area keeps the 144x44 row inside the round screen.
@@ -137,6 +143,7 @@ let plusSlot = 0;
 // Where the last touch started, for the edge swipe; -1 when the event gave no position.
 let touchX = -1;
 let plusTimers = [];
+let pressTimer = null;
 let tickTimer = null;
 let noticeTimer = null;
 let notices = [];
@@ -288,6 +295,7 @@ export default {
         items: [],
         upgradeItems: [],
         cookieSrc: themePath(THEMES[0].id),
+        cookieSize: COOKIE_PX,
         plus0: '', plus1: '', plus2: '', plus3: '', plus4: '',
         plusX0: 0, plusX1: 0, plusX2: 0, plusX3: 0, plusX4: 0,
         plusY0: 0, plusY1: 0, plusY2: 0, plusY3: 0, plusY4: 0
@@ -340,6 +348,7 @@ export default {
     },
     onDestroy() {
         clearInterval(tickTimer);
+        clearTimeout(pressTimer);
         this.save();
     },
     // savedAt is when count was last saved, so the time since then is exactly what was not produced.
@@ -425,12 +434,25 @@ export default {
         this.taps++;
         this.bake(this.tapPower * this.multiplier());
 
+        this.pressCookie();
         this.showPlus();
 
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             this.save();
         }, SAVE_DELAY_MS);
+    },
+    // A tap during a press changes nothing, so fast taps redraw the cookie at most about four
+    // times a second.
+    pressCookie() {
+        if (pressTimer !== null) {
+            return;
+        }
+        this.cookieSize = COOKIE_PRESSED_PX;
+        pressTimer = setTimeout(() => {
+            pressTimer = null;
+            this.cookieSize = COOKIE_PX;
+        }, PRESS_MS);
     },
     // Moves the next slot to a random spot and swaps which of its two "if" texts exists, so a
     // new text is created and its animation starts again (lite cannot bind class). The slot is
