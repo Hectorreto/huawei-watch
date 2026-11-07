@@ -21,9 +21,7 @@ const DIAMOND_HIT = BALL_R + 13;
 const TURN_SPEED = 3.2;        // rad/s while a half of the screen is held
 const TAP_TURN = 0.4;          // one tap turns the arena this far (about 23 degrees)...
 const TAP_TURN_SPEED = 4;      // ...at this many rad/s
-const BASE_SPEED = 380;        // px/s, plus SPEED_STEP per point up to MAX_SPEED
-const SPEED_STEP = 2;
-const MAX_SPEED = 540;
+const BALL_SPEED = 380;        // px/s, the same whatever the score
 const FRAME_MS = 33;
 const BOUNCE_OFF_MIN = 0.02;   // after a bounce the ball heads 1 to 5 degrees off the centre
 const BOUNCE_OFF_MAX = 0.09;
@@ -486,8 +484,7 @@ export default {
             spin += sign * turn;
             pendingTurn -= sign * turn;
         }
-        const speed = Math.min(MAX_SPEED, BASE_SPEED + score * SPEED_STEP);
-        const travel = speed * dt;
+        const travel = BALL_SPEED * dt;
         const steps = Math.max(1, Math.ceil(travel / SUBSTEP_PX));
         const stepLen = travel / steps;
         const limit = (WALL - BALL_R) * (WALL - BALL_R);
