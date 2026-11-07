@@ -1,0 +1,71 @@
+.container {
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+}
+/* The arena: its inner edge (233 - 9 = 224 px from the centre) is the wall the ball bounces on. */
+.ring {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+  border-width: 9px;
+  border-color: #34406a;
+  border-radius: 233px;
+  background-color: #121729;
+}
+/* The score, large and dim in the centre, under everything that moves. */
+.score {
+  width: 300px;
+  height: 110px;
+  left: 83px;
+  top: 170px;
+  font-size: 90px;
+  color: #3a4670;
+  text-align: center;
+}
+/* "Toca para jugar" and the record, under the score. */
+.line {
+  width: 300px;
+  height: 36px;
+  left: 83px;
+  top: 285px;
+  font-size: 24px;
+  color: #8f9bc4;
+  text-align: center;
+}
+/* Only takes the crown: hidden under the ring, which is drawn over it. */
+.crown {
+  width: 100px;
+  height: 20px;
+  left: 183px;
+  top: 223px;
+}
+.diamond {
+  width: 30px;
+  height: 30px;
+}
+.ruby {
+  width: 20px;
+  height: 20px;
+}
+.shield {
+  width: 28px;
+  height: 28px;
+}
+.spike {
+  width: 32px;
+  height: 32px;
+}
+.ball {
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+}
+/* Takes every touch: the left half turns the arena anticlockwise, the right half clockwise. */
+.touch {
+  width: 466px;
+  height: 466px;
+  left: 0px;
+  top: 0px;
+}

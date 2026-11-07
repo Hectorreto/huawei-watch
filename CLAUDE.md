@@ -6,6 +6,7 @@ Self-built apps for a Huawei Watch GT 6 Pro, one repository for all of them. It 
   - `apps/bakery-clicker/`: the cookie clicker game (`com.hectorreto.counter`).
   - `apps/maze/`: the first-person maze prototype (`com.hectorreto.maze`).
   - `apps/drawing-lab/`: tests of drawing methods and watch limits (`com.hectorreto.drawinglab`).
+  - `apps/orbit/`: Órbita, a ball in a round arena that turns while a half of the screen is held (`com.hectorreto.orbita`).
 - **Shared:** `docs/` (lessons for all apps) and `tools/` (scripts).
 - **Tools:** DevEco Studio 6.1.1 at `E:\Programs\Huawei\DevEco Studio`, with its bundled SDK 6.1.1(24). See `docs/create-and-preview-the-app.md`.
 
@@ -38,5 +39,6 @@ How to write them:
 - Adding a new app to `apps/`, its bundle name, app ID, debug profile and signing config → `docs/add-a-new-app.md`
 - Choosing how to draw something (canvas, components, images, animations), or running the drawing lab → `docs/compare-drawing-methods.md`
 - Working on the first-person maze prototype (`apps/maze/`) → `docs/maze-prototype.md`
+- Working on Órbita, the circular arena game (`apps/orbit/`) → `docs/orbit-game.md`
 - Something looks wrong and you need to know whether it is already known or unfinished → `docs/known-issues.md`
 - Preparing a session on the real watch, or leaving a change untested on it → `docs/watch-test-list.md`
