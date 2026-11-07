@@ -64,9 +64,9 @@ const EXTRAS = 2;
 const EXTRA_HALF = [10, 14];             // half the image (ruby.png 20 px, shield.png 28 px)
 const EXTRA_HIT = [BALL_R + 9, BALL_R + 12];
 const EXTRA_LIFE = [5, 6];               // s on the screen
-const EXTRA_FIRST = [20, 30];            // s of play before the first one can show up
-const EXTRA_GAP_MIN = [15, 25];          // s from one going away to the next showing up...
-const EXTRA_GAP_MAX = [30, 45];          // ...at random between these
+const EXTRA_FIRST = [20, 15];            // s of play before the first one can show up
+const EXTRA_GAP_MIN = [15, 10];          // s from one going away to the next showing up...
+const EXTRA_GAP_MAX = [30, 20];          // ...at random between these
 const BALL_LOST = '#ff5040';
 const TWO_PI = Math.PI * 2;
 
