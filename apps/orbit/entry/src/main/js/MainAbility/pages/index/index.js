@@ -31,7 +31,7 @@ const CURVE_MIN = 0.04;        // rad/s its heading turns, to a random side: abo
 const CURVE_MAX = 0.1;         // over a crossing
 const SRC_SWAPS_PER_FRAME = 2; // spike images whose direction may change in one frame
 const REVEALS_PER_FRAME = 3;   // new spikes shown per frame after a bounce
-const SHOW_FRAME_MS = true;    // while playing, the line shows the average and the slowest ms
+const SHOW_FRAME_MS = false;   // while playing, the line shows the average and the slowest ms
                                // per frame of the last second (a measuring aid for the watch)
 const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
 const SUBSTEP_PX = 6;          // collisions are checked at least every 6 px of travel
