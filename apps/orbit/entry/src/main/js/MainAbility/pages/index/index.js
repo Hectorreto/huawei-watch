@@ -25,6 +25,13 @@ const BASE_SPEED = 185;        // px/s, plus SPEED_STEP per point up to MAX_SPEE
 const SPEED_STEP = 2;
 const MAX_SPEED = 300;
 const FRAME_MS = 33;
+const BOUNCE_OFF_MIN = 0.02;   // after a bounce the ball heads 1 to 5 degrees off the centre
+const BOUNCE_OFF_MAX = 0.09;
+const CURVE_MIN = 0.04;        // rad/s its heading turns, to a random side: about 5 degrees
+const CURVE_MAX = 0.1;         // over a crossing
+const SRC_SWAPS_PER_FRAME = 2; // spike images whose direction may change in one frame
+const SHOW_FRAME_MS = true;    // while playing, the line shows the average ms per frame of
+                               // the last second (a measuring aid for the watch)
 const MAX_DT = 0.1;            // a slower frame moves the game less, so it never jumps far
 const SUBSTEP_PX = 6;          // collisions are checked at least every 6 px of travel
 const CROWN_MAX = 1000;        // the hidden slider the crown turns runs 0..CROWN_MAX...
@@ -79,9 +86,27 @@ let lastTime = 0;
 let overUntil = 0;
 let drawnSpin = null;          // spin when the arena was last placed, null to force it
 let immune = 0;                // s of immunity left
+const shownBall = [MID - BALL_R, MID - BALL_R];
+const shownX = [];             // what each spike's bindings hold
+const shownY = [];
+const shownDir = [];
+const wantDir = [];
+for (let i = 0; i < SPIKES; i++) {
+    shownX.push(OFF);
+    shownY.push(OFF);
+    shownDir.push(0);
+    wantDir.push(0);
+}
+let nextSwap = 0;
+let perfStart = 0;
+let perfFrames = 0;
 
 function rand(lo, hi) {
     return lo + Math.random() * (hi - lo);
+}
+
+function randCurve() {
+    return randSign() * rand(CURVE_MIN, CURVE_MAX);
 }
 
 function randSign() {
@@ -122,7 +147,7 @@ function freshRound() {
     ballX = 0;
     ballY = 0;
     heading = rand(0, TWO_PI);
-    curve = randSign() * rand(0.1, 0.3);
+    curve = randCurve();
     spikesShown = false;
     spikeAngles = [];
     for (let i = 0; i < SPIKES; i++) {
@@ -213,21 +238,14 @@ function touchesDiamond() {
     return dx * dx + dy * dy < DIAMOND_HIT * DIAMOND_HIT;
 }
 
-// The ball goes back the way it came, a little off: 3 to 11 degrees to either side, and
-// with a new slight curve.
+// The ball heads back towards the centre, slightly off (BOUNCE_OFF), with a new slight curve.
 function bounce() {
     const hit = Math.atan2(ballY, ballX);
     const r = WALL - BALL_R - 0.5;
     ballX = Math.cos(hit) * r;
     ballY = Math.sin(hit) * r;
-    heading += Math.PI + randSign() * rand(0.05, 0.2);
-    // Never along the wall: keep it within about 60 degrees of straight in.
-    const inward = hit + Math.PI;
-    if (Math.cos(heading - inward) < 0.5) {
-        heading = inward + rand(-0.5, 0.5);
-    }
-    heading %= TWO_PI;
-    curve = randSign() * rand(0.1, 0.3);
+    heading = (hit + Math.PI + randSign() * rand(BOUNCE_OFF_MIN, BOUNCE_OFF_MAX)) % TWO_PI;
+    curve = randCurve();
 }
 
 export default {
@@ -323,6 +341,8 @@ export default {
         this.line = '';
         this.ballColour = BALL_COLOUR;
         lastTime = Date.now();
+        perfStart = lastTime;
+        perfFrames = 0;
         keepScreen(true);
         if (timer === null) {
             timer = setInterval(() => {
@@ -342,6 +362,14 @@ export default {
         const now = Date.now();
         const dt = Math.min(MAX_DT, Math.max(0, (now - lastTime) / 1000));
         lastTime = now;
+        if (SHOW_FRAME_MS) {
+            perfFrames++;
+            if (now - perfStart >= 1000) {
+                this.line = Math.round((now - perfStart) / perfFrames) + ' ms';
+                perfStart = now;
+                perfFrames = 0;
+            }
+        }
         if (hold !== 0) {
             spin += hold * TURN_SPEED * dt;
             pendingTurn = 0;
@@ -417,42 +445,58 @@ export default {
         save();
     },
     // Places the ball every frame, and the spikes and the diamond only when the arena moved.
+    // What each binding holds is kept in module arrays, so nothing is read back from the page.
+    // Changing an image's src is slow on the watch (the lab: 51 ms a frame against 34 for a
+    // move), so while the arena turns at most SRC_SWAPS_PER_FRAME spikes take their new
+    // direction each frame, in turn; a new set of spikes (drawnSpin null) takes them all.
     draw() {
         const bx = Math.round(MID + ballX - BALL_R);
         const by = Math.round(MID + ballY - BALL_R);
-        if (this.bx !== bx) {
+        if (shownBall[0] !== bx) {
+            shownBall[0] = bx;
             this.bx = bx;
         }
-        if (this.by !== by) {
+        if (shownBall[1] !== by) {
+            shownBall[1] = by;
             this.by = by;
         }
-        if (drawnSpin === spin) {
+        const all = drawnSpin === null;
+        if (drawnSpin !== spin) {
+            drawnSpin = spin;
+            const ga = diamondA + spin;
+            this.gx = Math.round(MID + Math.cos(ga) * diamondR - DIAMOND_HALF);
+            this.gy = Math.round(MID + Math.sin(ga) * diamondR - DIAMOND_HALF);
+            for (let i = 0; i < SPIKES; i++) {
+                let x = OFF;
+                let y = OFF;
+                if (spikesShown) {
+                    const a = spikeAngles[i] + spin;
+                    x = Math.round(MID + Math.cos(a) * SPIKE_RADIUS - SPIKE_HALF);
+                    y = Math.round(MID + Math.sin(a) * SPIKE_RADIUS - SPIKE_HALF);
+                    let dir = Math.round(a / TWO_PI * SPIKE_DIRS) % SPIKE_DIRS;
+                    wantDir[i] = dir < 0 ? dir + SPIKE_DIRS : dir;
+                }
+                if (shownX[i] !== x) {
+                    shownX[i] = x;
+                    this['x' + i] = x;
+                }
+                if (shownY[i] !== y) {
+                    shownY[i] = y;
+                    this['y' + i] = y;
+                }
+            }
+        }
+        if (!spikesShown) {
             return;
         }
-        drawnSpin = spin;
-        const ga = diamondA + spin;
-        this.gx = Math.round(MID + Math.cos(ga) * diamondR - DIAMOND_HALF);
-        this.gy = Math.round(MID + Math.sin(ga) * diamondR - DIAMOND_HALF);
-        for (let i = 0; i < SPIKES; i++) {
-            let x = OFF;
-            let y = OFF;
-            if (spikesShown) {
-                const a = spikeAngles[i] + spin;
-                x = Math.round(MID + Math.cos(a) * SPIKE_RADIUS - SPIKE_HALF);
-                y = Math.round(MID + Math.sin(a) * SPIKE_RADIUS - SPIKE_HALF);
-                let dir = Math.round(a / TWO_PI * SPIKE_DIRS) % SPIKE_DIRS;
-                if (dir < 0) {
-                    dir += SPIKE_DIRS;
-                }
-                if (this['s' + i] !== SPIKE_SRC[dir]) {
-                    this['s' + i] = SPIKE_SRC[dir];
-                }
-            }
-            if (this['x' + i] !== x) {
-                this['x' + i] = x;
-            }
-            if (this['y' + i] !== y) {
-                this['y' + i] = y;
+        let swaps = all ? SPIKES : SRC_SWAPS_PER_FRAME;
+        for (let k = 0; k < SPIKES && swaps > 0; k++) {
+            const i = (nextSwap + k) % SPIKES;
+            if (shownDir[i] !== wantDir[i]) {
+                shownDir[i] = wantDir[i];
+                this['s' + i] = SPIKE_SRC[wantDir[i]];
+                swaps--;
+                nextSwap = (i + 1) % SPIKES;
             }
         }
     },
