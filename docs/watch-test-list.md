@@ -12,9 +12,8 @@ Back to the October version, which counted quick taps and bought on the watch; t
 
 ## Órbita (`apps/orbit/`)
 
-Installed in November 2026: it looks very good and the crown turns the arena continuously. See `orbit-game.md`, **Status**.
+Installed in November 2026: it looks very good and the crown turns the arena continuously at a good speed. See `orbit-game.md`, **Status**.
 
-- The crown turns the arena fast enough now (3 times the first gain).
 - Diamonds score and vibrate, spikes end the game, and closing and reopening resumes the score and the ball.
 
 ## Maze (`apps/maze/`)
