@@ -17,9 +17,3 @@ The October version (`a8a1603`, no press effect, separate shop and upgrades view
 - The 512 KB JS heap: `index.js` grew from 777 to 1,115 lines, with bigger `UPGRADES`, `ACHIEVEMENTS` and `THEMES` tables, and a buy rebuilds `items`, checks achievements and may save.
 
 The Previewer did not log an error, although it froze in 3 of 6 buys once. The clicker was put back to the October version (`2c8609c`); the November improvements stay on branch `claude/mejoras-clicker-6e8b06`. Bring back only the ones worth it, one at a time, checking each on the watch, and keep the press effect out unless it is shown not to be the cause.
-
-## Maze: menu and help (GT 6 Pro, November 2026)
-
-- On the menu, a tap anywhere starts a maze: the top half continues the levels and the bottom half the daily challenge (`MENU_SPLIT`). "Seguir" and "Reto del día" do not look like buttons, and a tap outside both still starts a game.
-- The controls help shows only in the first maze while no star has been earned (`totalStars === 0`), so it showed on the daily challenge, and afterwards there is no way to see it again.
-- There is no way back to the menu from a maze or the map; only closing the app shows it again.

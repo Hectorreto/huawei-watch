@@ -16,6 +16,8 @@ The Previewer has shown the menu, help, controls, map, result screen, levels, da
 
 On the GT 6 Pro (November 2026) movement felt good and the result screen with stars and the daily challenge looked right; the menu and help problems are in `known-issues.md`.
 
+- The menu: only the "Seguir", "Reto del día" and "Controles" buttons respond; "Controles" shows the help and a tap returns to the menu.
+- On the map, the "Menú" button returns to the menu, and "Seguir" (or the challenge) carries on where the maze was left.
 - Vibration on gems, guardian nearby, capture and exit.
 - The maze in progress is restored after closing and reopening the app.
 - The screen may turn off after two minutes without a tap, and the game resumes when it turns back on.

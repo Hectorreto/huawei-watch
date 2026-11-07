@@ -174,6 +174,48 @@
   color: #c8c8c8;
   text-align: center;
 }
+/* The small "Controles" button under the rank, and the "Menú" button on the map, in the same
+   box (MENU_HELP and MAP_MENU in index.js). The map one is its own stack over the canvas. */
+.menu-help {
+  width: 180px;
+  height: 44px;
+  left: 143px;
+  top: 392px;
+  background-color: #333333;
+  border-radius: 22px;
+}
+.menu-help-name {
+  width: 180px;
+  height: 44px;
+  left: 143px;
+  top: 392px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
+.map-menu-box {
+  width: 180px;
+  height: 44px;
+  left: 143px;
+  top: 392px;
+}
+.menu-help-box {
+  width: 180px;
+  height: 44px;
+  left: 0px;
+  top: 0px;
+  background-color: #333333;
+  border-radius: 22px;
+}
+.menu-help-name-box {
+  width: 180px;
+  height: 44px;
+  left: 0px;
+  top: 0px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
 .result-title {
   width: 340px;
   height: 40px;

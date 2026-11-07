@@ -98,8 +98,19 @@ const GUARD_SETBACK_SHORT = 1;
 const DAILY_LEVEL = 1;
 const DAILY_BONUS_MAX = 5;
 const DAY_MS = 86400000;
-// On the menu, taps above this continue the levels and the rest open the daily challenge.
-const MENU_SPLIT = 225;
+// Menu buttons as [top, bottom] in screen y, matching .menu-levels, .menu-daily and .menu-help in
+// index.css; a tap counts only inside a button, so a stray tap does not start a game. The two
+// big buttons span MENU_X_MIN..MENU_X_MAX, the help button HELP_X_MIN..HELP_X_MAX.
+const MENU_LEVELS = [108, 218];
+const MENU_DAILY = [232, 342];
+const MENU_HELP = [392, 436];
+const MENU_X_MIN = 43;
+const MENU_X_MAX = 423;
+const HELP_X_MIN = 143;
+const HELP_X_MAX = 323;
+// While the map is open, a tap on its "Menú" button (.map-menu, same box) leaves the maze for
+// the menu, saving it so "Seguir" or the challenge carries on; any other tap closes the map.
+const MAP_MENU = [392, 436];
 // The maze in progress is saved this long after the last tap, as in the clicker, and when the
 // app closes. Numbers in key 'run': seed, daily, level, px, py, facing, steps, guardSteps, gems.
 const SAVE_DELAY_MS = 1000;
@@ -168,6 +179,8 @@ let mapOpen = false;
 let resultOpen = false;
 let menuOpen = false;
 let helpOpen = false;
+// The help was opened from the menu's button, so closing it goes back to the menu.
+let helpFromMenu = false;
 // 1 for each grid cell the player has stood on, by y * size + x.
 let visited = [];
 // Gems still in the maze, as [x, y, number] with x and y grid cells, how many were picked up,
@@ -256,12 +269,20 @@ function makeMaze() {
     return parent;
 }
 
+function inside(x, y, xMin, xMax, ys) {
+    return x >= xMin && x <= xMax && y >= ys[0] && y <= ys[1];
+}
+
+function runNumbers() {
+    return [runSeed, daily ? 1 : 0, mazeLevel, px, py, facing, steps, guardSteps, gemsTaken];
+}
+
 // Writes the maze in progress, unless nothing has changed since the last write.
 function saveRun() {
     if (!runActive) {
         return;
     }
-    const value = [runSeed, daily ? 1 : 0, mazeLevel, px, py, facing, steps, guardSteps, gemsTaken].join(',');
+    const value = runNumbers().join(',');
     if (value !== runSaved) {
         runSaved = value;
         storage.set({ key: 'run', value: value });
@@ -678,6 +699,8 @@ export default {
         keyY: 0,
         keyS: 64,
         help: false,
+        helpStart: 'Toca para empezar',
+        mapMenu: false,
         menu: false,
         menuLevel: '',
         menuDaily: '',
@@ -920,14 +943,14 @@ export default {
         if (helpOpen) {
             helpOpen = false;
             this.help = false;
+            if (helpFromMenu) {
+                helpFromMenu = false;
+                this.showMenu();
+            }
             return;
         }
         if (menuOpen) {
-            menuOpen = false;
-            busy = true;
-            this.menu = false;
-            daily = touchY >= MENU_SPLIT;
-            this.startMaze();
+            this.menuTap(touchX, touchY);
             return;
         }
         if (resultOpen) {
@@ -944,11 +967,17 @@ export default {
         this.note = '';
         if (mapOpen) {
             mapOpen = false;
+            this.mapMenu = false;
+            if (inside(touchX, touchY, HELP_X_MIN, HELP_X_MAX, MAP_MENU)) {
+                this.leaveToMenu();
+                return;
+            }
             this.newCanvas();
             return;
         }
         if (touchY < MAP_ZONE && touchX >= TURN_ZONE && touchX <= SCREEN - TURN_ZONE) {
             mapOpen = true;
+            this.mapMenu = true;
             this.newCanvas();
             return;
         }
@@ -984,6 +1013,36 @@ export default {
             }
         }
         this.draw();
+    },
+    // Only a tap inside a button does something: continue the levels, play the daily
+    // challenge, or show the controls.
+    menuTap(x, y) {
+        if (inside(x, y, HELP_X_MIN, HELP_X_MAX, MENU_HELP)) {
+            menuOpen = false;
+            this.menu = false;
+            helpOpen = true;
+            helpFromMenu = true;
+            this.helpStart = 'Toca para volver';
+            this.help = true;
+            return;
+        }
+        const levels = inside(x, y, MENU_X_MIN, MENU_X_MAX, MENU_LEVELS);
+        if (!levels && !inside(x, y, MENU_X_MIN, MENU_X_MAX, MENU_DAILY)) {
+            return;
+        }
+        menuOpen = false;
+        busy = true;
+        this.menu = false;
+        this.helpStart = 'Toca para empezar';
+        daily = !levels;
+        this.startMaze();
+    },
+    // Saves the maze where it is and shows the menu, which offers to carry on with it.
+    leaveToMenu() {
+        saveRun();
+        savedRun = runNumbers();
+        runActive = false;
+        this.showMenu();
     },
     // Moves one grid cell forward; false when the guardian caught the player there.
     stepOnce() {

@@ -12,7 +12,7 @@
         <text class="help-step">Avanzar</text>
         <text class="help-right">Girar</text>
         <text class="help-back">Media vuelta</text>
-        <text class="help-start">Toca para empezar</text>
+        <text class="help-start">{{ helpStart }}</text>
     </stack>
     <stack class="panel" if="{{ menu }}">
         <text class="menu-title">Laberinto</text>
@@ -23,6 +23,12 @@
         <text class="menu-daily-name">Reto del día</text>
         <text class="menu-daily-line">{{ menuDaily }}</text>
         <text class="menu-rank">{{ menuRank }}</text>
+        <div class="menu-help"></div>
+        <text class="menu-help-name">Controles</text>
+    </stack>
+    <stack class="map-menu-box" if="{{ mapMenu }}">
+        <div class="menu-help-box"></div>
+        <text class="menu-help-name-box">Menú</text>
     </stack>
     <stack class="panel" if="{{ result }}">
         <text class="result-title">{{ resultTitle }}</text>
